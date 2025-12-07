@@ -11,12 +11,12 @@
                     Limited Time Offer
                 </div>
                 <h2 class="text-5xl md:text-6xl font-bold leading-tight">
-                <span class="glitch-text-large" data-text="GET 100 taka off" style="text-transform: none;">GET 100 taka off</span>
+                <span class="glitch-text-large" data-text="GET 100 taka off + 10% Discount" style="text-transform: none;">GET 100 taka off + <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">10&#37;</span> Discount</span>
     <br>
     <span class="text-violet-300">On PRE-ORDER</span>
 </h2>
 <p class="text-xl text-violet-100">
-   Pre-order your favorite Valorant collectibles and get 100 taka off  on your order.
+   Pre-order your favorite Valorant collectibles and get 100 taka off plus <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">10&#37;</span> discount on your order.
    Current Pricing is only for pre-order.
 </p>
                 <div class="flex flex-wrap items-center gap-6 pt-4">

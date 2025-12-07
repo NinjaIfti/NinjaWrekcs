@@ -14,8 +14,8 @@
     <!-- Include Hero Section -->
     @include('home.sections.hero')
     
-    <!-- Include Features Section -->
-    @include('home.sections.features')
+    <!-- Include Features Section
+    @include('home.sections.features') -->
     
     <!-- Include Categories Section -->
     @include('home.sections.categories')

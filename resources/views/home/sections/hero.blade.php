@@ -17,7 +17,7 @@
             <div class="space-y-6 md:space-y-8 text-center lg:text-left">
                 <div class="inline-block">
                     <span class="px-4 py-2 bg-violet-500/20 text-violet-300 rounded-full text-sm font-semibold border border-violet-500/30 backdrop-blur-sm glitch-badge">
-                        Official Valorant Collectibles
+                        Premium Valorant Collectibles only in Bangladesh
                     </span>
                 </div>
                 
@@ -87,6 +87,24 @@
                                 <div class="glitch-overlay"></div>
                             </div>
                         </div>
+                        <div class="hero-slide">
+                            <div class="glitch-image-wrapper">
+                                <img src="/img/f5.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <div class="glitch-overlay"></div>
+                            </div>
+                        </div>
+                        <div class="hero-slide">
+                            <div class="glitch-image-wrapper">
+                                <img src="/img/f6.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <div class="glitch-overlay"></div>
+                            </div>
+                        </div>
+                        <div class="hero-slide">
+                            <div class="glitch-image-wrapper">
+                                <img src="/img/f7.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <div class="glitch-overlay"></div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Slideshow Navigation Dots -->
@@ -95,6 +113,9 @@
                         <button class="hero-dot" data-slide="1" aria-label="Slide 2"></button>
                         <button class="hero-dot" data-slide="2" aria-label="Slide 3"></button>
                         <button class="hero-dot" data-slide="3" aria-label="Slide 4"></button>
+                        <button class="hero-dot" data-slide="4" aria-label="Slide 5"></button>
+                        <button class="hero-dot" data-slide="5" aria-label="Slide 6"></button>
+                        <button class="hero-dot" data-slide="6" aria-label="Slide 7"></button>
                     </div>
                     
                     <!-- Navigation Arrows -->

@@ -38,6 +38,30 @@ Route::get('/about', function () {
     return view('about');
 })->name('about');
 
+Route::get('/contact', function () {
+    return view('contact');
+})->name('contact');
+
+Route::get('/shipping', function () {
+    return view('shipping');
+})->name('shipping');
+
+Route::get('/returns', function () {
+    return view('returns');
+})->name('returns');
+
+Route::get('/faq', function () {
+    return view('faq');
+})->name('faq');
+
+Route::get('/privacy', function () {
+    return view('privacy');
+})->name('privacy');
+
+Route::get('/terms', function () {
+    return view('terms');
+})->name('terms');
+
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product}', [ShopController::class, 'show'])->name('shop.show');
 

@@ -87,6 +87,11 @@
                         <h2 class="text-2xl font-bold mb-6">Payment Information</h2>
                         
                         <div class="space-y-4">
+                            <div class="p-4 bg-green-500/10 border border-green-500/50 rounded-lg">
+                                <p class="text-green-300 font-bold text-lg mb-1">💰 Pre-Order Special</p>
+                                <p class="text-white font-semibold">Pay only <span class="text-green-400 text-xl">৳200</span> now, pay rest on <span class="text-green-400">COD</span></p>
+                            </div>
+                            
                             <div class="p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
                                 <p class="text-violet-300 font-semibold mb-2">Send payment to:</p>
                                 <p class="text-2xl font-bold text-white">01533133309</p>

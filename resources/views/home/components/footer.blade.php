@@ -27,20 +27,20 @@
             <div>
                 <h4 class="text-white font-semibold mb-4">Shop</h4>
                 <ul class="space-y-3">
-                    <li><a href="#products" class="hover:text-violet-400 transition-colors">All Collectibles</a></li>
-                    <li><a href="#categories" class="hover:text-violet-400 transition-colors">Agent Figures</a></li>
-                    <li><a href="#categories" class="hover:text-violet-400 transition-colors">Knives & Weapons</a></li>
-                    <li><a href="#deals" class="hover:text-violet-400 transition-colors">Special Deals</a></li>
+                    <li><a href="{{ route('shop.index') }}" class="hover:text-violet-400 transition-colors">All Collectibles</a></li>
+                    <li><a href="{{ route('shop.index', ['category' => 'figures']) }}" class="hover:text-violet-400 transition-colors">Agent Figures</a></li>
+                    <li><a href="{{ route('shop.index', ['category' => 'knives']) }}" class="hover:text-violet-400 transition-colors">Knives & Weapons</a></li>
+                    <li><a href="/#deals" class="hover:text-violet-400 transition-colors">Special Deals</a></li>
                 </ul>
             </div>
 
             <div>
                 <h4 class="text-white font-semibold mb-4">Customer Service</h4>
                 <ul class="space-y-3">
-                    <li><a href="#" class="hover:text-violet-400 transition-colors">Contact Us</a></li>
-                    <li><a href="#" class="hover:text-violet-400 transition-colors">Shipping Info</a></li>
-                    <li><a href="#" class="hover:text-violet-400 transition-colors">Returns</a></li>
-                    <li><a href="#" class="hover:text-violet-400 transition-colors">FAQ</a></li>
+                    <li><a href="{{ route('contact') }}" class="hover:text-violet-400 transition-colors">Contact Us</a></li>
+                    <li><a href="{{ route('shipping') }}" class="hover:text-violet-400 transition-colors">Shipping Info</a></li>
+                    <li><a href="{{ route('returns') }}" class="hover:text-violet-400 transition-colors">Returns</a></li>
+                    <li><a href="{{ route('faq') }}" class="hover:text-violet-400 transition-colors">FAQ</a></li>
                 </ul>
             </div>
 
@@ -48,9 +48,9 @@
                 <h4 class="text-white font-semibold mb-4">Company</h4>
                 <ul class="space-y-3">
                     <li><a href="{{ route('about') }}" class="hover:text-violet-400 transition-colors">About Us</a></li>
-                    <li><a href="#" class="hover:text-violet-400 transition-colors">Careers</a></li>
-                    <li><a href="#" class="hover:text-violet-400 transition-colors">Privacy Policy</a></li>
-                    <li><a href="#" class="hover:text-violet-400 transition-colors">Terms of Service</a></li>
+                    <li><a href="{{ route('contact') }}" class="hover:text-violet-400 transition-colors">Careers</a></li>
+                    <li><a href="{{ route('privacy') }}" class="hover:text-violet-400 transition-colors">Privacy Policy</a></li>
+                    <li><a href="{{ route('terms') }}" class="hover:text-violet-400 transition-colors">Terms of Service</a></li>
                 </ul>
             </div>
         </div>
@@ -61,7 +61,7 @@
                 <div class="flex space-x-6 mt-4 md:mt-0">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" class="h-8 opacity-70">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-8 opacity-70">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" class="h-8 opacity-70">
+                    <img src="https://upload.wikimedia.org/wikipedia/en/6/68/BKash_logo.svg" alt="PayPal" class="h-8 opacity-70">
                 </div>
             </div>
         </div>
