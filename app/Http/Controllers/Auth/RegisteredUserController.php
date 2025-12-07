@@ -49,3 +49,4 @@ class RegisteredUserController extends Controller
         return redirect(route('profile.index', absolute: false));
     }
 }
+

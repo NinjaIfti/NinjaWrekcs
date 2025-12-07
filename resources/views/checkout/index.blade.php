@@ -61,8 +61,8 @@
                             <!-- Email (for non-logged users) -->
                             @guest
                             <div>
-                                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email (Optional)</label>
-                                <input type="email" name="email" id="email" value="{{ old('email') }}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">
+                                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                                <input type="email" name="email" id="email" value="{{ old('email') }}" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">
                                 @error('email')
                                     <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                                 @enderror

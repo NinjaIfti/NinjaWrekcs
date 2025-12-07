@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Mail;
 
 Route::get('/', function () {
     $products = \App\Models\Product::where('is_active', true)
@@ -13,6 +14,25 @@ Route::get('/', function () {
     
     return view('welcome', compact('products'));
 });
+
+Route::get('/test-email', function () {
+    try {
+        Mail::raw('This is a test email from NinjaWrekcs! Your Brevo SMTP configuration is working correctly.', function ($message) {
+            $message->to('ninjaifti3061@gmail.com')
+                    ->subject('Test Email from NinjaWrekcs - Brevo SMTP');
+        });
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Test email sent successfully to ninjaifti3061@gmail.com'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to send email: ' . $e->getMessage()
+        ], 500);
+    }
+})->name('test.email');
 
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product}', [ShopController::class, 'show'])->name('shop.show');

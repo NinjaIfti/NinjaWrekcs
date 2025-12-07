@@ -54,10 +54,10 @@ class CheckoutController extends Controller
             'terms_accepted' => 'required|accepted',
         ];
 
-        // Add password field only for non-logged-in users
+        // Add password and email fields only for non-logged-in users
         if (!$isLoggedIn) {
             $rules['password'] = 'required|string|min:8';
-            $rules['email'] = 'nullable|email|unique:users,email';
+            $rules['email'] = 'required|email|unique:users,email';
         }
 
         $validated = $request->validate($rules);
