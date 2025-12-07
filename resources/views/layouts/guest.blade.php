@@ -11,8 +11,11 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="antialiased bg-black text-white">
+        <!-- Include Navigation -->
+        @include('home.components.navigation')
+        
         <!-- Violet Glitch Background -->
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 relative overflow-hidden bg-gradient-to-br from-black via-violet-950 to-purple-950">
+        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-24 sm:pt-6 relative overflow-hidden bg-gradient-to-br from-black via-violet-950 to-purple-950">
             <!-- Animated Background Effects -->
             <div class="absolute inset-0 overflow-hidden">
                 <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse"></div>

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Order;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -12,12 +14,51 @@ class AdminController extends Controller
 {
     public function dashboard(): View
     {
-        return view('admin.dashboard');
+        $totalProducts = Product::count();
+        $totalOrders = Order::count();
+        $totalCustomers = \App\Models\User::where('email', '!=', 'ifti3061@gmail.com')->count();
+        $totalRevenue = Order::where('status', '!=', 'cancelled')->sum('total');
+        
+        $recentOrders = Order::with(['user', 'items'])->latest()->take(5)->get();
+        $recentProducts = Product::latest()->take(5)->get();
+        
+        return view('admin.dashboard', [
+            'totalProducts' => $totalProducts,
+            'totalOrders' => $totalOrders,
+            'totalCustomers' => $totalCustomers,
+            'totalRevenue' => $totalRevenue,
+            'recentOrders' => $recentOrders,
+            'recentProducts' => $recentProducts,
+        ]);
     }
 
-    public function orders(): View
+    public function orders(Request $request): View
     {
-        return view('admin.orders');
+        $status = $request->query('status', '');
+        
+        $query = Order::with(['user', 'items.product']);
+        
+        if ($status && in_array($status, ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])) {
+            $query->where('status', $status);
+        }
+        
+        $orders = $query->latest()->get();
+        
+        return view('admin.orders', [
+            'orders' => $orders,
+            'selectedStatus' => $status,
+        ]);
+    }
+
+    public function updateOrderStatus(Request $request, Order $order): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
+        ]);
+
+        $order->update(['status' => $validated['status']]);
+
+        return redirect()->route('admin.orders')->with('success', 'Order status updated successfully!');
     }
 
     public function products(Request $request): View

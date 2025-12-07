@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -58,5 +59,16 @@ class UserProfileController extends Controller
         ]);
 
         return redirect()->route('profile.index')->with('success', 'Password updated successfully!');
+    }
+
+    public function showOrder(Order $order): View
+    {
+        if ($order->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to this order.');
+        }
+
+        $order->load(['items.product', 'user']);
+        
+        return view('profile.order-details', compact('order'));
     }
 }

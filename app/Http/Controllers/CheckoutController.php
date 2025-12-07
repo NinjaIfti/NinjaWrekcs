@@ -121,6 +121,15 @@ class CheckoutController extends Controller
             foreach ($cartItems as $item) {
                 $product = Product::find($item->id);
                 
+                if (!$product) {
+                    throw new \Exception("Product with ID {$item->id} not found.");
+                }
+
+                // Check stock availability
+                if ($product->quantity < $item->quantity) {
+                    throw new \Exception("Insufficient stock for {$product->name}. Only {$product->quantity} available, but {$item->quantity} requested.");
+                }
+                
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item->id,
@@ -131,9 +140,7 @@ class CheckoutController extends Controller
                 ]);
 
                 // Update product quantity
-                if ($product) {
-                    $product->decrement('quantity', $item->quantity);
-                }
+                $product->decrement('quantity', $item->quantity);
             }
 
             DB::commit();
@@ -142,9 +149,29 @@ class CheckoutController extends Controller
             \Cart::clear();
 
             return redirect()->route('checkout.success', $order)->with('success', 'Order placed successfully!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Failed to place order. Please try again.')->withInput();
+            \Log::error('Order placement failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id(),
+                'cart_items' => $cartItems->toArray(),
+            ]);
+            
+            $errorMessage = 'Failed to place order: ';
+            if (str_contains($e->getMessage(), 'foreign key constraint')) {
+                $errorMessage .= 'Product not found or invalid.';
+            } elseif (str_contains($e->getMessage(), 'duplicate entry')) {
+                $errorMessage .= 'Email already exists. Please use a different email.';
+            } elseif (str_contains($e->getMessage(), 'cart')) {
+                $errorMessage .= 'Cart is empty or invalid.';
+            } else {
+                $errorMessage .= $e->getMessage();
+            }
+            
+            return redirect()->back()->with('error', $errorMessage)->withInput();
         }
     }
 

@@ -79,9 +79,14 @@
                                             @endforeach
                                         </div>
 
-                                        <div class="pt-4 border-t border-violet-500/20">
-                                            <p class="text-sm text-gray-400"><strong>Delivery:</strong> {{ $order->address }}</p>
-                                            <p class="text-sm text-gray-400"><strong>Phone:</strong> {{ $order->phone }}</p>
+                                        <div class="pt-4 border-t border-violet-500/20 flex justify-between items-center">
+                                            <div>
+                                                <p class="text-sm text-gray-400"><strong>Delivery:</strong> {{ $order->address }}</p>
+                                                <p class="text-sm text-gray-400"><strong>Phone:</strong> {{ $order->phone }}</p>
+                                            </div>
+                                            <a href="{{ route('profile.orders.show', $order) }}" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-semibold transition">
+                                                View Details
+                                            </a>
                                         </div>
                                     </div>
                                 @endforeach

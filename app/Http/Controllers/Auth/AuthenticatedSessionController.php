@@ -30,11 +30,21 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
         
-        if ($user->email === 'ifti3061@gmail.com') {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
+        // Always redirect admin users to admin dashboard, regardless of intended URL
+        if ($user->isAdmin()) {
+            return redirect()->route('admin.dashboard');
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Regular users - redirect to profile (or intended URL if it's not admin)
+        $intended = $request->session()->pull('url.intended');
+        
+        // If intended URL is an admin route, redirect to profile instead
+        if ($intended && str_contains($intended, '/admin')) {
+            return redirect()->route('profile.index');
+        }
+        
+        // Use intended URL if available, otherwise go to profile
+        return redirect($intended ?? route('profile.index'));
     }
 
     /**

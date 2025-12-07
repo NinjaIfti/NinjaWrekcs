@@ -38,7 +38,10 @@
                 </div>
 
                 <div class="space-y-3">
-                    <a href="{{ route('profile.index') }}" class="block w-full px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition-all">
+                    <a href="{{ route('profile.orders.show', $order) }}" class="block w-full px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition-all">
+                        View Order Details
+                    </a>
+                    <a href="{{ route('profile.index') }}" class="block w-full px-6 py-3 bg-transparent border-2 border-violet-500/50 text-violet-400 rounded-lg font-semibold hover:bg-violet-500/10 transition-all">
                         View Order History
                     </a>
                     <a href="{{ route('shop.index') }}" class="block w-full px-6 py-3 bg-transparent border-2 border-violet-500/50 text-violet-400 rounded-lg font-semibold hover:bg-violet-500/10 transition-all">

@@ -31,14 +31,16 @@ Route::get('/checkout/success/{order}', [\App\Http\Controllers\CheckoutControlle
 
 Route::get('/dashboard', function () {
     // Redirect admin users to admin dashboard
-    if (Auth::check() && Auth::user()->email === 'ifti3061@gmail.com') {
+    if (Auth::check() && Auth::user()->isAdmin()) {
         return redirect()->route('admin.dashboard');
     }
-    return view('dashboard');
+    // Regular users go to profile instead of old dashboard
+    return redirect()->route('profile.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [\App\Http\Controllers\UserProfileController::class, 'index'])->name('profile.index');
+    Route::get('/profile/orders/{order}', [\App\Http\Controllers\UserProfileController::class, 'showOrder'])->name('profile.orders.show');
     Route::post('/profile/personal-info', [\App\Http\Controllers\UserProfileController::class, 'updatePersonalInfo'])->name('profile.update.personal');
     Route::post('/profile/address', [\App\Http\Controllers\UserProfileController::class, 'updateAddress'])->name('profile.update.address');
     Route::post('/profile/password', [\App\Http\Controllers\UserProfileController::class, 'updatePassword'])->name('profile.update.password');
@@ -52,6 +54,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/orders', [\App\Http\Controllers\AdminController::class, 'orders'])->name('orders');
+    Route::put('/orders/{order}/status', [\App\Http\Controllers\AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
     
     // Products Management
     Route::get('/products', [\App\Http\Controllers\AdminController::class, 'products'])->name('products');

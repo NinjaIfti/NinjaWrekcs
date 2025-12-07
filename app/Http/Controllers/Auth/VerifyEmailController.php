@@ -14,14 +14,20 @@ class VerifyEmailController extends Controller
      */
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        $user = $request->user();
+        
+        if ($user->hasVerifiedEmail()) {
+            return $user->isAdmin() 
+                ? redirect()->route('admin.dashboard', ['verified' => 1])
+                : redirect()->route('profile.index', ['verified' => 1]);
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
         }
 
-        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        return $user->isAdmin() 
+            ? redirect()->route('admin.dashboard', ['verified' => 1])
+            : redirect()->route('profile.index', ['verified' => 1]);
     }
 }

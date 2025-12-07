@@ -17,7 +17,7 @@ class AdminMiddleware
             return redirect()->route('login');
         }
 
-        if (Auth::user()->email !== self::ADMIN_EMAIL) {
+        if (!Auth::user()->isAdmin()) {
             abort(403, 'Unauthorized access. Admin only.');
         }
 

@@ -285,5 +285,32 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: rgba(167, 139, 250, 0.7);
     }
+    
+    /* Profile Dropdown Styles */
+    .group\/profile:hover .absolute {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .group\/profile .absolute:hover {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    /* Mobile Menu Styles */
+    #mobileMenu {
+        transition: transform 0.3s ease-in-out;
+    }
+    
+    #mobileMenu:not(.translate-x-full) {
+        transform: translateX(0);
+    }
+    
+    /* Mobile Bottom Nav - Ensure visibility */
+    @media (max-width: 768px) {
+        body {
+            padding-bottom: 70px; /* Add padding to prevent content from being hidden behind bottom nav */
+        }
+    }
 </style>
 
