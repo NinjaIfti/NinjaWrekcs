@@ -11,23 +11,14 @@
                     Limited Time Offer
                 </div>
                 <h2 class="text-5xl md:text-6xl font-bold leading-tight">
-                    <span class="glitch-text-large" data-text="GET 100 taka off 10% Discount" style="text-transform: none;">GET 100 taka off 10% Discount</span>
-                    <br>
-                    <span class="text-violet-300">On PRE-ORDER</span>
-                </h2>
-                <p class="text-xl text-violet-100">
-                    Pre-order your favorite Valorant collectibles and get 100 taka off 10% discount on your order.
-                    Current Pricing is only for pre-order.
-                </p>
-                <!-- <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                    <a href="#" class="px-8 py-4 bg-white text-violet-900 rounded-lg font-semibold hover:shadow-xl hover:scale-105 transition-all relative overflow-hidden group">
-                        <span class="relative z-10">Claim Offer</span>
-                        <span class="absolute inset-0 bg-violet-100 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                    </a>
-                    <a href="#" class="px-8 py-4 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-violet-900 transition-all">
-                        Learn More
-                    </a>
-                </div> -->
+                <span class="glitch-text-large" data-text="GET 100 taka off" style="text-transform: none;">GET 100 taka off</span>
+    <br>
+    <span class="text-violet-300">On PRE-ORDER</span>
+</h2>
+<p class="text-xl text-violet-100">
+   Pre-order your favorite Valorant collectibles and get 100 taka off  on your order.
+   Current Pricing is only for pre-order.
+</p>
                 <div class="flex flex-wrap items-center gap-6 pt-4">
                     <div class="flex items-center space-x-2">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -52,4 +43,3 @@
         </div>
     </div>
 </section>
-

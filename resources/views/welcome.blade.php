@@ -28,6 +28,9 @@
     <!-- Include Footer -->
     @include('home.components.footer')
     
+    <!-- Pre-Order Popup -->
+    @include('components.pre-order-popup')
+    
     <!-- Include Styles -->
     @include('home.styles')
 </body>

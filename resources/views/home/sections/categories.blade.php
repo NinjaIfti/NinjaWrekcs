@@ -10,7 +10,7 @@
         
         <div class="grid md:grid-cols-3 gap-8">
             <!-- Category 1 - Figures -->
-            <a href="#" class="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border border-violet-500/20">
+            <a href="{{ route('shop.index', ['category' => 'figures']) }}" class="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border border-violet-500/20">
                 <div class="relative h-80">
                     <img src="/img/figure.jpg" alt="Valorant Figures" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-violet-900/50 to-transparent"></div>
@@ -29,7 +29,7 @@
             </a>
 
             <!-- Category 2 - Knives & Weapons -->
-            <a href="#" class="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border border-violet-500/20">
+            <a href="{{ route('shop.index', ['category' => 'knives']) }}" class="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border border-violet-500/20">
                 <div class="relative h-80">
                     <img src="/img/knives.jpg" alt="Valorant Knives" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-purple-900/50 to-transparent"></div>
@@ -48,7 +48,7 @@
             </a>
 
             <!-- Category 3 - Accessories -->
-            <a href="#" class="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border border-violet-500/20">
+            <a href="{{ route('shop.index', ['category' => 'stickers']) }}" class="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border border-violet-500/20">
                 <div class="relative h-80">
                     <img src="/img/keychain.jpg" alt="Valorant Accessories" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-fuchsia-900/50 to-transparent"></div>

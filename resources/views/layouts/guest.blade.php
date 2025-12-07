@@ -54,5 +54,19 @@
 
         <!-- Include Glitch Styles -->
         @include('home.styles')
+        
+        <!-- Password Input Styles -->
+        <style>
+            input[type="password"] {
+                -webkit-text-security: disc !important;
+                text-security: disc !important;
+                font-family: 'text-security-disc', monospace;
+            }
+            
+            input[type="password"]::placeholder {
+                -webkit-text-security: none !important;
+                text-security: none !important;
+            }
+        </style>
     </body>
 </html>

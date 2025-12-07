@@ -254,5 +254,36 @@
     ::-webkit-scrollbar-thumb:hover {
         background: linear-gradient(to bottom, #a78bfa, #c4b5fd);
     }
+    
+    /* Cart Dropdown Styles */
+    .cart-dropdown {
+        pointer-events: auto;
+    }
+    
+    /* Keep dropdown visible when hovering over cart icon or dropdown */
+    .group\/cart:hover .cart-dropdown,
+    .cart-dropdown:hover {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    /* Custom Scrollbar for Cart Dropdown */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(167, 139, 250, 0.1);
+        border-radius: 3px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(167, 139, 250, 0.5);
+        border-radius: 3px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(167, 139, 250, 0.7);
+    }
 </style>
 

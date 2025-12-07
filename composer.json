@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "darryldecode/cart": "^4.2",
         "intervention/image": "^3.11",
         "laravel/cashier": "^16.1",
         "laravel/framework": "^12.0",
