@@ -3,7 +3,10 @@
     <div class="flex flex-col h-full">
         <!-- Header -->
         <div class="flex justify-between items-center p-4 border-b border-violet-500/20 bg-black/50">
-            <span class="text-2xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</span>
+            <div class="flex items-center space-x-2">
+                <img src="{{ asset('img/fav.png') }}" alt="NinjaWrekcs" class="h-10 w-auto">
+                <span class="text-xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</span>
+            </div>
             <button id="mobileMenuClose" class="p-2 text-gray-300 hover:text-violet-400 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -22,7 +25,7 @@
             <a href="#deals" class="block px-4 py-3 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
                 Deals
             </a>
-            <a href="#about" class="block px-4 py-3 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
+            <a href="{{ route('about') }}" class="block px-4 py-3 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
                 About
             </a>
         </nav>
@@ -103,7 +106,10 @@
     <div class="flex flex-col h-full">
         <!-- Header -->
         <div class="flex justify-between items-center p-4 border-b border-violet-500/20 bg-black/50">
-            <span class="text-2xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</span>
+            <div class="flex items-center space-x-2">
+                <img src="{{ asset('img/fav.png') }}" alt="NinjaWrekcs" class="h-10 w-auto">
+                <span class="text-xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</span>
+            </div>
             <button id="mobileMenuClose" class="p-2 text-gray-300 hover:text-violet-400 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -122,7 +128,7 @@
             <a href="#deals" class="block px-4 py-3 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
                 Deals
             </a>
-            <a href="#about" class="block px-4 py-3 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
+            <a href="{{ route('about') }}" class="block px-4 py-3 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
                 About
             </a>
         </nav>
@@ -198,4 +204,5 @@
         }
     });
 </script>
+
 

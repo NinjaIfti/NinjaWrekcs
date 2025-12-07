@@ -12,7 +12,7 @@
         Deals
         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-violet-400 group-hover:w-full transition-all duration-300"></span>
     </a>
-    <a href="#about" class="text-gray-300 hover:text-violet-400 transition-colors font-medium relative group">
+    <a href="{{ route('about') }}" class="text-gray-300 hover:text-violet-400 transition-colors font-medium relative group">
         About
         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-violet-400 group-hover:w-full transition-all duration-300"></span>
     </a>

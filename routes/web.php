@@ -34,6 +34,10 @@ Route::get('/test-email', function () {
     }
 })->name('test.email');
 
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product}', [ShopController::class, 'show'])->name('shop.show');
 
