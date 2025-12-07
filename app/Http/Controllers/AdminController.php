@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\User;
+use App\Mail\OrderStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -50,13 +53,142 @@ class AdminController extends Controller
         ]);
     }
 
+    public function exportOrders(Request $request)
+    {
+        $status = $request->query('status', '');
+        
+        $query = Order::with(['user', 'items']);
+        
+        if ($status && in_array($status, ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])) {
+            $query->where('status', $status);
+        }
+        
+        $orders = $query->latest()->get();
+        
+        $filename = 'orders_' . date('Y-m-d_His') . ($status ? '_' . $status : '') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+        
+        $callback = function() use ($orders) {
+            $file = fopen('php://output', 'w');
+            
+            // Add BOM for UTF-8 to ensure Excel opens it correctly
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Headers
+            fputcsv($file, [
+                'Order ID',
+                'Order Date',
+                'Status',
+                'Customer Name',
+                'Email',
+                'Phone',
+                'Address',
+                'User ID',
+                'Payment Method',
+                'Transaction Number',
+                'Sending Number',
+                'Subtotal',
+                'Discount',
+                'Total',
+                'Product Name',
+                'Product Price',
+                'Quantity',
+                'Item Subtotal',
+                'Notes',
+                'Terms Accepted',
+                'Save Info'
+            ]);
+            
+            // Data rows
+            foreach ($orders as $order) {
+                if ($order->items->count() > 0) {
+                    foreach ($order->items as $item) {
+                        fputcsv($file, [
+                            $order->id,
+                            $order->created_at->format('Y-m-d H:i:s'),
+                            ucfirst($order->status),
+                            $order->name,
+                            $order->email,
+                            $order->phone,
+                            $order->address,
+                            $order->user_id ?? 'Guest',
+                            $order->payment_method,
+                            $order->transaction_number,
+                            $order->sending_number,
+                            number_format($order->subtotal, 2),
+                            number_format($order->discount, 2),
+                            number_format($order->total, 2),
+                            $item->product_name,
+                            number_format($item->price, 2),
+                            $item->quantity,
+                            number_format($item->subtotal, 2),
+                            $order->notes ?? '',
+                            $order->terms_accepted ? 'Yes' : 'No',
+                            $order->save_info ? 'Yes' : 'No'
+                        ]);
+                    }
+                } else {
+                    // If order has no items, still export order info
+                    fputcsv($file, [
+                        $order->id,
+                        $order->created_at->format('Y-m-d H:i:s'),
+                        ucfirst($order->status),
+                        $order->name,
+                        $order->email,
+                        $order->phone,
+                        $order->address,
+                        $order->user_id ?? 'Guest',
+                        $order->payment_method,
+                        $order->transaction_number,
+                        $order->sending_number,
+                        number_format($order->subtotal, 2),
+                        number_format($order->discount, 2),
+                        number_format($order->total, 2),
+                        'N/A',
+                        '0.00',
+                        '0',
+                        '0.00',
+                        $order->notes ?? '',
+                        $order->terms_accepted ? 'Yes' : 'No',
+                        $order->save_info ? 'Yes' : 'No'
+                    ]);
+                }
+            }
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function updateOrderStatus(Request $request, Order $order): RedirectResponse
     {
         $validated = $request->validate([
             'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
         ]);
 
+        $oldStatus = $order->status;
         $order->update(['status' => $validated['status']]);
+
+        // Send email notification if status changed and order has email
+        if ($oldStatus !== $validated['status'] && $order->email) {
+            try {
+                // Reload order with items relationship for email
+                $order->refresh();
+                $order->load('items');
+                Mail::to($order->email)->send(new OrderStatusUpdated($order, $oldStatus));
+            } catch (\Exception $e) {
+                // Log error but don't fail the status update
+                \Log::error('Failed to send order status email: ' . $e->getMessage(), [
+                    'order_id' => $order->id,
+                    'email' => $order->email,
+                ]);
+            }
+        }
 
         return redirect()->route('admin.orders')->with('success', 'Order status updated successfully!');
     }
@@ -179,12 +311,124 @@ class AdminController extends Controller
 
     public function visitors(): View
     {
-        return view('admin.visitors');
+        // Get visitor stats from sessions table
+        $totalVisitors = DB::table('sessions')
+            ->distinct('ip_address')
+            ->count('ip_address');
+        
+        $todayStart = now()->startOfDay()->timestamp;
+        $todayVisitors = DB::table('sessions')
+            ->where('last_activity', '>=', $todayStart)
+            ->distinct('ip_address')
+            ->count('ip_address');
+        
+        $weekVisitors = DB::table('sessions')
+            ->where('last_activity', '>=', now()->subWeek()->timestamp)
+            ->distinct('ip_address')
+            ->count('ip_address');
+        
+        $monthVisitors = DB::table('sessions')
+            ->where('last_activity', '>=', now()->subMonth()->timestamp)
+            ->distinct('ip_address')
+            ->count('ip_address');
+        
+        // Get recent sessions with IP and user agent info
+        $recentSessions = DB::table('sessions')
+            ->select('ip_address', 'user_agent', 'last_activity')
+            ->orderBy('last_activity', 'desc')
+            ->take(50)
+            ->get()
+            ->map(function ($session) {
+                return [
+                    'ip_address' => $session->ip_address ?? 'Unknown',
+                    'user_agent' => $session->user_agent ?? 'Unknown',
+                    'device' => $this->parseUserAgent($session->user_agent ?? ''),
+                    'location' => 'Unknown', // Could integrate with IP geolocation API
+                    'date_time' => date('Y-m-d H:i:s', $session->last_activity),
+                ];
+            });
+        
+        return view('admin.visitors', [
+            'totalVisitors' => $totalVisitors,
+            'todayVisitors' => $todayVisitors,
+            'weekVisitors' => $weekVisitors,
+            'monthVisitors' => $monthVisitors,
+            'recentSessions' => $recentSessions,
+        ]);
+    }
+
+    private function parseUserAgent(?string $userAgent): string
+    {
+        if (!$userAgent) {
+            return 'Unknown';
+        }
+        
+        if (stripos($userAgent, 'Mobile') !== false || stripos($userAgent, 'Android') !== false || stripos($userAgent, 'iPhone') !== false) {
+            return 'Mobile';
+        }
+        
+        if (stripos($userAgent, 'Tablet') !== false || stripos($userAgent, 'iPad') !== false) {
+            return 'Tablet';
+        }
+        
+        return 'Desktop';
     }
 
     public function financial(): View
     {
-        return view('admin.financial');
+        // Total Revenue (excluding cancelled orders)
+        $totalRevenue = Order::where('status', '!=', 'cancelled')->sum('total');
+        
+        // This Month Revenue
+        $thisMonthRevenue = Order::where('status', '!=', 'cancelled')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('total');
+        
+        // Total Orders (excluding cancelled)
+        $totalOrders = Order::where('status', '!=', 'cancelled')->count();
+        
+        // Average Order Value
+        $averageOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+        
+        // Recent Transactions (last 20 orders)
+        $recentTransactions = Order::where('status', '!=', 'cancelled')
+            ->with(['user'])
+            ->latest()
+            ->take(20)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'transaction_id' => $order->transaction_number ?? 'N/A',
+                    'order_id' => $order->id,
+                    'amount' => $order->total,
+                    'payment_method' => strtoupper($order->payment_method ?? 'N/A'),
+                    'status' => ucfirst($order->status),
+                    'date' => $order->created_at->format('Y-m-d H:i:s'),
+                ];
+            });
+        
+        // Revenue by month for chart (last 6 months)
+        $revenueByMonth = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $revenueByMonth[] = [
+                'month' => $month->format('M Y'),
+                'revenue' => Order::where('status', '!=', 'cancelled')
+                    ->whereMonth('created_at', $month->month)
+                    ->whereYear('created_at', $month->year)
+                    ->sum('total'),
+            ];
+        }
+        
+        return view('admin.financial', [
+            'totalRevenue' => $totalRevenue,
+            'thisMonthRevenue' => $thisMonthRevenue,
+            'totalOrders' => $totalOrders,
+            'averageOrder' => $averageOrder,
+            'recentTransactions' => $recentTransactions,
+            'revenueByMonth' => $revenueByMonth,
+        ]);
     }
 }
 

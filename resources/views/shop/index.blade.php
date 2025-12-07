@@ -3,8 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Shop - NinjaWrekcs</title>
+    <title>Shop Valorant Collectibles - NinjaWrekcs</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
+    
+    @include('components.seo', [
+        'title' => 'Shop Valorant Collectibles - NinjaWrekcs | Agent Figures, Knives & Weapons',
+        'description' => 'Browse our complete collection of Valorant collectibles. Shop agent figures, knives, weapons, stickers, and keychains. Pre-order now with special discounts.',
+        'url' => route('shop.index'),
+        'keywords' => 'Valorant shop, buy Valorant collectibles, Valorant agent figures, Valorant knives, Valorant weapons, Valorant merchandise store, Bangladesh'
+    ])
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased bg-black text-white">

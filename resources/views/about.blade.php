@@ -3,8 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>About Us - NinjaWrekcs</title>
+    <title>About Us - NinjaWrekcs | Valorant Collectibles Store</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
+    
+    @include('components.seo', [
+        'title' => 'About Us - NinjaWrekcs | Valorant Collectibles Store',
+        'description' => 'Learn about NinjaWrekcs - your trusted source for premium Valorant gaming collectibles. We bring authentic agent figures, knives, weapons, and more to Valorant fans in Bangladesh.',
+        'url' => route('about')
+    ])
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased bg-black text-white">

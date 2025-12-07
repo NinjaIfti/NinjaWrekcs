@@ -205,6 +205,10 @@
     </section>
 
     @include('home.components.footer')
+    
+    <!-- Pre-Order Popup -->
+    @include('components.pre-order-popup')
+    
     @include('home.styles')
 </body>
 </html>

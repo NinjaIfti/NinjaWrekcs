@@ -62,6 +62,80 @@ Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
 
+// Robots.txt
+Route::get('/robots.txt', function () {
+    $sitemapUrl = url('/sitemap.xml');
+    $content = "User-agent: *\n";
+    $content .= "Allow: /\n";
+    $content .= "Disallow: /admin/\n";
+    $content .= "Disallow: /profile/\n";
+    $content .= "Disallow: /checkout/\n";
+    $content .= "Disallow: /cart\n";
+    $content .= "Disallow: /test-email\n\n";
+    $content .= "# Sitemap\n";
+    $content .= "Sitemap: {$sitemapUrl}\n";
+    
+    return response($content, 200)->header('Content-Type', 'text/plain');
+})->name('robots');
+
+// Sitemap
+Route::get('/sitemap.xml', function () {
+    $products = \App\Models\Product::where('is_active', true)->get();
+    
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    
+    // Homepage
+    $xml .= '  <url>' . "\n";
+    $xml .= '    <loc>' . url('/') . '</loc>' . "\n";
+    $xml .= '    <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '    <changefreq>daily</changefreq>' . "\n";
+    $xml .= '    <priority>1.0</priority>' . "\n";
+    $xml .= '  </url>' . "\n";
+    
+    // Shop
+    $xml .= '  <url>' . "\n";
+    $xml .= '    <loc>' . route('shop.index') . '</loc>' . "\n";
+    $xml .= '    <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+    $xml .= '    <changefreq>daily</changefreq>' . "\n";
+    $xml .= '    <priority>0.9</priority>' . "\n";
+    $xml .= '  </url>' . "\n";
+    
+    // Products
+    foreach ($products as $product) {
+        $xml .= '  <url>' . "\n";
+        $xml .= '    <loc>' . route('shop.show', $product->slug ?? $product->id) . '</loc>' . "\n";
+        $xml .= '    <lastmod>' . $product->updated_at->format('Y-m-d') . '</lastmod>' . "\n";
+        $xml .= '    <changefreq>weekly</changefreq>' . "\n";
+        $xml .= '    <priority>0.8</priority>' . "\n";
+        $xml .= '  </url>' . "\n";
+    }
+    
+    // Static pages
+    $pages = [
+        ['url' => route('about'), 'priority' => '0.7'],
+        ['url' => route('contact'), 'priority' => '0.7'],
+        ['url' => route('shipping'), 'priority' => '0.6'],
+        ['url' => route('returns'), 'priority' => '0.6'],
+        ['url' => route('faq'), 'priority' => '0.6'],
+        ['url' => route('privacy'), 'priority' => '0.5'],
+        ['url' => route('terms'), 'priority' => '0.5'],
+    ];
+    
+    foreach ($pages as $page) {
+        $xml .= '  <url>' . "\n";
+        $xml .= '    <loc>' . $page['url'] . '</loc>' . "\n";
+        $xml .= '    <lastmod>' . date('Y-m-d') . '</lastmod>' . "\n";
+        $xml .= '    <changefreq>monthly</changefreq>' . "\n";
+        $xml .= '    <priority>' . $page['priority'] . '</priority>' . "\n";
+        $xml .= '  </url>' . "\n";
+    }
+    
+    $xml .= '</urlset>';
+    
+    return response($xml, 200)->header('Content-Type', 'application/xml');
+})->name('sitemap');
+
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product}', [ShopController::class, 'show'])->name('shop.show');
 
@@ -102,6 +176,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/orders', [\App\Http\Controllers\AdminController::class, 'orders'])->name('orders');
+    Route::get('/orders/export', [\App\Http\Controllers\AdminController::class, 'exportOrders'])->name('orders.export');
     Route::put('/orders/{order}/status', [\App\Http\Controllers\AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
     
     // Products Management

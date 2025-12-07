@@ -19,7 +19,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Visitors</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">0</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($totalVisitors) }}</p>
                         </div>
                     </div>
                 </div>
@@ -35,7 +35,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Today</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">0</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($todayVisitors) }}</p>
                         </div>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">This Week</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">0</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($weekVisitors) }}</p>
                         </div>
                     </div>
                 </div>
@@ -67,7 +67,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">This Month</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">0</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($monthVisitors) }}</p>
                         </div>
                     </div>
                 </div>
@@ -90,11 +90,29 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            <tr>
-                                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    No visitor data available
-                                </td>
-                            </tr>
+                            @forelse($recentSessions as $session)
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $session['ip_address'] }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $session['location'] }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <div class="max-w-xs truncate" title="{{ $session['user_agent'] }}">
+                                            {{ \Illuminate\Support\Str::limit($session['user_agent'], 50) }}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                            {{ $session['device'] }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $session['date_time'] }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                        No visitor data available
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>

@@ -3,8 +3,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $product->name }} - NinjaWrekcs</title>
+    <title>{{ $product->name }} - NinjaWrekcs | Valorant Collectibles</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
+    
+    @include('components.seo', [
+        'title' => $product->name . ' - NinjaWrekcs | Valorant Collectibles',
+        'description' => $product->description ? \Illuminate\Support\Str::limit(strip_tags($product->description), 160) : 'Buy ' . $product->name . ' - Authentic Valorant collectible. Pre-order now and get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
+        'image' => $product->image ? asset('storage/' . $product->image) : asset('img/fav.png'),
+        'url' => route('shop.show', $product->slug ?? $product->id),
+        'type' => 'product',
+        'keywords' => $product->name . ', Valorant collectibles, ' . ($product->category ?? 'gaming merchandise') . ', pre-order Valorant, Bangladesh',
+        'product' => $product
+    ])
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased bg-black text-white">

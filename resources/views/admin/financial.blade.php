@@ -18,7 +18,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">$0.00</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">৳{{ number_format($totalRevenue, 2) }}</p>
                         </div>
                     </div>
                 </div>
@@ -34,7 +34,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">This Month</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">$0.00</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">৳{{ number_format($thisMonthRevenue, 2) }}</p>
                         </div>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Orders</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">0</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($totalOrders) }}</p>
                         </div>
                     </div>
                 </div>
@@ -66,19 +66,33 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Average Order</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">$0.00</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">৳{{ number_format($averageOrder, 2) }}</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Revenue Chart Placeholder -->
+        <!-- Revenue Chart -->
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Chart</h3>
-                <div class="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                    <p class="text-gray-500 dark:text-gray-400">Chart will be displayed here</p>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Trend (Last 6 Months)</h3>
+                <div class="h-64 flex items-end justify-between gap-2">
+                    @foreach($revenueByMonth as $monthData)
+                        @php
+                            $maxRevenue = max(array_column($revenueByMonth, 'revenue'));
+                            $height = $maxRevenue > 0 ? ($monthData['revenue'] / $maxRevenue) * 100 : 0;
+                        @endphp
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg relative" style="height: {{ $height }}%">
+                                <div class="absolute inset-0 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg"></div>
+                            </div>
+                            <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 text-center">
+                                <div class="font-semibold">৳{{ number_format($monthData['revenue'], 0) }}</div>
+                                <div class="mt-1">{{ $monthData['month'] }}</div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         </div>
@@ -100,11 +114,31 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            <tr>
-                                <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    No transactions found
-                                </td>
-                            </tr>
+                            @forelse($recentTransactions as $transaction)
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $transaction['transaction_id'] }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">#{{ $transaction['order_id'] }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">৳{{ number_format($transaction['amount'], 2) }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $transaction['payment_method'] }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded-full
+                                            {{ $transaction['status'] === 'Delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}
+                                            {{ $transaction['status'] === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                                            {{ $transaction['status'] === 'Processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                                            {{ $transaction['status'] === 'Shipped' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : '' }}
+                                            {{ $transaction['status'] === 'Confirmed' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' : '' }}">
+                                            {{ $transaction['status'] }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $transaction['date'] }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                        No transactions found
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
