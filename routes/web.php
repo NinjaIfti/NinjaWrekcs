@@ -16,15 +16,17 @@ Route::get('/', function () {
 });
 
 Route::get('/test-email', function () {
+    $toEmail = request('to', 'ninjaifti3061@gmail.com');
+    
     try {
-        Mail::raw('This is a test email from NinjaWrekcs! Your Brevo SMTP configuration is working correctly.', function ($message) {
-            $message->to('ninjaifti3061@gmail.com')
+        Mail::raw('This is a test email from NinjaWrekcs! Your Brevo SMTP configuration is working correctly. Sent at: ' . now()->format('Y-m-d H:i:s'), function ($message) use ($toEmail) {
+            $message->to($toEmail)
                     ->subject('Test Email from NinjaWrekcs - Brevo SMTP');
         });
         
         return response()->json([
             'success' => true,
-            'message' => 'Test email sent successfully to ninjaifti3061@gmail.com'
+            'message' => 'Test email sent successfully to ' . $toEmail
         ]);
     } catch (\Exception $e) {
         return response()->json([

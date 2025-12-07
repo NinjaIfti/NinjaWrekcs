@@ -339,11 +339,13 @@ class AdminController extends Controller
             ->take(50)
             ->get()
             ->map(function ($session) {
+                $deviceInfo = $this->parseUserAgent($session->user_agent ?? '');
                 return [
                     'ip_address' => $session->ip_address ?? 'Unknown',
                     'user_agent' => $session->user_agent ?? 'Unknown',
-                    'device' => $this->parseUserAgent($session->user_agent ?? ''),
-                    'location' => 'Unknown', // Could integrate with IP geolocation API
+                    'device_type' => $deviceInfo['type'],
+                    'browser' => $deviceInfo['browser'],
+                    'os' => $deviceInfo['os'],
                     'date_time' => date('Y-m-d H:i:s', $session->last_activity),
                 ];
             });
@@ -357,21 +359,57 @@ class AdminController extends Controller
         ]);
     }
 
-    private function parseUserAgent(?string $userAgent): string
+    private function parseUserAgent(?string $userAgent): array
     {
         if (!$userAgent) {
-            return 'Unknown';
+            return [
+                'type' => 'Unknown',
+                'browser' => 'Unknown',
+                'os' => 'Unknown',
+            ];
         }
         
+        // Determine device type
+        $deviceType = 'Desktop';
         if (stripos($userAgent, 'Mobile') !== false || stripos($userAgent, 'Android') !== false || stripos($userAgent, 'iPhone') !== false) {
-            return 'Mobile';
+            $deviceType = 'Mobile';
+        } elseif (stripos($userAgent, 'Tablet') !== false || stripos($userAgent, 'iPad') !== false) {
+            $deviceType = 'Tablet';
         }
         
-        if (stripos($userAgent, 'Tablet') !== false || stripos($userAgent, 'iPad') !== false) {
-            return 'Tablet';
+        // Determine browser
+        $browser = 'Unknown';
+        if (stripos($userAgent, 'Chrome') !== false && stripos($userAgent, 'Edg') === false) {
+            $browser = 'Chrome';
+        } elseif (stripos($userAgent, 'Firefox') !== false) {
+            $browser = 'Firefox';
+        } elseif (stripos($userAgent, 'Safari') !== false && stripos($userAgent, 'Chrome') === false) {
+            $browser = 'Safari';
+        } elseif (stripos($userAgent, 'Edg') !== false) {
+            $browser = 'Edge';
+        } elseif (stripos($userAgent, 'Opera') !== false || stripos($userAgent, 'OPR') !== false) {
+            $browser = 'Opera';
         }
         
-        return 'Desktop';
+        // Determine OS
+        $os = 'Unknown';
+        if (stripos($userAgent, 'Windows') !== false) {
+            $os = 'Windows';
+        } elseif (stripos($userAgent, 'Mac OS X') !== false || stripos($userAgent, 'Macintosh') !== false) {
+            $os = 'macOS';
+        } elseif (stripos($userAgent, 'Linux') !== false) {
+            $os = 'Linux';
+        } elseif (stripos($userAgent, 'Android') !== false) {
+            $os = 'Android';
+        } elseif (stripos($userAgent, 'iPhone') !== false || stripos($userAgent, 'iPad') !== false) {
+            $os = 'iOS';
+        }
+        
+        return [
+            'type' => $deviceType,
+            'browser' => $browser,
+            'os' => $os,
+        ];
     }
 
     public function financial(): View

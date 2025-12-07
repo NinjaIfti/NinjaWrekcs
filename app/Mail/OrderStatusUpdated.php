@@ -44,6 +44,10 @@ class OrderStatusUpdated extends Mailable
 
         return new Envelope(
             subject: $subject,
+            from: new \Illuminate\Mail\Mailables\Address(
+                config('mail.from.address'),
+                config('mail.from.name')
+            ),
         );
     }
 

@@ -1,4 +1,8 @@
 <x-mail::message>
+<x-mail::header>
+<img src="{{ asset('img/fav.png') }}" alt="NinjaWrekcs Logo" style="height: 60px; width: auto; display: block; margin: 0 auto 20px;">
+</x-mail::header>
+
 # Order Status Update
 
 Hello {{ $order->name }},
