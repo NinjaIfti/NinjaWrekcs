@@ -180,6 +180,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/orders', [\App\Http\Controllers\AdminController::class, 'orders'])->name('orders');
     Route::get('/orders/export', [\App\Http\Controllers\AdminController::class, 'exportOrders'])->name('orders.export');
     Route::put('/orders/{order}/status', [\App\Http\Controllers\AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
+    Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users'])->name('users');
     
     // Products Management
     Route::get('/products', [\App\Http\Controllers\AdminController::class, 'products'])->name('products');

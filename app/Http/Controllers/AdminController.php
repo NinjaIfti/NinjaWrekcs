@@ -54,6 +54,15 @@ class AdminController extends Controller
         ]);
     }
 
+    public function users(): View
+    {
+        $users = User::latest()->paginate(20);
+
+        return view('admin.users', [
+            'users' => $users,
+        ]);
+    }
+
     public function exportOrders(Request $request)
     {
         $status = $request->query('status', '');
