@@ -19,9 +19,9 @@ class AdminController extends Controller
     public function dashboard(): View
     {
         $totalProducts = Product::count();
-        $totalOrders = Order::count();
+        $totalOrders = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->count();
         $totalCustomers = \App\Models\User::where('email', '!=', 'ifti3061@gmail.com')->count();
-        $totalRevenue = Order::where('status', '!=', 'cancelled')->sum('total');
+        $totalRevenue = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->sum('total');
         
         $recentOrders = Order::with(['user', 'items'])->latest()->take(5)->get();
         $recentProducts = Product::latest()->take(5)->get();
@@ -515,23 +515,25 @@ class AdminController extends Controller
 
     public function financial(): View
     {
-        // Total Revenue (excluding cancelled orders)
-        $totalRevenue = Order::where('status', '!=', 'cancelled')->sum('total');
+        // Total Revenue (excluding pending and cancelled orders)
+        $totalRevenue = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->sum('total');
         
-        // This Month Revenue
-        $thisMonthRevenue = Order::where('status', '!=', 'cancelled')
+        // This Month Revenue (excluding pending and cancelled orders)
+        $thisMonthRevenue = Order::where('status', '!=', 'pending')
+            ->where('status', '!=', 'cancelled')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->sum('total');
         
-        // Total Orders (excluding cancelled)
-        $totalOrders = Order::where('status', '!=', 'cancelled')->count();
+        // Total Orders (excluding pending and cancelled)
+        $totalOrders = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->count();
         
         // Average Order Value
         $averageOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
         
-        // Recent Transactions (last 20 orders)
-        $recentTransactions = Order::where('status', '!=', 'cancelled')
+        // Recent Transactions (last 20 orders excluding pending and cancelled)
+        $recentTransactions = Order::where('status', '!=', 'pending')
+            ->where('status', '!=', 'cancelled')
             ->with(['user'])
             ->latest()
             ->take(20)
@@ -547,13 +549,14 @@ class AdminController extends Controller
                 ];
             });
         
-        // Revenue by month for chart (last 6 months)
+        // Revenue by month for chart (last 6 months - excluding pending and cancelled)
         $revenueByMonth = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
             $revenueByMonth[] = [
                 'month' => $month->format('M Y'),
-                'revenue' => Order::where('status', '!=', 'cancelled')
+                'revenue' => Order::where('status', '!=', 'pending')
+                    ->where('status', '!=', 'cancelled')
                     ->whereMonth('created_at', $month->month)
                     ->whereYear('created_at', $month->year)
                     ->sum('total'),
