@@ -22,10 +22,12 @@ class Product extends Model
         'rating',
         'reviews',
         'is_active',
+        'is_featured',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_featured' => 'boolean',
     ];
 
     public function images(): HasMany

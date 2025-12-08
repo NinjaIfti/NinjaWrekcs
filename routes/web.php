@@ -7,10 +7,21 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Mail;
 
 Route::get('/', function () {
-    $products = \App\Models\Product::where('is_active', true)
+    $products = \App\Models\Product::with('images')
+        ->where('is_active', true)
+        ->where('is_featured', true)
         ->latest()
-        ->take(4)
+        ->take(8)
         ->get();
+    
+    // If no featured products, fallback to latest active products
+    if ($products->count() === 0) {
+        $products = \App\Models\Product::with('images')
+            ->where('is_active', true)
+            ->latest()
+            ->take(4)
+            ->get();
+    }
     
     return view('welcome', compact('products'));
 });
@@ -189,6 +200,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/products/{product}/edit', [\App\Http\Controllers\AdminController::class, 'productEdit'])->name('products.edit');
     Route::put('/products/{product}', [\App\Http\Controllers\AdminController::class, 'productUpdate'])->name('products.update');
     Route::delete('/products/{product}', [\App\Http\Controllers\AdminController::class, 'productDestroy'])->name('products.destroy');
+    
+    // Featured Products Management
+    Route::get('/featured-products', [\App\Http\Controllers\AdminController::class, 'featuredProducts'])->name('featured-products');
+    Route::post('/featured-products', [\App\Http\Controllers\AdminController::class, 'updateFeaturedProducts'])->name('featured-products.update');
     
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');

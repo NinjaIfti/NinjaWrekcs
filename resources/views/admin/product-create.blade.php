@@ -93,6 +93,14 @@
                                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Product is active</span>
                             </label>
                         </div>
+
+                        <!-- Featured Status -->
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', false) ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-blue-600 shadow-sm focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Feature on homepage</span>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Right Column -->

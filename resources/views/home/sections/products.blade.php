@@ -19,8 +19,12 @@
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             @forelse($products as $product)
             <div class="group">
-                <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20">
-                    <img src="{{ $product->image ? asset('storage/' . $product->image) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
+                <a href="{{ route('shop.show', $product) }}" class="block">
+                    <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20">
+                        @php
+                            $coverImage = $product->images->first()->path ?? $product->image;
+                        @endphp
+                        <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                     <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <div class="absolute top-4 right-4 z-10">
                         <button class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30">
@@ -29,7 +33,7 @@
                             </svg>
                         </button>
                     </div>
-                </div>
+                </a>
                 <div class="space-y-2">
                     <div class="flex items-center space-x-1">
                         @for($i = 1; $i <= 5; $i++)
@@ -39,7 +43,12 @@
                         @endfor
                         <span class="text-sm text-gray-400">({{ $product->reviews }})</span>
                     </div>
-                    <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
+                    <a href="{{ route('shop.show', $product) }}">
+                        <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
+                    </a>
+                    @if($product->price)
+                        <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                    @endif
                 </div>
             </div>
             @empty
@@ -50,6 +59,7 @@
         </div>
     </div>
 </section>
+
 
 
 

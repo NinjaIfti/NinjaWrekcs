@@ -63,6 +63,43 @@ class AdminController extends Controller
         ]);
     }
 
+    public function featuredProducts(): View
+    {
+        $featuredProducts = Product::where('is_featured', true)
+            ->where('is_active', true)
+            ->latest()
+            ->get();
+        
+        $allProducts = Product::where('is_active', true)
+            ->latest()
+            ->get();
+
+        return view('admin.featured-products', [
+            'featuredProducts' => $featuredProducts,
+            'allProducts' => $allProducts,
+        ]);
+    }
+
+    public function updateFeaturedProducts(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'featured_product_ids' => 'nullable|array',
+            'featured_product_ids.*' => 'exists:products,id',
+        ]);
+
+        // Remove featured status from all products
+        Product::query()->update(['is_featured' => false]);
+
+        // Set featured status for selected products
+        if (!empty($validated['featured_product_ids'])) {
+            Product::whereIn('id', $validated['featured_product_ids'])
+                ->update(['is_featured' => true]);
+        }
+
+        return redirect()->route('admin.featured-products')
+            ->with('success', 'Featured products updated successfully!');
+    }
+
     public function exportOrders(Request $request)
     {
         $status = $request->query('status', '');
@@ -270,6 +307,7 @@ class AdminController extends Controller
         }
 
         $validated['is_active'] = $request->has('is_active');
+        $validated['is_featured'] = $request->has('is_featured');
         $validated['rating'] = $validated['rating'] ?? 0;
         $validated['reviews'] = $validated['reviews'] ?? 0;
 
@@ -311,6 +349,7 @@ class AdminController extends Controller
             'rating' => 'nullable|integer|min:0|max:5',
             'reviews' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'is_featured' => 'boolean',
         ]);
 
         // Delete selected images
@@ -339,6 +378,7 @@ class AdminController extends Controller
         }
 
         $validated['is_active'] = $request->has('is_active');
+        $validated['is_featured'] = $request->has('is_featured');
 
         $product->update($validated);
 
