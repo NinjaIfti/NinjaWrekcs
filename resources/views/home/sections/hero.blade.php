@@ -128,7 +128,7 @@
                 
                 <div class="flex items-center justify-center lg:justify-start space-x-6 md:space-x-8 pt-4">
                     <div class="text-center">
-                        <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">50K+</div>
+                        <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">5K+</div>
                         <div class="text-gray-400 text-xs sm:text-sm">Happy Customers</div>
                     </div>
                     <div class="h-10 md:h-12 w-px bg-violet-500/30"></div>
