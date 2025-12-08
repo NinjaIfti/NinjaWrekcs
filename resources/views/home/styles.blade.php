@@ -460,6 +460,36 @@
             height: 10px;
         }
     }
+    
+    /* Featured Products Slideshow */
+    .featured-products-slideshow {
+        position: relative;
+    }
+    
+    .featured-products-track {
+        display: flex;
+    }
+    
+    .featured-products-slide {
+        flex-shrink: 0;
+    }
+    
+    @media (max-width: 768px) {
+        .featured-products-prev,
+        .featured-products-next {
+            width: 36px;
+            height: 36px;
+            transform: translateY(-50%);
+        }
+        
+        .featured-products-prev {
+            left: -12px;
+        }
+        
+        .featured-products-next {
+            right: -12px;
+        }
+    }
 </style>
 
 <script>
@@ -603,6 +633,113 @@ document.addEventListener('DOMContentLoaded', function() {
             startSlideshow();
         }
     });
+});
+
+// Featured Products Slideshow
+document.addEventListener('DOMContentLoaded', function() {
+    const slideshow = document.querySelector('.featured-products-slideshow');
+    if (!slideshow) return;
+    
+    const track = slideshow.querySelector('.featured-products-track');
+    const slides = slideshow.querySelectorAll('.featured-products-slide');
+    const dots = slideshow.querySelectorAll('.featured-products-dot');
+    const prevBtn = slideshow.querySelector('.featured-products-prev');
+    const nextBtn = slideshow.querySelector('.featured-products-next');
+    
+    if (slides.length === 0) return;
+    
+    let currentSlide = 0;
+    let slideInterval;
+    
+    function showSlide(index) {
+        if (slides.length === 0) return;
+        const safeIndex = ((index % slides.length) + slides.length) % slides.length;
+        
+        track.style.transform = `translateX(-${safeIndex * 100}%)`;
+        
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('bg-violet-400', i === safeIndex);
+            dot.classList.toggle('bg-violet-500/40', i !== safeIndex);
+        });
+        
+        currentSlide = safeIndex;
+    }
+    
+    function nextSlide() {
+        const next = (currentSlide + 1) % slides.length;
+        showSlide(next);
+    }
+    
+    function prevSlide() {
+        const prev = (currentSlide - 1 + slides.length) % slides.length;
+        showSlide(prev);
+    }
+    
+    function startSlideshow() {
+        if (slideInterval) clearInterval(slideInterval);
+        slideInterval = setInterval(nextSlide, 5000);
+    }
+    
+    function stopSlideshow() {
+        if (slideInterval) {
+            clearInterval(slideInterval);
+            slideInterval = null;
+        }
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            nextSlide();
+            stopSlideshow();
+            startSlideshow();
+        });
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            prevSlide();
+            stopSlideshow();
+            startSlideshow();
+        });
+    }
+    
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            showSlide(index);
+            stopSlideshow();
+            startSlideshow();
+        });
+    });
+    
+    // Pause on hover
+    slideshow.addEventListener('mouseenter', stopSlideshow);
+    slideshow.addEventListener('mouseleave', startSlideshow);
+    
+    // Touch swipe support
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    slideshow.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+    
+    slideshow.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        if (touchEndX < touchStartX - 50) {
+            nextSlide();
+            stopSlideshow();
+            startSlideshow();
+        }
+        if (touchEndX > touchStartX + 50) {
+            prevSlide();
+            stopSlideshow();
+            startSlideshow();
+        }
+    });
+    
+    // Initialize
+    showSlide(0);
+    startSlideshow();
 });
 </script>
 

@@ -11,7 +11,6 @@ Route::get('/', function () {
         ->where('is_active', true)
         ->where('is_featured', true)
         ->latest()
-        ->take(8)
         ->get();
     
     // If no featured products, fallback to latest active products
