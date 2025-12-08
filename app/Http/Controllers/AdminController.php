@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Order;
 use App\Models\User;
 use App\Mail\OrderStatusUpdated;
@@ -238,21 +239,38 @@ class AdminController extends Controller
             'quantity' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
             'category' => 'required|in:figures,knives,stickers',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'rating' => 'nullable|integer|min:0|max:5',
             'reviews' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
         ]);
 
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('products', 'public');
+        $uploadedPaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $file) {
+                $uploadedPaths[] = [
+                    'path' => $file->store('products', 'public'),
+                    'sort_order' => $index,
+                ];
+            }
+        }
+
+        if (!empty($uploadedPaths)) {
+            $validated['image'] = $uploadedPaths[0]['path'];
         }
 
         $validated['is_active'] = $request->has('is_active');
         $validated['rating'] = $validated['rating'] ?? 0;
         $validated['reviews'] = $validated['reviews'] ?? 0;
 
-        Product::create($validated);
+        $product = Product::create($validated);
+
+        if (!empty($uploadedPaths)) {
+            foreach ($uploadedPaths as $pathData) {
+                $product->images()->create($pathData);
+            }
+        }
 
         return redirect()->route('admin.products')->with('success', 'Product created successfully!');
     }
@@ -277,23 +295,53 @@ class AdminController extends Controller
             'quantity' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
             'category' => 'required|in:figures,knives,stickers',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'delete_images' => 'nullable|array',
+            'delete_images.*' => 'integer',
             'rating' => 'nullable|integer|min:0|max:5',
             'reviews' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
         ]);
 
-        if ($request->hasFile('image')) {
-            // Delete old image
-            if ($product->image) {
-                Storage::disk('public')->delete($product->image);
+        // Delete selected images
+        $deleteIds = $request->input('delete_images', []);
+        if (!empty($deleteIds)) {
+            $imagesToDelete = $product->images()->whereIn('id', $deleteIds)->get();
+            foreach ($imagesToDelete as $img) {
+                Storage::disk('public')->delete($img->path);
+                $img->delete();
             }
-            $validated['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $newImagePaths = [];
+        if ($request->hasFile('images')) {
+            $existingCount = $product->images()->count();
+            foreach ($request->file('images') as $idx => $file) {
+                $newImagePaths[] = [
+                    'path' => $file->store('products', 'public'),
+                    'sort_order' => $existingCount + $idx,
+                ];
+            }
+        }
+
+        if (!empty($newImagePaths)) {
+            $validated['image'] = $newImagePaths[0]['path'] ?? $product->image;
         }
 
         $validated['is_active'] = $request->has('is_active');
 
         $product->update($validated);
+
+        if (!empty($newImagePaths)) {
+            foreach ($newImagePaths as $pathData) {
+                $product->images()->create($pathData);
+            }
+        }
+
+        // Ensure primary image set to first available
+        $primary = $product->images()->orderBy('sort_order')->first();
+        $product->update(['image' => $primary->path ?? null]);
 
         return redirect()->route('admin.products')->with('success', 'Product updated successfully!');
     }
@@ -302,6 +350,10 @@ class AdminController extends Controller
     {
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
+        }
+        // Delete additional images
+        foreach ($product->images as $image) {
+            Storage::disk('public')->delete($image->path);
         }
         
         $product->delete();

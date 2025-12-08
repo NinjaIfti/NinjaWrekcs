@@ -20,7 +20,7 @@ class ShopController extends Controller
         ];
         
         // Fetch products from database
-        $query = Product::where('is_active', true);
+        $query = Product::with('images')->where('is_active', true);
         
         if ($category && in_array($category, array_keys($categories))) {
             $query->where('category', $category);
@@ -42,6 +42,8 @@ class ShopController extends Controller
             abort(404);
         }
         
+        $product->load('images');
+
         return view('shop.show', compact('product'));
     }
 }

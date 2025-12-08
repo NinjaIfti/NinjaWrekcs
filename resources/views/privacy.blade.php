@@ -10,7 +10,7 @@
 <body class="antialiased bg-black text-white">
     @include('home.components.navigation')
     
-    <section class="pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-20 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 class="text-4xl md:text-5xl font-bold mb-8 text-center">
                 <span class="glitch-text" data-text="Privacy Policy">Privacy Policy</span>
@@ -87,4 +87,5 @@
     @include('home.styles')
 </body>
 </html>
+
 

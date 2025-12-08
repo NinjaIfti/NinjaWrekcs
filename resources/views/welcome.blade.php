@@ -18,11 +18,10 @@
     <!-- Include Navigation -->
     @include('home.components.navigation')
     
-    <!-- Include Hero Section -->
+    <!-- Include Hero Sections -->
+    @include('home.sections.hero-mobile')
     @include('home.sections.hero')
-    
-    <!-- Include Features Section
-    @include('home.sections.features') -->
+  
     
     <!-- Include Categories Section -->
     @include('home.sections.categories')

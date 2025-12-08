@@ -20,10 +20,10 @@
     @include('home.components.navigation')
     
     <!-- Shop Section -->
-    <section class="pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-24 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Page Header -->
-            <div class="mb-12">
+            <div class="mb-12 hidden lg:block">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">
                     <span class="glitch-text" data-text="Shop">Shop</span>
                 </h1>
@@ -42,7 +42,17 @@
                 </div>
             @endif
 
-            <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Mobile Layout -->
+            <div class="lg:hidden">
+                @include('shop.mobile', [
+                    'categories' => $categories,
+                    'selectedCategory' => $selectedCategory,
+                    'products' => $products
+                ])
+            </div>
+
+            <!-- Desktop Layout -->
+            <div class="hidden lg:flex flex-col lg:flex-row gap-8">
                 <!-- Filters Sidebar -->
                 <aside class="lg:w-64 flex-shrink-0">
                     <div class="bg-black/50 backdrop-blur-xl rounded-2xl border border-violet-500/30 p-6 sticky top-24">
@@ -83,7 +93,10 @@
                             <div class="group">
                                 <a href="{{ route('shop.show', $product) }}" class="block">
                                     <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20">
-                                        <img src="{{ $product->image ? asset('storage/' . $product->image) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
+                                        @php
+                                            $cover = $product->images->first()->path ?? $product->image;
+                                        @endphp
+                                        <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                         <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                         <div class="absolute top-4 right-4 z-10">
                                             <button class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30" onclick="event.preventDefault();">

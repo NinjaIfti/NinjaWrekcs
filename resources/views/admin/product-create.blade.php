@@ -59,14 +59,19 @@
                             @enderror
                         </div>
 
-                        <!-- Image Upload -->
+                        <!-- Images Upload -->
                         <div>
-                            <label for="image" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Image</label>
-                            <input type="file" name="image" id="image" accept="image/*" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            @error('image')
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Images</label>
+                            <div id="images-container" class="space-y-3">
+                                <input type="file" name="images[]" accept="image/*" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <button type="button" id="add-image-input" class="mt-3 inline-flex items-center px-3 py-2 text-sm font-semibold border border-dashed border-violet-500/60 text-violet-500 rounded-lg hover:bg-violet-500/10 transition">
+                                <span class="text-lg leading-none mr-2">+</span> Add another image
+                            </button>
+                            @error('images.*')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Max size: 2MB. Formats: JPEG, PNG, JPG, GIF</p>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Upload one or more images. Max size: 2MB each. Formats: JPEG, PNG, JPG, GIF</p>
                         </div>
 
                         <!-- Rating & Reviews -->
@@ -124,5 +129,22 @@
             </form>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('images-container');
+            const addBtn = document.getElementById('add-image-input');
+            if (container && addBtn) {
+                addBtn.addEventListener('click', () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.name = 'images[]';
+                    input.accept = 'image/*';
+                    input.className = 'w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+                    container.appendChild(input);
+                });
+            }
+        });
+    </script>
 </x-admin-layout>
 

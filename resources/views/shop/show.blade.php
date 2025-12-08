@@ -46,11 +46,41 @@
             @endif
 
             <div class="grid lg:grid-cols-2 gap-12">
-                <!-- Product Image -->
+                <!-- Product Images -->
                 <div class="relative">
+                    @php
+                        $gallery = $product->images->count() ? $product->images : collect($product->image ? [(object)['path' => $product->image]] : []);
+                    @endphp
                     <div class="relative rounded-2xl overflow-hidden border border-violet-500/30 bg-gray-900">
-                        <img src="{{ $product->image ? asset('storage/' . $product->image) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-auto object-cover">
-                        <div class="absolute inset-0 glitch-overlay opacity-30"></div>
+                        @if($gallery->count())
+                            <div class="product-slideshow">
+                                @foreach($gallery as $idx => $img)
+                                    <div class="product-slide {{ $idx === 0 ? 'active' : '' }}">
+                                        <img src="{{ asset('storage/' . $img->path) }}" alt="{{ $product->name }}" class="w-full h-auto object-cover">
+                                        <div class="absolute inset-0 glitch-overlay opacity-30"></div>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @if($gallery->count() > 1)
+                            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+                                @foreach($gallery as $idx => $_)
+                                    <button class="product-dot {{ $idx === 0 ? 'bg-violet-400' : 'bg-violet-500/40' }}" data-slide="{{ $idx }}" aria-label="Slide {{ $idx + 1 }}"></button>
+                                @endforeach
+                            </div>
+                            <button class="product-nav product-prev" aria-label="Previous">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <button class="product-nav product-next" aria-label="Next">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                            @endif
+                        @else
+                            <img src="/img/placeholder.jpg" alt="{{ $product->name }}" class="w-full h-auto object-cover">
+                        @endif
                     </div>
                 </div>
 
@@ -165,6 +195,47 @@
     
     <!-- Include Styles -->
     @include('home.styles')
+
+    <style>
+        .product-slideshow { position: relative; min-height: 320px; }
+        .product-slide { display: none; }
+        .product-slide.active { display: block; }
+        .product-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: #a78bfa; border: 1px solid rgba(167,139,250,0.4); width: 42px; height: 42px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; }
+        .product-prev { left: 12px; }
+        .product-next { right: 12px; }
+        .product-dot { width: 10px; height: 10px; border-radius: 9999px; border: 1px solid rgba(167,139,250,0.5); transition: background 0.3s ease; padding: 0; }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slides = Array.from(document.querySelectorAll('.product-slide'));
+            if (slides.length === 0) return;
+            const dots = Array.from(document.querySelectorAll('.product-dot'));
+            const prev = document.querySelector('.product-prev');
+            const next = document.querySelector('.product-next');
+            let current = 0;
+
+            const showSlide = (index) => {
+                slides.forEach((s, i) => {
+                    s.classList.toggle('active', i === index);
+                });
+                dots.forEach((d, i) => {
+                    d.classList.toggle('bg-violet-400', i === index);
+                    d.classList.toggle('bg-violet-500/40', i !== index);
+                });
+                current = index;
+            };
+
+            const nextSlide = () => showSlide((current + 1) % slides.length);
+            const prevSlide = () => showSlide((current - 1 + slides.length) % slides.length);
+
+            dots.forEach((dot, i) => dot.addEventListener('click', () => showSlide(i)));
+            if (next) next.addEventListener('click', nextSlide);
+            if (prev) prev.addEventListener('click', prevSlide);
+
+            showSlide(0);
+        });
+    </script>
 </body>
 </html>
 

@@ -60,22 +60,42 @@
                             @enderror
                         </div>
 
-                        <!-- Current Image -->
-                        @if($product->image)
+                        <!-- Current Images -->
+                        @if($product->images && $product->images->count())
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Images</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                @foreach($product->images as $img)
+                                    <label class="block border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
+                                        <img src="{{ asset('storage/' . $img->path) }}" alt="{{ $product->name }}" class="h-32 w-full object-cover">
+                                        <div class="p-2 flex items-center space-x-2">
+                                            <input type="checkbox" name="delete_images[]" value="{{ $img->id }}" class="rounded text-blue-600 focus:ring-blue-500">
+                                            <span class="text-xs text-gray-600 dark:text-gray-400">Remove</span>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                        @elseif($product->image)
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Image</label>
                             <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="h-32 w-32 object-cover rounded-lg border border-gray-300 dark:border-gray-700">
                         </div>
                         @endif
 
-                        <!-- Image Upload -->
+                        <!-- Add Images -->
                         <div>
-                            <label for="image" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Update Product Image</label>
-                            <input type="file" name="image" id="image" accept="image/*" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            @error('image')
+                            <label for="images" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add Images</label>
+                            <div id="images-container" class="space-y-3">
+                                <input type="file" name="images[]" accept="image/*" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <button type="button" id="add-image-input" class="mt-3 inline-flex items-center px-3 py-2 text-sm font-semibold border border-dashed border-violet-500/60 text-violet-500 rounded-lg hover:bg-violet-500/10 transition">
+                                <span class="text-lg leading-none mr-2">+</span> Add another image
+                            </button>
+                            @error('images.*')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave empty to keep current image. Max size: 2MB</p>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Upload one or more images. Max size: 2MB each.</p>
                         </div>
 
                         <!-- Rating & Reviews -->
@@ -133,5 +153,22 @@
             </form>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('images-container');
+            const addBtn = document.getElementById('add-image-input');
+            if (container && addBtn) {
+                addBtn.addEventListener('click', () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.name = 'images[]';
+                    input.accept = 'image/*';
+                    input.className = 'w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+                    container.appendChild(input);
+                });
+            }
+        });
+    </script>
 </x-admin-layout>
 

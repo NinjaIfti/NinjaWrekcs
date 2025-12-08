@@ -1,5 +1,8 @@
-<!-- Footer -->
-<footer class="bg-black border-t border-violet-500/20 text-gray-300 py-16">
+<!-- Mobile Footer -->
+@include('home.components.footer-mobile')
+
+<!-- Desktop Footer -->
+<footer class="hidden md:block bg-black border-t border-violet-500/20 text-gray-300 py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid md:grid-cols-4 gap-12 mb-12">
             <div class="space-y-4">

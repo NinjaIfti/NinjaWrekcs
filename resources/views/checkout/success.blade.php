@@ -10,7 +10,7 @@
 <body class="antialiased bg-black text-white">
     @include('home.components.navigation')
     
-    <section class="pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-20 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="bg-black/50 backdrop-blur-xl rounded-2xl border border-violet-500/30 p-8">
                 <div class="mb-6">
