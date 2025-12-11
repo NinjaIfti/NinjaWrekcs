@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Order;
 use App\Models\User;
+use App\Models\Visitor;
 use App\Mail\OrderStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -412,42 +414,35 @@ class AdminController extends Controller
 
     public function visitors(): View
     {
-        // Get visitor stats from sessions table
-        $totalVisitors = DB::table('sessions')
-            ->distinct('ip_address')
-            ->count('ip_address');
+        // Get visitor stats from persistent visitors table
+        $totalVisitors = Visitor::count();
         
-        $todayStart = now()->startOfDay()->timestamp;
-        $todayVisitors = DB::table('sessions')
-            ->where('last_activity', '>=', $todayStart)
-            ->distinct('ip_address')
-            ->count('ip_address');
+        $todayVisitors = Visitor::where('last_visit_at', '>=', Carbon::today())
+            ->count();
         
-        $weekVisitors = DB::table('sessions')
-            ->where('last_activity', '>=', now()->subWeek()->timestamp)
-            ->distinct('ip_address')
-            ->count('ip_address');
+        $weekVisitors = Visitor::where('last_visit_at', '>=', Carbon::now()->subWeek())
+            ->count();
         
-        $monthVisitors = DB::table('sessions')
-            ->where('last_activity', '>=', now()->subMonth()->timestamp)
-            ->distinct('ip_address')
-            ->count('ip_address');
+        $monthVisitors = Visitor::where('last_visit_at', '>=', Carbon::now()->subMonth())
+            ->count();
         
-        // Get recent sessions with IP and user agent info
-        $recentSessions = DB::table('sessions')
-            ->select('ip_address', 'user_agent', 'last_activity')
-            ->orderBy('last_activity', 'desc')
+        // Get total visits (sum of all visit counts)
+        $totalVisits = Visitor::sum('visit_count');
+        
+        // Get recent visitors
+        $recentSessions = Visitor::select('ip_address', 'user_agent', 'device_type', 'browser', 'os', 'last_visit_at', 'visit_count')
+            ->orderBy('last_visit_at', 'desc')
             ->take(50)
             ->get()
-            ->map(function ($session) {
-                $deviceInfo = $this->parseUserAgent($session->user_agent ?? '');
+            ->map(function ($visitor) {
                 return [
-                    'ip_address' => $session->ip_address ?? 'Unknown',
-                    'user_agent' => $session->user_agent ?? 'Unknown',
-                    'device_type' => $deviceInfo['type'],
-                    'browser' => $deviceInfo['browser'],
-                    'os' => $deviceInfo['os'],
-                    'date_time' => date('Y-m-d H:i:s', $session->last_activity),
+                    'ip_address' => $visitor->ip_address ?? 'Unknown',
+                    'user_agent' => $visitor->user_agent ?? 'Unknown',
+                    'device_type' => $visitor->device_type ?? 'Unknown',
+                    'browser' => $visitor->browser ?? 'Unknown',
+                    'os' => $visitor->os ?? 'Unknown',
+                    'date_time' => $visitor->last_visit_at->format('Y-m-d H:i:s'),
+                    'visit_count' => $visitor->visit_count,
                 ];
             });
         
@@ -456,6 +451,7 @@ class AdminController extends Controller
             'todayVisitors' => $todayVisitors,
             'weekVisitors' => $weekVisitors,
             'monthVisitors' => $monthVisitors,
+            'totalVisits' => $totalVisits,
             'recentSessions' => $recentSessions,
         ]);
     }

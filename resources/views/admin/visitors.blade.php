@@ -5,69 +5,69 @@
         </h2>
     </x-slot>
 
-    <div class="space-y-6">
+    <div class="space-y-4 sm:space-y-6">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex-shrink-0 bg-blue-500 rounded-md p-2 sm:p-3">
+                            <svg class="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Visitors</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($totalVisitors) }}</p>
+                        <div class="ml-3 sm:ml-4">
+                            <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Unique Visitors</p>
+                            <p class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($totalVisitors) }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex-shrink-0 bg-green-500 rounded-md p-2 sm:p-3">
+                            <svg class="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                             </svg>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Today</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($todayVisitors) }}</p>
+                        <div class="ml-3 sm:ml-4">
+                            <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">Today</p>
+                            <p class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($todayVisitors) }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-purple-500 rounded-md p-3">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex-shrink-0 bg-purple-500 rounded-md p-2 sm:p-3">
+                            <svg class="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">This Week</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($weekVisitors) }}</p>
+                        <div class="ml-3 sm:ml-4">
+                            <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">This Week</p>
+                            <p class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($weekVisitors) }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-2 sm:p-3">
+                            <svg class="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                             </svg>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">This Month</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($monthVisitors) }}</p>
+                        <div class="ml-3 sm:ml-4">
+                            <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">This Month</p>
+                            <p class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($monthVisitors) }}</p>
                         </div>
                     </div>
                 </div>
@@ -76,9 +76,59 @@
 
         <!-- Visitors Table -->
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Visitors</h3>
-                <div class="overflow-x-auto">
+            <div class="p-4 sm:p-6">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Visitors</h3>
+                
+                <!-- Mobile View - Cards -->
+                <div class="block lg:hidden space-y-4">
+                    @forelse($recentSessions as $session)
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">IP Address</p>
+                                    <p class="text-sm font-mono text-gray-900 dark:text-white">{{ $session['ip_address'] }}</p>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                                    {{ $session['device_type'] === 'Mobile' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}
+                                    {{ $session['device_type'] === 'Tablet' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : '' }}
+                                    {{ $session['device_type'] === 'Desktop' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' }}">
+                                    {{ $session['device_type'] }}
+                                </span>
+                            </div>
+                            <div class="flex gap-4">
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Browser</p>
+                                    <span class="inline-block mt-1 px-2 py-1 text-xs font-medium rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">
+                                        {{ $session['browser'] }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">OS</p>
+                                    <span class="inline-block mt-1 px-2 py-1 text-xs font-medium rounded bg-yellow-50 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200">
+                                        {{ $session['os'] }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <div>
+                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Last Visit</p>
+                                    <p class="text-xs text-gray-900 dark:text-white">{{ $session['date_time'] }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Visits</p>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $session['visit_count'] ?? 1 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+                            No visitor data available
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Desktop View - Table -->
+                <div class="hidden lg:block overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-50 dark:bg-gray-700">
                             <tr>
@@ -86,7 +136,8 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Device Type</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Browser</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Operating System</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date & Time</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Last Visit</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Visits</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -112,10 +163,11 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $session['date_time'] }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-semibold">{{ $session['visit_count'] ?? 1 }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                         No visitor data available
                                     </td>
                                 </tr>

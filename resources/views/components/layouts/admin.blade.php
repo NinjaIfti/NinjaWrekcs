@@ -16,10 +16,24 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
+    <body class="font-sans antialiased" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" x-data="{ sidebarOpen: false }">
+        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
+            <!-- Mobile Overlay -->
+            <div x-show="sidebarOpen" 
+                 @click="sidebarOpen = false"
+                 x-transition:enter="transition-opacity ease-linear duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition-opacity ease-linear duration-300"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
+                 style="display: none;">
+            </div>
+
             <!-- Sidebar -->
-            <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 fixed h-screen overflow-y-auto">
+            <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+                   class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 fixed h-screen overflow-y-auto z-30 transition-transform duration-300 ease-in-out lg:translate-x-0">
                 <div class="p-6">
                     <!-- Logo -->
                     <div class="mb-8">
@@ -110,27 +124,43 @@
             </aside>
 
             <!-- Main Content -->
-            <div class="flex-1 ml-64">
+            <div class="flex-1 lg:ml-64">
                 <!-- Top Header -->
                 <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-                    <div class="px-6 py-4">
+                    <div class="px-4 sm:px-6 py-4">
                         <div class="flex justify-between items-center">
-                            <div>
-                                @if($header)
-                                    {{ $header }}
-                                @endif
+                            <div class="flex items-center space-x-4">
+                                <!-- Mobile Menu Button -->
+                                <button @click="sidebarOpen = !sidebarOpen" 
+                                        class="lg:hidden p-2 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                                    </svg>
+                                </button>
+                                
+                                <div class="hidden sm:block">
+                                    @if($header)
+                                        {{ $header }}
+                                    @endif
+                                </div>
                             </div>
                             <div class="flex items-center space-x-4">
-                                <a href="/" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                                <a href="/" class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                                     View Site
                                 </a>
                             </div>
+                        </div>
+                        <!-- Mobile Header Title -->
+                        <div class="sm:hidden mt-2">
+                            @if($header)
+                                {{ $header }}
+                            @endif
                         </div>
                     </div>
                 </header>
 
                 <!-- Page Content -->
-                <main class="p-6">
+                <main class="p-4 sm:p-6">
                     {{ $slot }}
                 </main>
             </div>
