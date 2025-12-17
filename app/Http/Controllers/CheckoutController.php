@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Coupon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -32,6 +33,47 @@ class CheckoutController extends Controller
         $finalTotal = max(0, $cartSubTotal - $totalDiscount);
 
         return view('checkout.index', compact('cartItems', 'cartTotal', 'cartSubTotal', 'totalDiscount', 'finalTotal'));
+    }
+
+    public function validateCoupon(Request $request)
+    {
+        $couponCode = strtoupper($request->input('coupon_code'));
+        $subtotal = $request->input('subtotal', 0);
+
+        $coupon = Coupon::where('code', $couponCode)->first();
+
+        if (!$coupon) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid coupon code.'
+            ]);
+        }
+
+        if (!$coupon->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This coupon is no longer valid or has expired.'
+            ]);
+        }
+
+        if ($coupon->minimum_order && $subtotal < $coupon->minimum_order) {
+            return response()->json([
+                'success' => false,
+                'message' => "Minimum order amount of ৳{$coupon->minimum_order} required for this coupon."
+            ]);
+        }
+
+        $discount = $coupon->calculateDiscount($subtotal);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Coupon applied successfully!',
+            'discount' => $discount,
+            'coupon_id' => $coupon->id,
+            'coupon_code' => $coupon->code,
+            'type' => $coupon->type,
+            'value' => $coupon->value
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -96,11 +138,26 @@ class CheckoutController extends Controller
             $discountAmount = 100;
             $percentageDiscount = $cartSubTotal * 0.10;
             $totalDiscount = $discountAmount + $percentageDiscount;
+            
+            // Apply coupon if provided
+            $coupon = null;
+            $couponDiscount = 0;
+            if (!empty($validated['coupon_code'])) {
+                $coupon = Coupon::where('code', strtoupper($validated['coupon_code']))->first();
+                if ($coupon && $coupon->isValid()) {
+                    $couponDiscount = $coupon->calculateDiscount($cartSubTotal);
+                    $totalDiscount += $couponDiscount;
+                }
+            }
+            
             $finalTotal = max(0, $cartSubTotal - $totalDiscount);
 
             // Create order
             $order = Order::create([
                 'user_id' => $user->id,
+                'coupon_id' => $coupon?->id,
+                'coupon_code' => $coupon?->code,
+                'coupon_discount' => $couponDiscount,
                 'name' => $validated['name'],
                 'phone' => $validated['phone'],
                 'address' => $validated['address'],
@@ -116,6 +173,11 @@ class CheckoutController extends Controller
                 'terms_accepted' => true,
                 'notes' => $request->input('notes'),
             ]);
+            
+            // Increment coupon usage
+            if ($coupon) {
+                $coupon->incrementUsage();
+            }
 
             // Create order items
             foreach ($cartItems as $item) {

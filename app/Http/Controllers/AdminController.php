@@ -7,6 +7,7 @@ use App\Models\ProductImage;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Visitor;
+use App\Models\Coupon;
 use App\Mail\OrderStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -567,6 +568,79 @@ class AdminController extends Controller
             'recentTransactions' => $recentTransactions,
             'revenueByMonth' => $revenueByMonth,
         ]);
+    }
+
+    public function coupons(): View
+    {
+        $coupons = Coupon::latest()->get();
+
+        return view('admin.coupons', [
+            'coupons' => $coupons,
+        ]);
+    }
+
+    public function couponCreate(): View
+    {
+        return view('admin.coupon-create');
+    }
+
+    public function couponStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:50|unique:coupons,code',
+            'type' => 'required|in:percentage,fixed',
+            'value' => 'required|numeric|min:0',
+            'minimum_order' => 'nullable|numeric|min:0',
+            'maximum_discount' => 'nullable|numeric|min:0',
+            'usage_limit' => 'nullable|integer|min:1',
+            'valid_from' => 'nullable|date',
+            'valid_until' => 'nullable|date|after_or_equal:valid_from',
+            'is_active' => 'boolean',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        // Convert code to uppercase
+        $validated['code'] = strtoupper($validated['code']);
+        $validated['is_active'] = $request->has('is_active');
+
+        Coupon::create($validated);
+
+        return redirect()->route('admin.coupons')->with('success', 'Coupon created successfully!');
+    }
+
+    public function couponEdit(Coupon $coupon): View
+    {
+        return view('admin.coupon-edit', compact('coupon'));
+    }
+
+    public function couponUpdate(Request $request, Coupon $coupon): RedirectResponse
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:50|unique:coupons,code,' . $coupon->id,
+            'type' => 'required|in:percentage,fixed',
+            'value' => 'required|numeric|min:0',
+            'minimum_order' => 'nullable|numeric|min:0',
+            'maximum_discount' => 'nullable|numeric|min:0',
+            'usage_limit' => 'nullable|integer|min:1',
+            'valid_from' => 'nullable|date',
+            'valid_until' => 'nullable|date|after_or_equal:valid_from',
+            'is_active' => 'boolean',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        $validated['code'] = strtoupper($validated['code']);
+        $validated['is_active'] = $request->has('is_active');
+
+        $coupon->update($validated);
+
+        return redirect()->route('admin.coupons')->with('success', 'Coupon updated successfully!');
+    }
+
+    public function couponDestroy(Coupon $coupon): RedirectResponse
+    {
+        $coupon->delete();
+
+        return redirect()->route('admin.coupons')->with('success', 'Coupon deleted successfully!');
     }
 }
 

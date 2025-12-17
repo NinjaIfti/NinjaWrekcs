@@ -13,6 +13,9 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'coupon_id',
+        'coupon_code',
+        'coupon_discount',
         'name',
         'phone',
         'address',
@@ -32,6 +35,7 @@ class Order extends Model
     protected $casts = [
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
+        'coupon_discount' => 'decimal:2',
         'total' => 'decimal:2',
         'save_info' => 'boolean',
         'terms_accepted' => 'boolean',
@@ -45,5 +49,10 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
     }
 }

@@ -171,19 +171,42 @@
                                 @endforeach
                             </div>
 
+                            <!-- Coupon Code -->
+                            <div class="border-t border-violet-500/20 pt-4">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Have a Coupon?</label>
+                                <div class="flex gap-2">
+                                    <input type="text" 
+                                           id="coupon_code_input" 
+                                           name="coupon_code"
+                                           placeholder="Enter coupon code" 
+                                           class="flex-1 px-4 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50 uppercase"
+                                           style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                                    <button type="button" 
+                                            onclick="applyCoupon()" 
+                                            class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold transition">
+                                        Apply
+                                    </button>
+                                </div>
+                                <div id="coupon_message" class="mt-2 text-sm"></div>
+                            </div>
+
                             <div class="border-t border-violet-500/20 pt-4 space-y-2">
                                 <div class="flex justify-between text-gray-300">
                                     <span>Subtotal</span>
-                                    <span>৳{{ number_format($cartSubTotal, 2) }}</span>
+                                    <span id="subtotal_display">৳{{ number_format($cartSubTotal, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between text-violet-300">
                                     <span>Discount (100 taka + 10{!! '%' !!})</span>
-                                    <span>-৳{{ number_format($totalDiscount, 2) }}</span>
+                                    <span id="regular_discount_display">-৳{{ number_format($totalDiscount, 2) }}</span>
+                                </div>
+                                <div id="coupon_discount_row" class="flex justify-between text-green-400" style="display: none;">
+                                    <span>Coupon Discount</span>
+                                    <span id="coupon_discount_display">-৳0.00</span>
                                 </div>
                                 <div class="border-t border-violet-500/20 pt-2">
                                     <div class="flex justify-between text-xl font-bold">
                                         <span>Total</span>
-                                        <span class="text-violet-400">৳{{ number_format($finalTotal, 2) }}</span>
+                                        <span class="text-violet-400" id="total_display">৳{{ number_format($finalTotal, 2) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -210,6 +233,94 @@
     @include('components.pre-order-popup')
     
     @include('home.styles')
+
+    <script>
+        let appliedCoupon = null;
+        const baseSubtotal = {{ $cartSubTotal }};
+        const baseDiscount = {{ $totalDiscount }};
+        const baseTotal = {{ $finalTotal }};
+
+        function applyCoupon() {
+            const couponInput = document.getElementById('coupon_code_input');
+            const couponCode = couponInput.value.trim().toUpperCase();
+            const messageDiv = document.getElementById('coupon_message');
+
+            if (!couponCode) {
+                showMessage('Please enter a coupon code.', 'error');
+                return;
+            }
+
+            // Show loading state
+            showMessage('Validating coupon...', 'info');
+
+            fetch('{{ route("checkout.validate-coupon") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    coupon_code: couponCode,
+                    subtotal: baseSubtotal
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    appliedCoupon = data;
+                    updatePricing(data.discount);
+                    showMessage(data.message, 'success');
+                    couponInput.value = data.coupon_code;
+                } else {
+                    showMessage(data.message, 'error');
+                    resetCoupon();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Failed to validate coupon. Please try again.', 'error');
+                resetCoupon();
+            });
+        }
+
+        function updatePricing(couponDiscount) {
+            const newTotal = Math.max(0, baseTotal - couponDiscount);
+            
+            document.getElementById('coupon_discount_row').style.display = 'flex';
+            document.getElementById('coupon_discount_display').textContent = '-৳' + couponDiscount.toFixed(2);
+            document.getElementById('total_display').textContent = '৳' + newTotal.toFixed(2);
+        }
+
+        function resetCoupon() {
+            appliedCoupon = null;
+            document.getElementById('coupon_discount_row').style.display = 'none';
+            document.getElementById('total_display').textContent = '৳' + baseTotal.toFixed(2);
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('coupon_message');
+            let className = '';
+            
+            if (type === 'success') {
+                className = 'text-green-400';
+            } else if (type === 'error') {
+                className = 'text-red-400';
+            } else {
+                className = 'text-yellow-400';
+            }
+            
+            messageDiv.className = 'mt-2 text-sm ' + className;
+            messageDiv.textContent = message;
+        }
+
+        // Allow Enter key to apply coupon
+        document.getElementById('coupon_code_input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyCoupon();
+            }
+        });
+    </script>
 </body>
 </html>
 

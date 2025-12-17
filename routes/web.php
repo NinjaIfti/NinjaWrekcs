@@ -161,6 +161,7 @@ Route::post('/cart/clear', [\App\Http\Controllers\CartController::class, 'clear'
 // Checkout Routes
 Route::get('/checkout', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])->name('checkout.store');
+Route::post('/checkout/validate-coupon', [\App\Http\Controllers\CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
 Route::get('/checkout/success/{order}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
 
 Route::get('/dashboard', function () {
@@ -203,6 +204,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Featured Products Management
     Route::get('/featured-products', [\App\Http\Controllers\AdminController::class, 'featuredProducts'])->name('featured-products');
     Route::post('/featured-products', [\App\Http\Controllers\AdminController::class, 'updateFeaturedProducts'])->name('featured-products.update');
+    
+    // Coupons Management
+    Route::get('/coupons', [\App\Http\Controllers\AdminController::class, 'coupons'])->name('coupons');
+    Route::get('/coupons/create', [\App\Http\Controllers\AdminController::class, 'couponCreate'])->name('coupons.create');
+    Route::post('/coupons', [\App\Http\Controllers\AdminController::class, 'couponStore'])->name('coupons.store');
+    Route::get('/coupons/{coupon}/edit', [\App\Http\Controllers\AdminController::class, 'couponEdit'])->name('coupons.edit');
+    Route::put('/coupons/{coupon}', [\App\Http\Controllers\AdminController::class, 'couponUpdate'])->name('coupons.update');
+    Route::delete('/coupons/{coupon}', [\App\Http\Controllers\AdminController::class, 'couponDestroy'])->name('coupons.destroy');
     
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');
