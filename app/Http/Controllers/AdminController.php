@@ -10,6 +10,9 @@ use App\Models\Visitor;
 use App\Models\Coupon;
 use App\Models\PopupSetting;
 use App\Mail\OrderStatusUpdated;
+use App\Services\AnalyticsService;
+use App\Services\NotificationService;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +20,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SalesReportExport;
 
 class AdminController extends Controller
 {
@@ -726,6 +731,57 @@ class AdminController extends Controller
         NotificationService::newProduct($product);
         
         return redirect()->back()->with('success', "New product notification sent for: {$product->name}");
+    }
+
+    /**
+     * Sales analytics and reports
+     */
+    public function analytics(): View
+    {
+        $period = request()->get('period', 'daily');
+        $startDate = request()->get('start_date');
+        $endDate = request()->get('end_date');
+        
+        $salesReport = AnalyticsService::getSalesReport($period, $startDate, $endDate);
+        $productPerformance = AnalyticsService::getProductPerformance();
+        $customerAnalytics = AnalyticsService::getCustomerAnalytics();
+        $dashboardSummary = AnalyticsService::getDashboardSummary();
+        
+        return view('admin.analytics', compact(
+            'salesReport',
+            'productPerformance',
+            'customerAnalytics',
+            'dashboardSummary',
+            'period',
+            'startDate',
+            'endDate'
+        ));
+    }
+
+    /**
+     * Export sales report to Excel
+     */
+    public function exportSalesReport(Request $request)
+    {
+        $period = $request->get('period', 'daily');
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        
+        $salesReport = AnalyticsService::getSalesReport($period, $startDate, $endDate);
+        
+        $fileName = 'sales_report_' . $period . '_' . now()->format('Y-m-d') . '.xlsx';
+        
+        return Excel::download(new SalesReportExport($salesReport, $period), $fileName);
+    }
+
+    /**
+     * Clear analytics cache
+     */
+    public function clearAnalyticsCache(): RedirectResponse
+    {
+        AnalyticsService::clearCache();
+        
+        return redirect()->back()->with('success', 'Analytics cache cleared successfully!');
     }
 }
 

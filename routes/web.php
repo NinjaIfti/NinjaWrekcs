@@ -295,6 +295,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/send-special-offer', [\App\Http\Controllers\AdminController::class, 'sendSpecialOffer'])->name('send-special-offer');
     Route::post('/send-new-product/{product}', [\App\Http\Controllers\AdminController::class, 'sendNewProductNotification'])->name('send-new-product');
     
+    // Analytics & Reports
+    Route::get('/analytics', [\App\Http\Controllers\AdminController::class, 'analytics'])->name('analytics');
+    Route::get('/analytics/export', [\App\Http\Controllers\AdminController::class, 'exportSalesReport'])->name('analytics.export');
+    Route::post('/analytics/clear-cache', [\App\Http\Controllers\AdminController::class, 'clearAnalyticsCache'])->name('analytics.clear-cache');
+    
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');
 });
