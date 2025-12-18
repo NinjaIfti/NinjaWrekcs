@@ -107,12 +107,6 @@
                     <!-- Cart Summary -->
                     <div class="lg:col-span-1">
                         <div class="bg-black/50 backdrop-blur-xl rounded-2xl border border-violet-500/30 p-6 sticky top-24">
-                            <!-- Pre-Order Payment Notice -->
-                            <div class="p-4 bg-green-500/10 border border-green-500/50 rounded-lg mb-6">
-                                <p class="text-green-300 font-bold text-lg mb-1">💰 Pre-Order Special</p>
-                                <p class="text-white font-semibold">Pay only <span class="text-green-400 text-xl">৳200</span> now, pay rest on <span class="text-green-400">COD</span></p>
-                            </div>
-                            
                             <h2 class="text-2xl font-bold mb-6">Order Summary</h2>
                             
                             <div class="space-y-4 mb-6">

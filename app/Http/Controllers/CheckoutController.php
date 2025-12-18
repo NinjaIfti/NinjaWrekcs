@@ -89,9 +89,11 @@ class CheckoutController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
-            'transaction_number' => 'required|string|max:50',
-            'sending_number' => 'required|string|max:20',
+            'payment_method' => 'required|in:bkash,cod',
+            'transaction_number' => 'required_if:payment_method,bkash|nullable|string|max:50',
+            'sending_number' => 'required_if:payment_method,bkash|nullable|string|max:20',
             'terms_accepted' => 'required|accepted',
+            'coupon_code' => 'nullable|string|exists:coupons,code',
         ];
 
         // Add password and email fields only for non-logged-in users
@@ -161,9 +163,9 @@ class CheckoutController extends Controller
                 'subtotal' => $cartSubTotal,
                 'discount' => $totalDiscount,
                 'total' => $finalTotal,
-                'payment_method' => 'bkash',
-                'transaction_number' => $validated['transaction_number'],
-                'sending_number' => $validated['sending_number'],
+                'payment_method' => $validated['payment_method'],
+                'transaction_number' => $validated['transaction_number'] ?? null,
+                'sending_number' => $validated['sending_number'] ?? null,
                 'status' => 'pending',
                 'save_info' => $request->has('save_info'),
                 'terms_accepted' => true,

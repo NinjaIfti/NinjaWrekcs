@@ -87,37 +87,77 @@
                         <h2 class="text-2xl font-bold mb-6">Payment Information</h2>
                         
                         <div class="space-y-4">
-                            <div class="p-4 bg-green-500/10 border border-green-500/50 rounded-lg">
-                                <p class="text-green-300 font-bold text-lg mb-1">💰 Pre-Order Special</p>
-                                <p class="text-white font-semibold">Pay only <span class="text-green-400 text-xl">৳200</span> now, pay rest on <span class="text-green-400">COD</span></p>
-                            </div>
-                            
-                            <div class="p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
-                                <p class="text-violet-300 font-semibold mb-2">Send payment to:</p>
-                                <p class="text-2xl font-bold text-white">01533133309</p>
-                                <p class="text-sm text-gray-400 mt-1">bKash / Nagad</p>
-                            </div>
-
-                            <!-- Transaction Number -->
+                            <!-- Payment Method Selection -->
                             <div>
-                                <label for="transaction_number" class="block text-sm font-medium text-gray-300 mb-2">Transaction Number *</label>
-                                <input type="text" name="transaction_number" id="transaction_number" value="{{ old('transaction_number') }}" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Enter your transaction ID">
-                                @error('transaction_number')
-                                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                                @enderror
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Select Payment Method *</label>
+                                <div class="space-y-3">
+                                    <!-- Mobile Banking Option -->
+                                    <label class="flex items-start space-x-3 p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg cursor-pointer hover:border-violet-500/60 transition payment-method-option">
+                                        <input type="radio" name="payment_method" value="bkash" checked onchange="togglePaymentFields()" class="mt-1 text-violet-600 focus:ring-violet-500">
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-white font-semibold">Mobile Banking</span>
+                                                <span class="px-2 py-1 bg-violet-500/20 text-violet-300 text-xs rounded">Recommended</span>
+                                            </div>
+                                            <p class="text-gray-400 text-sm mt-1">bKash / Nagad</p>
+                                        </div>
+                                    </label>
+
+                                    <!-- Cash on Delivery Option -->
+                                    <label class="flex items-start space-x-3 p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg cursor-pointer hover:border-violet-500/60 transition payment-method-option">
+                                        <input type="radio" name="payment_method" value="cod" onchange="togglePaymentFields()" class="mt-1 text-violet-600 focus:ring-violet-500">
+                                        <div class="flex-1">
+                                            <span class="text-white font-semibold">Cash on Delivery</span>
+                                            <p class="text-gray-400 text-sm mt-1">Pay when you receive your order</p>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
 
-                            <!-- Sending Number -->
-                            <div>
-                                <label for="sending_number" class="block text-sm font-medium text-gray-300 mb-2">Sending Number *</label>
-                                <input type="text" name="sending_number" id="sending_number" value="{{ old('sending_number') }}" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Enter the number you sent from">
-                                @error('sending_number')
-                                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
-                                @enderror
+                            <!-- Mobile Banking Payment Details (Hidden when COD selected) -->
+                            <div id="mobile-banking-details" class="space-y-4">
+                                <div class="p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
+                                    <p class="text-violet-300 font-semibold mb-2">Send payment to:</p>
+                                    <p class="text-2xl font-bold text-white">01533133309</p>
+                                    <p class="text-sm text-gray-400 mt-1">bKash / Nagad</p>
+                                </div>
+
+                                <!-- Transaction Number -->
+                                <div>
+                                    <label for="transaction_number" class="block text-sm font-medium text-gray-300 mb-2">Transaction Number *</label>
+                                    <input type="text" name="transaction_number" id="transaction_number" value="{{ old('transaction_number') }}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Enter your transaction ID">
+                                    @error('transaction_number')
+                                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <!-- Sending Number -->
+                                <div>
+                                    <label for="sending_number" class="block text-sm font-medium text-gray-300 mb-2">Sending Number *</label>
+                                    <input type="text" name="sending_number" id="sending_number" value="{{ old('sending_number') }}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Enter the number you sent from">
+                                    @error('sending_number')
+                                        <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div class="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                                    <p class="text-yellow-300 text-sm">⚠️ We are working to get an automatic bKash payment system soon. For now, please send payment manually and enter the details above.</p>
+                                </div>
                             </div>
 
-                            <div class="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                                <p class="text-yellow-300 text-sm">⚠️ We are working to get an automatic bKash payment system soon. For now, please send payment manually and enter the details above.</p>
+                            <!-- COD Information (Shown when COD selected) -->
+                            <div id="cod-details" class="hidden">
+                                <div class="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                    <div class="flex items-start space-x-3">
+                                        <svg class="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <div>
+                                            <p class="text-green-300 font-semibold">Cash on Delivery Selected</p>
+                                            <p class="text-gray-300 text-sm mt-1">You will pay the full amount when you receive your order. Our delivery person will collect the payment.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -127,7 +167,7 @@
                         <div class="space-y-4">
                             @auth
                             <label class="flex items-start space-x-3 cursor-pointer">
-                                <input type="checkbox" name="save_info" value="1" class="mt-1 rounded border-violet-500/50 bg-black/50 text-violet-600">
+                                <input type="checkbox" name="save_info" value="1" checked class="mt-1 rounded border-violet-500/50 bg-black/50 text-violet-600">
                                 <span class="text-gray-300">Save this information for future orders</span>
                             </label>
                             @endauth
@@ -229,6 +269,44 @@
     @include('components.pre-order-popup')
     
     @include('home.styles')
+
+    <script>
+        // Toggle payment fields based on payment method
+        function togglePaymentFields() {
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+            const mobileBankingDetails = document.getElementById('mobile-banking-details');
+            const codDetails = document.getElementById('cod-details');
+            const transactionNumber = document.getElementById('transaction_number');
+            const sendingNumber = document.getElementById('sending_number');
+
+            if (paymentMethod === 'cod') {
+                // Hide mobile banking fields
+                mobileBankingDetails.classList.add('hidden');
+                codDetails.classList.remove('hidden');
+                
+                // Remove required attribute from payment fields
+                transactionNumber.removeAttribute('required');
+                sendingNumber.removeAttribute('required');
+                
+                // Clear values
+                transactionNumber.value = '';
+                sendingNumber.value = '';
+            } else {
+                // Show mobile banking fields
+                mobileBankingDetails.classList.remove('hidden');
+                codDetails.classList.add('hidden');
+                
+                // Add required attribute back
+                transactionNumber.setAttribute('required', 'required');
+                sendingNumber.setAttribute('required', 'required');
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            togglePaymentFields();
+        });
+    </script>
 
     <script>
         let appliedCoupon = null;
