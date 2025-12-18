@@ -87,7 +87,6 @@
             @endif
             <span class="absolute inset-0 bg-violet-500/20 rounded-lg scale-0 group-hover:scale-100 transition-transform duration-300"></span>
         </a>
-    @endif
 
         <!-- Profile Dropdown -->
         <div class="relative group/profile">
