@@ -213,6 +213,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/coupons/{coupon}', [\App\Http\Controllers\AdminController::class, 'couponUpdate'])->name('coupons.update');
     Route::delete('/coupons/{coupon}', [\App\Http\Controllers\AdminController::class, 'couponDestroy'])->name('coupons.destroy');
     
+    // Popup Settings
+    Route::get('/popup-settings', [\App\Http\Controllers\AdminController::class, 'popupSettings'])->name('popup-settings');
+    Route::put('/popup-settings', [\App\Http\Controllers\AdminController::class, 'updatePopupSettings'])->name('popup-settings.update');
+    
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');
 });

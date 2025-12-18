@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_featured')->default(false)->after('is_active');
+        Schema::create('popup_settings', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
         });
     }
 
@@ -21,17 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('is_featured');
-        });
+        Schema::dropIfExists('popup_settings');
     }
 };
-
-
-
-
-
-
-
-
-

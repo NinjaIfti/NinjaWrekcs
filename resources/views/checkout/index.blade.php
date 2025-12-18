@@ -195,10 +195,6 @@
                                     <span>Subtotal</span>
                                     <span id="subtotal_display">৳{{ number_format($cartSubTotal, 2) }}</span>
                                 </div>
-                                <div class="flex justify-between text-violet-300">
-                                    <span>Discount (100 taka + 10{!! '%' !!})</span>
-                                    <span id="regular_discount_display">-৳{{ number_format($totalDiscount, 2) }}</span>
-                                </div>
                                 <div id="coupon_discount_row" class="flex justify-between text-green-400" style="display: none;">
                                     <span>Coupon Discount</span>
                                     <span id="coupon_discount_display">-৳0.00</span>
@@ -237,8 +233,7 @@
     <script>
         let appliedCoupon = null;
         const baseSubtotal = {{ $cartSubTotal }};
-        const baseDiscount = {{ $totalDiscount }};
-        const baseTotal = {{ $finalTotal }};
+        const baseTotal = {{ $cartSubTotal }};
 
         function applyCoupon() {
             const couponInput = document.getElementById('coupon_code_input');

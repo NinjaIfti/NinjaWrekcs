@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Models\Visitor;
 use App\Models\Coupon;
+use App\Models\PopupSetting;
 use App\Mail\OrderStatusUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -641,6 +642,42 @@ class AdminController extends Controller
         $coupon->delete();
 
         return redirect()->route('admin.coupons')->with('success', 'Coupon deleted successfully!');
+    }
+
+    public function popupSettings(): View
+    {
+        $settings = PopupSetting::getSettings();
+
+        return view('admin.popup-settings', compact('settings'));
+    }
+
+    public function updatePopupSettings(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'main_heading' => 'nullable|string|max:500',
+            'subheading' => 'nullable|string|max:500',
+            'description' => 'nullable|string|max:1000',
+            'discount_text' => 'nullable|string|max:100',
+            'discount_amount' => 'nullable|string|max:100',
+            'badge_text' => 'nullable|string|max:100',
+            'button_text' => 'required|string|max:50',
+            'button_url' => 'required|string|max:255',
+            'is_active' => 'boolean',
+            'display_delay' => 'required|integer|min:0|max:30000',
+        ]);
+
+        $validated['is_active'] = $request->has('is_active');
+
+        $settings = PopupSetting::first();
+        
+        if ($settings) {
+            $settings->update($validated);
+        } else {
+            PopupSetting::create($validated);
+        }
+
+        return redirect()->route('admin.popup-settings')->with('success', 'Popup settings updated successfully!');
     }
 }
 

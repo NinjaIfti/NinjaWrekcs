@@ -26,11 +26,9 @@ class CheckoutController extends Controller
         $cartTotal = \Cart::getTotal();
         $cartSubTotal = \Cart::getSubTotal();
         
-        // Calculate discounts (100 taka + 10%)
-        $discountAmount = 100;
-        $percentageDiscount = $cartSubTotal * 0.10;
-        $totalDiscount = $discountAmount + $percentageDiscount;
-        $finalTotal = max(0, $cartSubTotal - $totalDiscount);
+        // No automatic discounts - only coupon discounts apply
+        $totalDiscount = 0;
+        $finalTotal = $cartSubTotal;
 
         return view('checkout.index', compact('cartItems', 'cartTotal', 'cartSubTotal', 'totalDiscount', 'finalTotal'));
     }
@@ -135,9 +133,7 @@ class CheckoutController extends Controller
 
             // Calculate totals
             $cartSubTotal = \Cart::getSubTotal();
-            $discountAmount = 100;
-            $percentageDiscount = $cartSubTotal * 0.10;
-            $totalDiscount = $discountAmount + $percentageDiscount;
+            $totalDiscount = 0;
             
             // Apply coupon if provided
             $coupon = null;
@@ -146,7 +142,7 @@ class CheckoutController extends Controller
                 $coupon = Coupon::where('code', strtoupper($validated['coupon_code']))->first();
                 if ($coupon && $coupon->isValid()) {
                     $couponDiscount = $coupon->calculateDiscount($cartSubTotal);
-                    $totalDiscount += $couponDiscount;
+                    $totalDiscount = $couponDiscount;
                 }
             }
             
