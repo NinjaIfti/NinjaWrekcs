@@ -45,8 +45,8 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        // Redirect to profile for new users (they can't be admin)
-        return redirect(route('profile.index', absolute: false));
+        // Redirect to email verification notice
+        return redirect(route('verification.notice'));
     }
 }
 

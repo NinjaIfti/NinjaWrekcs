@@ -22,12 +22,124 @@
     <!-- Shop Section -->
     <section class="pt-24 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Page Header -->
-            <div class="mb-12 hidden lg:block">
+            <!-- Page Header with Search -->
+            <div class="mb-8 hidden lg:block">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">
                     <span class="glitch-text" data-text="Shop">Shop</span>
                 </h1>
-                <p class="text-xl text-gray-400">Browse our Valorant collectibles</p>
+                <p class="text-xl text-gray-400 mb-6">Browse our Valorant collectibles</p>
+                
+                <!-- Search and Sort Bar -->
+                <div class="flex gap-4 items-center">
+                    <!-- Search Box -->
+                    <form action="{{ route('shop.index') }}" method="GET" class="flex-1 max-w-xl">
+                        <div class="relative">
+                            <input type="text" 
+                                   name="search" 
+                                   value="{{ $search }}"
+                                   placeholder="Search products..." 
+                                   class="w-full px-4 py-3 pl-12 bg-black/50 border border-violet-500/30 rounded-lg text-white placeholder-gray-500 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/50 transition">
+                            <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            @if($search)
+                                <a href="{{ route('shop.index') }}" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </a>
+                            @endif
+                        </div>
+                        <!-- Hidden inputs to preserve other filters -->
+                        @if($selectedCategory)<input type="hidden" name="category" value="{{ $selectedCategory }}">@endif
+                        @if($minPrice)<input type="hidden" name="min_price" value="{{ $minPrice }}">@endif
+                        @if($maxPrice)<input type="hidden" name="max_price" value="{{ $maxPrice }}">@endif
+                        @if($sort !== 'newest')<input type="hidden" name="sort" value="{{ $sort }}">@endif
+                        @if($inStock)<input type="hidden" name="in_stock" value="1">@endif
+                    </form>
+                    
+                    <!-- Sort Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white hover:border-violet-500 transition flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+                            </svg>
+                            <span>Sort</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        
+                        <div x-show="open" 
+                             @click.away="open = false"
+                             x-transition
+                             class="absolute right-0 mt-2 w-56 bg-gray-900 border border-violet-500/30 rounded-lg shadow-xl z-50"
+                             style="display: none;">
+                            <div class="py-2">
+                                <a href="{{ route('shop.index', array_merge(request()->except('sort'), [])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'newest' ? 'text-violet-400' : 'text-gray-300' }}">
+                                    Newest First
+                                </a>
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'price_asc'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'price_asc' ? 'text-violet-400' : 'text-gray-300' }}">
+                                    Price: Low to High
+                                </a>
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'price_desc'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'price_desc' ? 'text-violet-400' : 'text-gray-300' }}">
+                                    Price: High to Low
+                                </a>
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'name_asc' ? 'text-violet-400' : 'text-gray-300' }}">
+                                    Name: A to Z
+                                </a>
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'name_desc' ? 'text-violet-400' : 'text-gray-300' }}">
+                                    Name: Z to A
+                                </a>
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'popular'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'popular' ? 'text-violet-400' : 'text-gray-300' }}">
+                                    Most Popular
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Active Filters -->
+                @if($search || $selectedCategory || $minPrice || $maxPrice || $inStock)
+                <div class="mt-4 flex items-center gap-2 flex-wrap">
+                    <span class="text-sm text-gray-400">Active filters:</span>
+                    @if($search)
+                        <a href="{{ route('shop.index', array_merge(request()->except('search'), [])) }}" class="px-3 py-1 bg-violet-500/20 border border-violet-500/50 rounded-full text-sm text-violet-300 hover:bg-violet-500/30 transition flex items-center gap-2">
+                            Search: "{{ $search }}"
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </a>
+                    @endif
+                    @if($selectedCategory)
+                        <a href="{{ route('shop.index', array_merge(request()->except('category'), [])) }}" class="px-3 py-1 bg-violet-500/20 border border-violet-500/50 rounded-full text-sm text-violet-300 hover:bg-violet-500/30 transition flex items-center gap-2">
+                            {{ $categories[$selectedCategory] }}
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </a>
+                    @endif
+                    @if($minPrice || $maxPrice)
+                        <a href="{{ route('shop.index', array_merge(request()->except(['min_price', 'max_price']), [])) }}" class="px-3 py-1 bg-violet-500/20 border border-violet-500/50 rounded-full text-sm text-violet-300 hover:bg-violet-500/30 transition flex items-center gap-2">
+                            Price: ৳{{ $minPrice ?: 0 }} - ৳{{ $maxPrice ?: '∞' }}
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </a>
+                    @endif
+                    @if($inStock)
+                        <a href="{{ route('shop.index', array_merge(request()->except('in_stock'), [])) }}" class="px-3 py-1 bg-violet-500/20 border border-violet-500/50 rounded-full text-sm text-violet-300 hover:bg-violet-500/30 transition flex items-center gap-2">
+                            In Stock Only
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </a>
+                    @endif
+                    <a href="{{ route('shop.index') }}" class="px-3 py-1 text-sm text-red-400 hover:text-red-300 transition">
+                        Clear All
+                    </a>
+                </div>
+                @endif
             </div>
 
             @if(session('success'))
@@ -47,45 +159,115 @@
                 @include('shop.mobile', [
                     'categories' => $categories,
                     'selectedCategory' => $selectedCategory,
-                    'products' => $products
+                    'products' => $products,
+                    'search' => $search,
+                    'minPrice' => $minPrice,
+                    'maxPrice' => $maxPrice,
+                    'sort' => $sort,
+                    'inStock' => $inStock,
+                    'priceRange' => $priceRange,
                 ])
             </div>
 
             <!-- Desktop Layout -->
             <div class="hidden lg:flex flex-col lg:flex-row gap-8">
                 <!-- Filters Sidebar -->
-                <aside class="lg:w-64 flex-shrink-0">
+                <aside class="lg:w-72 flex-shrink-0">
                     <div class="bg-black/50 backdrop-blur-xl rounded-2xl border border-violet-500/30 p-6 sticky top-24">
-                        <h2 class="text-xl font-bold text-white mb-6">Filters</h2>
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold text-white">Filters</h2>
+                            @if($search || $selectedCategory || $minPrice || $maxPrice || $inStock)
+                                <a href="{{ route('shop.index') }}" class="text-sm text-red-400 hover:text-red-300 transition">
+                                    Clear All
+                                </a>
+                            @endif
+                        </div>
                         
-                        <div class="space-y-4">
+                        <form action="{{ route('shop.index') }}" method="GET" class="space-y-6">
+                            <!-- Preserve search -->
+                            @if($search)
+                                <input type="hidden" name="search" value="{{ $search }}">
+                            @endif
+                            
+                            <!-- Category Filter -->
                             <div>
                                 <h3 class="text-sm font-semibold text-gray-300 mb-3 uppercase">Category</h3>
                                 <div class="space-y-2">
-                                    <a href="{{ route('shop.index') }}" class="block px-4 py-2 rounded-lg transition {{ !$selectedCategory ? 'bg-violet-600 text-white' : 'text-gray-400 hover:bg-violet-500/20 hover:text-violet-400' }}">
-                                        All Products
-                                    </a>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="category" value="" {{ !$selectedCategory ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
+                                        <span class="text-gray-400">All Products</span>
+                                    </label>
                                     @foreach($categories as $key => $name)
-                                    <a href="{{ route('shop.index', ['category' => $key]) }}" class="block px-4 py-2 rounded-lg transition {{ $selectedCategory === $key ? 'bg-violet-600 text-white' : 'text-gray-400 hover:bg-violet-500/20 hover:text-violet-400' }}">
-                                        {{ $name }}
-                                    </a>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="category" value="{{ $key }}" {{ $selectedCategory === $key ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
+                                        <span class="text-gray-400">{{ $name }}</span>
+                                    </label>
                                     @endforeach
                                 </div>
                             </div>
-                        </div>
+                            
+                            <!-- Price Range Filter -->
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-300 mb-3 uppercase">Price Range</h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="text-xs text-gray-400 mb-1 block">Min Price (৳)</label>
+                                        <input type="number" 
+                                               name="min_price" 
+                                               value="{{ $minPrice }}"
+                                               placeholder="{{ $priceRange->min ?? 0 }}"
+                                               min="0"
+                                               class="w-full px-3 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white text-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-400 mb-1 block">Max Price (৳)</label>
+                                        <input type="number" 
+                                               name="max_price" 
+                                               value="{{ $maxPrice }}"
+                                               placeholder="{{ $priceRange->max ?? 10000 }}"
+                                               min="0"
+                                               class="w-full px-3 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white text-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+                                    </div>
+                                    @if($priceRange)
+                                    <p class="text-xs text-gray-500">Range: ৳{{ number_format($priceRange->min, 0) }} - ৳{{ number_format($priceRange->max, 0) }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                            
+                            <!-- Availability Filter -->
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-300 mb-3 uppercase">Availability</h3>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" 
+                                           name="in_stock" 
+                                           value="1" 
+                                           {{ $inStock ? 'checked' : '' }}
+                                           class="mr-3 rounded text-violet-600 focus:ring-violet-500">
+                                    <span class="text-gray-400">In Stock Only</span>
+                                </label>
+                            </div>
+                            
+                            <!-- Sort (hidden, preserve from URL) -->
+                            @if($sort && $sort !== 'newest')
+                                <input type="hidden" name="sort" value="{{ $sort }}">
+                            @endif
+                            
+                            <!-- Apply Filters Button -->
+                            <button type="submit" class="w-full px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition">
+                                Apply Filters
+                            </button>
+                        </form>
                     </div>
                 </aside>
 
                 <!-- Products Grid -->
                 <div class="flex-1">
-                    @if($selectedCategory)
-                        <div class="mb-6">
-                            <p class="text-gray-400">
-                                Showing results for: <span class="text-violet-400 font-semibold">{{ $categories[$selectedCategory] }}</span>
-                                <a href="{{ route('shop.index') }}" class="ml-4 text-violet-400 hover:text-violet-300 text-sm">Clear filter</a>
-                            </p>
-                        </div>
-                    @endif
+                    <!-- Results Count -->
+                    <div class="mb-6 flex items-center justify-between">
+                        <p class="text-gray-400">
+                            Showing <span class="text-white font-semibold">{{ $products->count() }}</span> {{ $products->count() === 1 ? 'product' : 'products' }}
+                        </p>
+                    </div>
 
                     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         @if($products->count() > 0)

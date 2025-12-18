@@ -62,18 +62,62 @@
     </div>
 
     @auth
+        <!-- Email Verification Notice (if not verified) -->
+        @if(!auth()->user()->hasVerifiedEmail())
+            <a href="{{ route('verification.notice') }}" class="hidden md:flex items-center gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400 hover:bg-yellow-500/20 transition-colors text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <span>Verify Email</span>
+            </a>
+        @endif
+
+        <!-- Notifications Bell -->
+        <a href="{{ route('notifications.index') }}" class="p-2 text-gray-300 hover:text-violet-400 transition-colors relative group">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            @php
+                $unreadCount = \App\Services\NotificationService::getUnreadCount(auth()->user());
+            @endphp
+            @if($unreadCount > 0)
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse">
+                    {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+                </span>
+            @endif
+            <span class="absolute inset-0 bg-violet-500/20 rounded-lg scale-0 group-hover:scale-100 transition-transform duration-300"></span>
+        </a>
+    @endif
+
         <!-- Profile Dropdown -->
         <div class="relative group/profile">
-            <a href="{{ route('profile.index') }}" class="hidden md:flex items-center px-4 py-2 text-gray-300 hover:text-violet-400 font-medium transition-colors">
+            <a href="{{ route('profile.index') }}" class="hidden md:flex items-center px-4 py-2 text-gray-300 hover:text-violet-400 font-medium transition-colors relative">
                 <span>Profile</span>
+                @if(!auth()->user()->hasVerifiedEmail())
+                    <span class="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                @endif
                 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </a>
             
             <!-- Dropdown Menu -->
-            <div class="absolute right-0 top-full mt-2 w-48 bg-black/95 backdrop-blur-xl rounded-lg border border-violet-500/30 shadow-2xl opacity-0 invisible group-hover/profile:opacity-100 group-hover/profile:visible transition-all duration-300 z-50">
+            <div class="absolute right-0 top-full mt-2 w-64 bg-black/95 backdrop-blur-xl rounded-lg border border-violet-500/30 shadow-2xl opacity-0 invisible group-hover/profile:opacity-100 group-hover/profile:visible transition-all duration-300 z-50">
                 <div class="p-2">
+                    @if(!auth()->user()->hasVerifiedEmail())
+                        <a href="{{ route('verification.notice') }}" class="block px-4 py-3 mb-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg hover:bg-yellow-500/20 transition-colors">
+                            <div class="flex items-start gap-2">
+                                <svg class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                <div>
+                                    <p class="text-yellow-400 text-sm font-semibold">Verify Email</p>
+                                    <p class="text-yellow-300 text-xs mt-0.5">Click to verify your email</p>
+                                </div>
+                            </div>
+                        </a>
+                    @endif
+                    
                     <a href="{{ route('profile.index') }}" class="block px-4 py-2 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
                         <div class="flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

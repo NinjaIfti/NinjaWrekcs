@@ -10,7 +10,13 @@ class ShopController extends Controller
 {
     public function index(Request $request): View
     {
+        // Get filter parameters
         $category = $request->query('category', '');
+        $search = $request->query('search', '');
+        $minPrice = $request->query('min_price', '');
+        $maxPrice = $request->query('max_price', '');
+        $sort = $request->query('sort', 'newest');
+        $inStock = $request->query('in_stock', '');
         
         // Available categories
         $categories = [
@@ -22,16 +28,72 @@ class ShopController extends Controller
         // Fetch products from database
         $query = Product::with('images')->where('is_active', true);
         
+        // Search filter
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%");
+            });
+        }
+        
+        // Category filter
         if ($category && in_array($category, array_keys($categories))) {
             $query->where('category', $category);
         }
         
-        $products = $query->latest()->get();
+        // Price range filter
+        if ($minPrice !== '' && is_numeric($minPrice)) {
+            $query->where('price', '>=', $minPrice);
+        }
+        
+        if ($maxPrice !== '' && is_numeric($maxPrice)) {
+            $query->where('price', '<=', $maxPrice);
+        }
+        
+        // In stock filter
+        if ($inStock) {
+            $query->where('quantity', '>', 0);
+        }
+        
+        // Sorting
+        switch ($sort) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'name_asc':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'popular':
+                $query->orderBy('reviews', 'desc')->orderBy('rating', 'desc');
+                break;
+            case 'newest':
+            default:
+                $query->latest();
+                break;
+        }
+        
+        $products = $query->get();
+        
+        // Get price range for filter
+        $priceRange = Product::where('is_active', true)->selectRaw('MIN(price) as min, MAX(price) as max')->first();
         
         return view('shop.index', [
             'selectedCategory' => $category,
             'categories' => $categories,
             'products' => $products,
+            'search' => $search,
+            'minPrice' => $minPrice,
+            'maxPrice' => $maxPrice,
+            'sort' => $sort,
+            'inStock' => $inStock,
+            'priceRange' => $priceRange,
         ]);
     }
 

@@ -27,24 +27,88 @@ Route::get('/', function () {
 
 Route::get('/test-email', function () {
     $toEmail = request('to', 'ninjaifti3061@gmail.com');
+    $type = request('type', 'simple'); // simple, order-confirmation, order-status
     
     try {
-        Mail::raw('This is a test email from NinjaWrekcs! Your Brevo SMTP configuration is working correctly. Sent at: ' . now()->format('Y-m-d H:i:s'), function ($message) use ($toEmail) {
-            $message->to($toEmail)
-                    ->subject('Test Email from NinjaWrekcs - Brevo SMTP');
-        });
+        if ($type === 'order-confirmation') {
+            // Get the latest order
+            $order = \App\Models\Order::with('items')->latest()->first();
+            
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No orders found in database. Please create an order first.'
+                ], 404);
+            }
+            
+            $result = \App\Services\EmailService::sendWithFallback(
+                new \App\Mail\OrderConfirmation($order),
+                $toEmail,
+                'order confirmation test'
+            );
+            
+            $result['order_id'] = $order->id;
+            return response()->json($result);
+            
+        } elseif ($type === 'order-status') {
+            // Get the latest order
+            $order = \App\Models\Order::with('items')->latest()->first();
+            
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No orders found in database. Please create an order first.'
+                ], 404);
+            }
+            
+            $result = \App\Services\EmailService::sendWithFallback(
+                new \App\Mail\OrderStatusUpdated($order, 'pending'),
+                $toEmail,
+                'order status update test'
+            );
+            
+            $result['order_id'] = $order->id;
+            return response()->json($result);
+            
+        } else {
+            // Simple test email
+            Mail::raw('This is a test email from NinjaWrekcs! Your Brevo SMTP configuration is working correctly. Sent at: ' . now()->format('Y-m-d H:i:s'), function ($message) use ($toEmail) {
+                $message->to($toEmail)
+                        ->subject('Test Email from NinjaWrekcs - Brevo SMTP');
+            });
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Simple test email sent to ' . $toEmail
+            ]);
+        }
+    } catch (\Exception $e) {
+        \Log::error('Test email failed', [
+            'type' => $type,
+            'to' => $toEmail,
+            'error' => $e->getMessage(),
+        ]);
         
         return response()->json([
-            'success' => true,
-            'message' => 'Test email sent successfully to ' . $toEmail
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
             'success' => false,
-            'message' => 'Failed to send email: ' . $e->getMessage()
+            'message' => 'Failed to send email: ' . $e->getMessage(),
+            'error_type' => get_class($e),
+            'error_file' => $e->getFile() . ':' . $e->getLine(),
         ], 500);
     }
 })->name('test.email');
+
+Route::get('/email-health', function () {
+    $health = \App\Services\EmailService::healthCheck();
+    
+    return response()->json($health);
+})->name('email.health');
+
+Route::get('/email-test-connection', function () {
+    $result = \App\Services\EmailService::testConnection();
+    
+    return response()->json($result);
+})->name('email.test.connection');
 
 Route::get('/about', function () {
     return view('about');
@@ -158,11 +222,13 @@ Route::put('/cart/update/{itemId}', [\App\Http\Controllers\CartController::class
 Route::delete('/cart/remove/{itemId}', [\App\Http\Controllers\CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear', [\App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
 
-// Checkout Routes
-Route::get('/checkout', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout.index');
-Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])->name('checkout.store');
-Route::post('/checkout/validate-coupon', [\App\Http\Controllers\CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
-Route::get('/checkout/success/{order}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
+// Checkout Routes (requires verified email)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/checkout', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout/validate-coupon', [\App\Http\Controllers\CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
+    Route::get('/checkout/success/{order}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
+});
 
 Route::get('/dashboard', function () {
     // Redirect admin users to admin dashboard
@@ -173,10 +239,17 @@ Route::get('/dashboard', function () {
     return redirect()->route('profile.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [\App\Http\Controllers\UserProfileController::class, 'index'])->name('profile.index');
     Route::get('/profile/orders/{order}', [\App\Http\Controllers\UserProfileController::class, 'showOrder'])->name('profile.orders.show');
     Route::post('/profile/personal-info', [\App\Http\Controllers\UserProfileController::class, 'updatePersonalInfo'])->name('profile.update.personal');
+    
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::delete('/notifications/{notification}', [\App\Http\Controllers\NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
     Route::post('/profile/address', [\App\Http\Controllers\UserProfileController::class, 'updateAddress'])->name('profile.update.address');
     Route::post('/profile/password', [\App\Http\Controllers\UserProfileController::class, 'updatePassword'])->name('profile.update.password');
     
@@ -216,6 +289,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Popup Settings
     Route::get('/popup-settings', [\App\Http\Controllers\AdminController::class, 'popupSettings'])->name('popup-settings');
     Route::put('/popup-settings', [\App\Http\Controllers\AdminController::class, 'updatePopupSettings'])->name('popup-settings.update');
+    
+    // Notifications Management
+    Route::get('/send-notifications', [\App\Http\Controllers\AdminController::class, 'sendNotifications'])->name('send-notifications');
+    Route::post('/send-special-offer', [\App\Http\Controllers\AdminController::class, 'sendSpecialOffer'])->name('send-special-offer');
+    Route::post('/send-new-product/{product}', [\App\Http\Controllers\AdminController::class, 'sendNewProductNotification'])->name('send-new-product');
     
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');

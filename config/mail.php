@@ -48,6 +48,15 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => 60,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+            'verify_peer' => false,
+        ],
+
+        'failover' => [
+            'transport' => 'failover',
+            'mailers' => [
+                'smtp',
+                'log',
+            ],
         ],
 
         'ses' => [

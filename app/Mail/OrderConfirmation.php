@@ -10,20 +10,18 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OrderStatusUpdated extends Mailable implements ShouldQueue
+class OrderConfirmation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
     public $order;
-    public $oldStatus;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(Order $order, $oldStatus = null)
+    public function __construct(Order $order)
     {
         $this->order = $order;
-        $this->oldStatus = $oldStatus;
     }
 
     /**
@@ -31,19 +29,8 @@ class OrderStatusUpdated extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
-        $statusMessages = [
-            'confirmed' => 'Order Confirmed',
-            'processing' => 'Order Processing',
-            'shipped' => 'Order Shipped',
-            'delivered' => 'Order Delivered',
-            'cancelled' => 'Order Cancelled',
-        ];
-
-        $subject = $statusMessages[$this->order->status] ?? 'Order Status Updated';
-        $subject .= ' - Order #' . $this->order->id;
-
         return new Envelope(
-            subject: $subject,
+            subject: 'Order Confirmation - Order #' . $this->order->id . ' - NinjaWrekcs',
             from: new \Illuminate\Mail\Mailables\Address(
                 config('mail.from.address'),
                 config('mail.from.name')
@@ -57,7 +44,7 @@ class OrderStatusUpdated extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.order-status-updated',
+            markdown: 'emails.order-confirmation',
         );
     }
 

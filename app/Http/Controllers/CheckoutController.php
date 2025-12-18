@@ -6,6 +6,9 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Coupon;
+use App\Mail\OrderConfirmation;
+use App\Services\EmailService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -204,6 +207,22 @@ class CheckoutController extends Controller
             }
 
             DB::commit();
+
+            // Send order confirmation email with improved error handling
+            $order->load('items'); // Load items for email
+            $emailResult = EmailService::sendWithFallback(
+                new OrderConfirmation($order),
+                $order->email,
+                'order confirmation'
+            );
+
+            // Add email status to session if failed
+            if (!$emailResult['success']) {
+                session()->flash('email_warning', 'Order placed successfully, but confirmation email could not be sent. Please check your email or contact support.');
+            }
+
+            // Send notification
+            NotificationService::orderPlaced($order);
 
             // Clear cart
             \Cart::clear();

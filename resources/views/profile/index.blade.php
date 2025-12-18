@@ -16,6 +16,18 @@
                 <span class="glitch-text" data-text="My Profile">My Profile</span>
             </h1>
 
+            @if(request('verified'))
+                <div class="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg flex items-start gap-3">
+                    <svg class="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <p class="text-green-400 font-semibold">Email Verified Successfully!</p>
+                        <p class="text-green-300 text-sm mt-1">Your email has been verified. You can now place orders and access all features.</p>
+                    </div>
+                </div>
+            @endif
+
             @if(session('success'))
                 <div class="mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400">
                     {{ session('success') }}

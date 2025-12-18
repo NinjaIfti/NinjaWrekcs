@@ -227,17 +227,24 @@ class AdminController extends Controller
 
         // Send email notification if status changed and order has email
         if ($oldStatus !== $validated['status'] && $order->email) {
-            try {
-                // Reload order with items relationship for email
-                $order->refresh();
-                $order->load('items');
-                Mail::to($order->email)->send(new OrderStatusUpdated($order, $oldStatus));
-            } catch (\Exception $e) {
-                // Log error but don't fail the status update
-                \Log::error('Failed to send order status email: ' . $e->getMessage(), [
-                    'order_id' => $order->id,
-                    'email' => $order->email,
-                ]);
+            // Reload order with items relationship for email
+            $order->refresh();
+            $order->load('items');
+            
+            $emailResult = \App\Services\EmailService::sendWithFallback(
+                new OrderStatusUpdated($order, $oldStatus),
+                $order->email,
+                'order status update'
+            );
+
+            // Send in-app notification
+            \App\Services\NotificationService::orderStatusUpdated($order, $oldStatus);
+
+            // Show email status in admin notification
+            if (!$emailResult['success']) {
+                return redirect()->route('admin.orders')
+                    ->with('success', 'Order status updated successfully!')
+                    ->with('warning', 'Status updated but email notification could not be sent to customer.');
             }
         }
 
@@ -678,6 +685,47 @@ class AdminController extends Controller
         }
 
         return redirect()->route('admin.popup-settings')->with('success', 'Popup settings updated successfully!');
+    }
+
+    /**
+     * Show notification sending page
+     */
+    public function sendNotifications(): View
+    {
+        $products = Product::where('is_active', true)->latest()->get();
+        $totalUsers = User::where('email', '!=', 'ifti3061@gmail.com')->count();
+        
+        return view('admin.send-notifications', compact('products', 'totalUsers'));
+    }
+
+    /**
+     * Send special offer notification to all users
+     */
+    public function sendSpecialOffer(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'message' => 'required|string',
+            'url' => 'nullable|url',
+        ]);
+
+        NotificationService::specialOffer(
+            $validated['title'],
+            $validated['message'],
+            $validated['url'] ?? null
+        );
+
+        return redirect()->back()->with('success', 'Special offer notification sent to all users!');
+    }
+
+    /**
+     * Send new product notification to all users
+     */
+    public function sendNewProductNotification(Product $product): RedirectResponse
+    {
+        NotificationService::newProduct($product);
+        
+        return redirect()->back()->with('success', "New product notification sent for: {$product->name}");
     }
 }
 
