@@ -1,8 +1,10 @@
-@extends('layouts.admin')
+<x-admin-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            {{ __('Analytics & Reports') }}
+        </h2>
+    </x-slot>
 
-@section('title', 'Analytics & Reports')
-
-@section('content')
 <div class="space-y-6">
     <div class="flex justify-between items-center">
         <h1 class="text-3xl font-bold text-white glitch-text">📊 Analytics & Reports</h1>
@@ -245,5 +247,5 @@
         </div>
     @endif
 </div>
-@endsection
+</x-admin-layout>
 

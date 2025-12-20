@@ -101,15 +101,15 @@
                             @endphp
                             <div class="flex-1 flex flex-col items-center">
                                 @if($monthData['revenue'] > 0)
-                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg relative group cursor-pointer transition-all hover:opacity-80" style="height: {{ $height }}%">
-                                        <div class="absolute inset-0 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg"></div>
-                                        <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                    <div class="w-full rounded-t-lg relative group cursor-pointer transition-all hover:opacity-80" style="height: {{ $height }}%">
+                                        <div class="w-full h-full bg-gradient-to-t from-blue-600 via-blue-500 to-blue-400 rounded-t-lg shadow-lg"></div>
+                                        <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                                             ৳{{ number_format($monthData['revenue'], 2) }}
                                         </div>
                                     </div>
                                 @else
-                                    <div class="w-full bg-gray-300 dark:bg-gray-700 rounded-t-lg relative" style="height: 5px">
-                                        <div class="absolute inset-0 bg-gray-400 dark:bg-gray-600 rounded-t-lg"></div>
+                                    <div class="w-full rounded-t-lg relative" style="height: 5px">
+                                        <div class="w-full h-full bg-gray-400 dark:bg-gray-600 rounded-t-lg"></div>
                                     </div>
                                 @endif
                                 <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 text-center">
