@@ -61,7 +61,7 @@
                 <h3 class="text-gray-400 text-sm">Low Stock</h3>
                 <span class="text-2xl">📦</span>
             </div>
-            <p class="text-2xl font-bold text-white">{{ count($dashboardSummary['low_stock']) }}</p>
+            <p class="text-2xl font-bold text-white">{{ count($dashboardSummary['low_stock_products']) }}</p>
             <p class="text-sm text-gray-400 mt-1">Products &lt; 5 units</p>
         </div>
     </div>
@@ -225,11 +225,11 @@
     </div>
 
     <!-- Low Stock Alert -->
-    @if(count($dashboardSummary['low_stock']) > 0)
+    @if(count($dashboardSummary['low_stock_products']) > 0)
         <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-6">
             <h2 class="text-xl font-bold text-red-400 mb-4">⚠️ Low Stock Alert</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach($dashboardSummary['low_stock'] as $product)
+                @foreach($dashboardSummary['low_stock_products'] as $product)
                     <div class="flex items-center justify-between p-3 bg-black/40 border border-red-500/20 rounded-lg">
                         <div>
                             <p class="text-white font-semibold">{{ $product->name }}</p>
