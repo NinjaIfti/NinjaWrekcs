@@ -78,21 +78,47 @@
             <div class="p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Trend (Last 6 Months)</h3>
                 <div class="h-64 flex items-end justify-between gap-2">
-                    @foreach($revenueByMonth as $monthData)
-                        @php
-                            $maxRevenue = max(array_column($revenueByMonth, 'revenue'));
-                            $height = $maxRevenue > 0 ? ($monthData['revenue'] / $maxRevenue) * 100 : 0;
-                        @endphp
-                        <div class="flex-1 flex flex-col items-center">
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg relative" style="height: {{ $height }}%">
-                                <div class="absolute inset-0 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg"></div>
-                            </div>
-                            <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 text-center">
-                                <div class="font-semibold">৳{{ number_format($monthData['revenue'], 0) }}</div>
-                                <div class="mt-1">{{ $monthData['month'] }}</div>
+                    @php
+                        $maxRevenue = max(array_column($revenueByMonth, 'revenue'));
+                    @endphp
+                    @if($maxRevenue == 0)
+                        <div class="w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                            <div class="text-center">
+                                <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                                <p class="text-lg font-medium">No revenue data available</p>
+                                <p class="text-sm mt-1">Start accepting orders to see your revenue trend</p>
                             </div>
                         </div>
-                    @endforeach
+                    @else
+                        @foreach($revenueByMonth as $monthData)
+                            @php
+                                // Calculate height, with minimum 5% if there's any revenue
+                                $height = $monthData['revenue'] > 0 
+                                    ? max(5, ($monthData['revenue'] / $maxRevenue) * 100) 
+                                    : 0;
+                            @endphp
+                            <div class="flex-1 flex flex-col items-center">
+                                @if($monthData['revenue'] > 0)
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg relative group cursor-pointer transition-all hover:opacity-80" style="height: {{ $height }}%">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg"></div>
+                                        <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            ৳{{ number_format($monthData['revenue'], 2) }}
+                                        </div>
+                                    </div>
+                                @else
+                                    <div class="w-full bg-gray-300 dark:bg-gray-700 rounded-t-lg relative" style="height: 5px">
+                                        <div class="absolute inset-0 bg-gray-400 dark:bg-gray-600 rounded-t-lg"></div>
+                                    </div>
+                                @endif
+                                <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 text-center">
+                                    <div class="font-semibold">৳{{ number_format($monthData['revenue'], 0) }}</div>
+                                    <div class="mt-1">{{ $monthData['month'] }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
                 </div>
             </div>
         </div>

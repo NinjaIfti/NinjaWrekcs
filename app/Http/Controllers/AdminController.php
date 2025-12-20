@@ -527,24 +527,32 @@ class AdminController extends Controller
 
     public function financial(): View
     {
-        // Total Revenue (excluding pending and cancelled orders)
-        $totalRevenue = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->sum('total');
-        
-        // This Month Revenue (excluding pending and cancelled orders)
-        $thisMonthRevenue = Order::where('status', '!=', 'pending')
+        // Total Revenue (excluding pending, cancelled, and deleted orders)
+        $totalRevenue = Order::notDeleted()
+            ->where('status', '!=', 'pending')
+            ->where('status', '!=', 'cancelled')
+            ->sum('total');
+
+        // This Month Revenue
+        $thisMonthRevenue = Order::notDeleted()
+            ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->sum('total');
-        
-        // Total Orders (excluding pending and cancelled)
-        $totalOrders = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->count();
-        
+
+        // Total Orders
+        $totalOrders = Order::notDeleted()
+            ->where('status', '!=', 'pending')
+            ->where('status', '!=', 'cancelled')
+            ->count();
+
         // Average Order Value
         $averageOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
-        
-        // Recent Transactions (last 20 orders excluding pending and cancelled)
-        $recentTransactions = Order::where('status', '!=', 'pending')
+
+        // Recent Transactions (last 20 orders)
+        $recentTransactions = Order::notDeleted()
+            ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
             ->with(['user'])
             ->latest()
@@ -560,21 +568,24 @@ class AdminController extends Controller
                     'date' => $order->created_at->format('Y-m-d H:i:s'),
                 ];
             });
-        
-        // Revenue by month for chart (last 6 months - excluding pending and cancelled)
+
+        // Revenue by month for chart (last 6 months)
         $revenueByMonth = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
+            $revenue = Order::notDeleted()
+                ->where('status', '!=', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->whereMonth('created_at', $month->month)
+                ->whereYear('created_at', $month->year)
+                ->sum('total');
+            
             $revenueByMonth[] = [
                 'month' => $month->format('M Y'),
-                'revenue' => Order::where('status', '!=', 'pending')
-                    ->where('status', '!=', 'cancelled')
-                    ->whereMonth('created_at', $month->month)
-                    ->whereYear('created_at', $month->year)
-                    ->sum('total'),
+                'revenue' => $revenue,
             ];
         }
-        
+
         return view('admin.financial', [
             'totalRevenue' => $totalRevenue,
             'thisMonthRevenue' => $thisMonthRevenue,
