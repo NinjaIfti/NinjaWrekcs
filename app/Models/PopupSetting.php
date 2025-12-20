@@ -55,3 +55,4 @@ class PopupSetting extends Model
         return $settings;
     }
 }
+

@@ -101,28 +101,55 @@ class CheckoutController extends Controller
 
         // Add password and email fields only for non-logged-in users
         if (!$isLoggedIn) {
+            $rules['email'] = 'required|email';
             $rules['password'] = 'required|string|min:8';
-            $rules['email'] = 'required|email|unique:users,email';
         }
 
         $validated = $request->validate($rules);
+
+        // Check if email already exists (for guest checkout)
+        if (!$isLoggedIn && !empty($validated['email'])) {
+            $existingUser = \App\Models\User::where('email', $validated['email'])->first();
+            if ($existingUser) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['email' => 'This email is already registered. Please login to continue or use a different email.'])
+                    ->with('error', 'An account with this email already exists. Please login to checkout.');
+            }
+        }
 
         DB::beginTransaction();
         try {
             $user = null;
 
             // Create user account if not logged in
+            $accountCreated = false;
             if (!$isLoggedIn) {
                 $user = \App\Models\User::create([
                     'name' => $validated['name'],
-                    'email' => $validated['email'] ?? $validated['phone'] . '@ninjawrekcs.com',
+                    'email' => $validated['email'],
                     'phone' => $validated['phone'],
                     'address' => $validated['address'],
                     'password' => Hash::make($validated['password']),
+                    'email_verified_at' => now(), // Auto-verify since they're making a purchase
                 ]);
+
+                $accountCreated = true;
 
                 // Auto-login the new user
                 Auth::login($user);
+
+                // Send welcome notification
+                NotificationService::create(
+                    $user->id,
+                    NotificationService::TYPE_ORDER_UPDATE,
+                    '🎉 Welcome to NinjaWrekcs!',
+                    "Your account has been created successfully! You can now track your orders and enjoy exclusive benefits.",
+                    ['account_created' => true],
+                    route('profile.index'),
+                    '🎮',
+                    'green'
+                );
             } else {
                 $user = Auth::user();
                 
@@ -227,7 +254,14 @@ class CheckoutController extends Controller
             // Clear cart
             \Cart::clear();
 
-            return redirect()->route('checkout.success', $order)->with('success', 'Order placed successfully!');
+            // Success message
+            $successMessage = $accountCreated 
+                ? 'Order placed successfully! Your account has been created and you are now logged in.'
+                : 'Order placed successfully!';
+
+            return redirect()->route('checkout.success', $order)
+                ->with('success', $successMessage)
+                ->with('account_created', $accountCreated);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();

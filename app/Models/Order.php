@@ -30,6 +30,8 @@ class Order extends Model
         'save_info',
         'terms_accepted',
         'notes',
+        'is_deleted',
+        'deleted_at',
     ];
 
     protected $casts = [
@@ -39,6 +41,8 @@ class Order extends Model
         'total' => 'decimal:2',
         'save_info' => 'boolean',
         'terms_accepted' => 'boolean',
+        'is_deleted' => 'boolean',
+        'deleted_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -54,5 +58,35 @@ class Order extends Model
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    /**
+     * Scope to get only non-deleted orders (for admin panel)
+     */
+    public function scopeNotDeleted($query)
+    {
+        return $query->where('is_deleted', false);
+    }
+
+    /**
+     * Soft delete the order (hide from admin)
+     */
+    public function softDelete()
+    {
+        $this->update([
+            'is_deleted' => true,
+            'deleted_at' => now(),
+        ]);
+    }
+
+    /**
+     * Restore a soft-deleted order
+     */
+    public function restore()
+    {
+        $this->update([
+            'is_deleted' => false,
+            'deleted_at' => null,
+        ]);
     }
 }

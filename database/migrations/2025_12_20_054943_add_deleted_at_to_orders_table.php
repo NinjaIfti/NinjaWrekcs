@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_featured')->default(false)->after('is_active');
+        Schema::table('orders', function (Blueprint $table) {
+            $table->boolean('is_deleted')->default(false)->after('notes');
+            $table->timestamp('deleted_at')->nullable()->after('is_deleted');
         });
     }
 
@@ -21,18 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('is_featured');
+        Schema::table('orders', function (Blueprint $table) {
+            $table->dropColumn(['is_deleted', 'deleted_at']);
         });
     }
 };
-
-
-
-
-
-
-
-
-
-

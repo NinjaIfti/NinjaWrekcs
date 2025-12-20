@@ -101,9 +101,9 @@ class AnalyticsService
                 ->when($endDate, fn($q) => $q->whereDate('orders.created_at', '<=', $endDate))
                 ->select(
                     'products.category',
-                    DB::raw('COUNT(*) as total_orders'),
-                    DB::raw('SUM(order_items.quantity) as total_sold'),
-                    DB::raw('SUM(order_items.subtotal) as total_revenue')
+                    DB::raw('COUNT(*) as order_count'),
+                    DB::raw('SUM(order_items.quantity) as products_sold'),
+                    DB::raw('SUM(order_items.subtotal) as revenue')
                 )
                 ->groupBy('products.category')
                 ->get();
@@ -122,21 +122,23 @@ class AnalyticsService
     {
         return Cache::remember('customer_analytics', 300, function () {
             // Top customers by revenue
-            $topCustomers = Order::with('user')
-                ->where('status', '!=', 'pending')
-                ->where('status', '!=', 'cancelled')
+            $topCustomers = DB::table('orders')
+                ->join('users', 'orders.user_id', '=', 'users.id')
+                ->where('users.email', '!=', 'ifti3061@gmail.com')
+                ->where('orders.status', '!=', 'pending')
+                ->where('orders.status', '!=', 'cancelled')
                 ->select(
-                    'user_id',
-                    'name',
-                    'email',
-                    DB::raw('COUNT(*) as total_orders'),
-                    DB::raw('SUM(total) as total_spent'),
-                    DB::raw('AVG(total) as avg_order_value'),
-                    DB::raw('MAX(created_at) as last_order_date')
+                    'users.id as user_id',
+                    'users.name',
+                    'users.email',
+                    DB::raw('COUNT(*) as order_count'),
+                    DB::raw('SUM(orders.total) as total_spent'),
+                    DB::raw('AVG(orders.total) as avg_order_value'),
+                    DB::raw('MAX(orders.created_at) as last_order_date')
                 )
-                ->groupBy('user_id', 'name', 'email')
+                ->groupBy('users.id', 'users.name', 'users.email')
                 ->orderBy('total_spent', 'desc')
-                ->limit(20)
+                ->limit(10)
                 ->get();
 
             // New customers trend
@@ -157,12 +159,26 @@ class AnalyticsService
                   ->where('status', '!=', 'cancelled');
             }, '>=', 2)->count();
 
+            // New customers count (last 30 days)
+            $newCustomers = User::where('email', '!=', 'ifti3061@gmail.com')
+                ->whereDate('created_at', '>=', now()->subDays(30))
+                ->count();
+
+            // Average lifetime value
+            $avgLifetimeValue = $totalCustomers > 0
+                ? Order::where('status', '!=', 'pending')
+                    ->where('status', '!=', 'cancelled')
+                    ->sum('total') / $totalCustomers
+                : 0;
+
             return [
                 'top_customers' => $topCustomers,
                 'new_customers_trend' => $newCustomersTrend,
+                'new_customers' => $newCustomers,
                 'total_customers' => $totalCustomers,
                 'returning_customers' => $returningCustomers,
                 'retention_rate' => $totalCustomers > 0 ? round(($returningCustomers / $totalCustomers) * 100, 2) : 0,
+                'average_lifetime_value' => $avgLifetimeValue,
             ];
         });
     }
@@ -226,7 +242,8 @@ class AnalyticsService
             $lowStockProducts = Product::where('is_active', true)
                 ->where('quantity', '<=', 5)
                 ->where('quantity', '>', 0)
-                ->count();
+                ->select('id', 'name', 'category', 'quantity')
+                ->get();
 
             return [
                 'today' => [
@@ -238,6 +255,7 @@ class AnalyticsService
                     'revenue' => $thisMonthRevenue,
                     'order_growth' => $orderGrowth,
                     'revenue_growth' => $revenueGrowth,
+                    'growth' => $revenueGrowth,
                 ],
                 'pending_orders' => $pendingOrders,
                 'low_stock_products' => $lowStockProducts,
@@ -253,3 +271,4 @@ class AnalyticsService
         Cache::flush();
     }
 }
+

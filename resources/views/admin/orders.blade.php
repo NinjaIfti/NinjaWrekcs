@@ -179,9 +179,21 @@
                                         <p>Created: {{ $order->created_at->format('M d, Y h:i A') }}</p>
                                         <p>Updated: {{ $order->updated_at->format('M d, Y h:i A') }}</p>
                                     </div>
-                                    <div class="text-right">
-                                        <p>Save Info: {{ $order->save_info ? 'Yes' : 'No' }}</p>
-                                        <p>Terms Accepted: {{ $order->terms_accepted ? 'Yes' : 'No' }}</p>
+                                    <div class="text-right flex items-center gap-4">
+                                        <div>
+                                            <p>Save Info: {{ $order->save_info ? 'Yes' : 'No' }}</p>
+                                            <p>Terms Accepted: {{ $order->terms_accepted ? 'Yes' : 'No' }}</p>
+                                        </div>
+                                        <form action="{{ route('admin.orders.delete', $order) }}" method="POST" onsubmit="return confirm('Hide this order from admin panel? The customer can still see it in their order history.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-400 rounded-lg transition text-sm font-medium flex items-center gap-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                                Hide
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

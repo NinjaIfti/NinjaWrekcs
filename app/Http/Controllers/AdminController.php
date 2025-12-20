@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Visitor;
 use App\Models\Coupon;
 use App\Models\PopupSetting;
+use App\Models\SpecialOffer;
 use App\Mail\OrderStatusUpdated;
 use App\Services\AnalyticsService;
 use App\Services\NotificationService;
@@ -48,15 +49,16 @@ class AdminController extends Controller
     public function orders(Request $request): View
     {
         $status = $request->query('status', '');
-        
-        $query = Order::with(['user', 'items.product']);
-        
+
+        $query = Order::with(['user', 'items.product'])
+            ->notDeleted(); // Only show non-deleted orders
+
         if ($status && in_array($status, ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])) {
             $query->where('status', $status);
         }
-        
+
         $orders = $query->latest()->get();
-        
+
         return view('admin.orders', [
             'orders' => $orders,
             'selectedStatus' => $status,
@@ -782,6 +784,147 @@ class AdminController extends Controller
         AnalyticsService::clearCache();
         
         return redirect()->back()->with('success', 'Analytics cache cleared successfully!');
+    }
+
+    /**
+     * Soft delete an order (hide from admin, no customer notification)
+     */
+    public function deleteOrder(Order $order): RedirectResponse
+    {
+        $order->softDelete();
+        
+        return redirect()->back()->with('success', "Order #{$order->id} has been hidden from the admin panel.");
+    }
+
+    /**
+     * Restore a soft-deleted order
+     */
+    public function restoreOrder(Order $order): RedirectResponse
+    {
+        $order->restore();
+        
+        return redirect()->back()->with('success', "Order #{$order->id} has been restored.");
+    }
+
+    /**
+     * Show special offers management
+     */
+    public function specialOffers(): View
+    {
+        $offers = SpecialOffer::orderBy('display_order')->get();
+        return view('admin.special-offers', compact('offers'));
+    }
+
+    /**
+     * Show create special offer form
+     */
+    public function specialOfferCreate(): View
+    {
+        return view('admin.special-offer-create');
+    }
+
+    /**
+     * Store new special offer
+     */
+    public function specialOfferStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'badge_text' => 'required|string|max:255',
+            'main_title' => 'required|string|max:255',
+            'subtitle' => 'nullable|string|max:255',
+            'description' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'feature_1' => 'nullable|string|max:255',
+            'feature_2' => 'nullable|string|max:255',
+            'is_active' => 'boolean',
+        ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('special-offers', 'public');
+        }
+
+        $features = array_filter([
+            $request->feature_1,
+            $request->feature_2,
+        ]);
+
+        SpecialOffer::create([
+            'badge_text' => $validated['badge_text'],
+            'main_title' => $validated['main_title'],
+            'subtitle' => $validated['subtitle'],
+            'description' => $validated['description'],
+            'image_path' => $imagePath,
+            'features' => $features,
+            'is_active' => $request->has('is_active'),
+            'display_order' => SpecialOffer::max('display_order') + 1,
+        ]);
+
+        return redirect()->route('admin.special-offers')->with('success', 'Special offer created successfully!');
+    }
+
+    /**
+     * Show edit special offer form
+     */
+    public function specialOfferEdit(SpecialOffer $specialOffer): View
+    {
+        return view('admin.special-offer-edit', compact('specialOffer'));
+    }
+
+    /**
+     * Update special offer
+     */
+    public function specialOfferUpdate(Request $request, SpecialOffer $specialOffer): RedirectResponse
+    {
+        $validated = $request->validate([
+            'badge_text' => 'required|string|max:255',
+            'main_title' => 'required|string|max:255',
+            'subtitle' => 'nullable|string|max:255',
+            'description' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'feature_1' => 'nullable|string|max:255',
+            'feature_2' => 'nullable|string|max:255',
+            'is_active' => 'boolean',
+        ]);
+
+        $imagePath = $specialOffer->image_path;
+        if ($request->hasFile('image')) {
+            if ($imagePath) {
+                Storage::delete('public/' . $imagePath);
+            }
+            $imagePath = $request->file('image')->store('special-offers', 'public');
+        }
+
+        $features = array_filter([
+            $request->feature_1,
+            $request->feature_2,
+        ]);
+
+        $specialOffer->update([
+            'badge_text' => $validated['badge_text'],
+            'main_title' => $validated['main_title'],
+            'subtitle' => $validated['subtitle'],
+            'description' => $validated['description'],
+            'image_path' => $imagePath,
+            'features' => $features,
+            'is_active' => $request->has('is_active'),
+        ]);
+
+        return redirect()->route('admin.special-offers')->with('success', 'Special offer updated successfully!');
+    }
+
+    /**
+     * Delete special offer
+     */
+    public function specialOfferDestroy(SpecialOffer $specialOffer): RedirectResponse
+    {
+        if ($specialOffer->image_path) {
+            Storage::delete('public/' . $specialOffer->image_path);
+        }
+        
+        $specialOffer->delete();
+        
+        return redirect()->route('admin.special-offers')->with('success', 'Special offer deleted successfully!');
     }
 }
 

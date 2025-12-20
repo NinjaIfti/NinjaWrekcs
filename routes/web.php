@@ -222,13 +222,11 @@ Route::put('/cart/update/{itemId}', [\App\Http\Controllers\CartController::class
 Route::delete('/cart/remove/{itemId}', [\App\Http\Controllers\CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear', [\App\Http\Controllers\CartController::class, 'clear'])->name('cart.clear');
 
-// Checkout Routes (requires verified email)
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/checkout', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])->name('checkout.store');
-    Route::post('/checkout/validate-coupon', [\App\Http\Controllers\CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
-    Route::get('/checkout/success/{order}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
-});
+// Checkout Routes (open to all - guest checkout enabled)
+Route::get('/checkout', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout.index');
+Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])->name('checkout.store');
+Route::post('/checkout/validate-coupon', [\App\Http\Controllers\CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
+Route::get('/checkout/success/{order}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
 
 Route::get('/dashboard', function () {
     // Redirect admin users to admin dashboard
@@ -264,6 +262,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/orders', [\App\Http\Controllers\AdminController::class, 'orders'])->name('orders');
     Route::get('/orders/export', [\App\Http\Controllers\AdminController::class, 'exportOrders'])->name('orders.export');
     Route::put('/orders/{order}/status', [\App\Http\Controllers\AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
+    Route::delete('/orders/{order}', [\App\Http\Controllers\AdminController::class, 'deleteOrder'])->name('orders.delete');
+    Route::post('/orders/{order}/restore', [\App\Http\Controllers\AdminController::class, 'restoreOrder'])->name('orders.restore');
     Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users'])->name('users');
     
     // Products Management
@@ -289,6 +289,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Popup Settings
     Route::get('/popup-settings', [\App\Http\Controllers\AdminController::class, 'popupSettings'])->name('popup-settings');
     Route::put('/popup-settings', [\App\Http\Controllers\AdminController::class, 'updatePopupSettings'])->name('popup-settings.update');
+    
+    // Special Offers Management
+    Route::get('/special-offers', [\App\Http\Controllers\AdminController::class, 'specialOffers'])->name('special-offers');
+    Route::get('/special-offers/create', [\App\Http\Controllers\AdminController::class, 'specialOfferCreate'])->name('special-offers.create');
+    Route::post('/special-offers', [\App\Http\Controllers\AdminController::class, 'specialOfferStore'])->name('special-offers.store');
+    Route::get('/special-offers/{specialOffer}/edit', [\App\Http\Controllers\AdminController::class, 'specialOfferEdit'])->name('special-offers.edit');
+    Route::put('/special-offers/{specialOffer}', [\App\Http\Controllers\AdminController::class, 'specialOfferUpdate'])->name('special-offers.update');
+    Route::delete('/special-offers/{specialOffer}', [\App\Http\Controllers\AdminController::class, 'specialOfferDestroy'])->name('special-offers.destroy');
     
     // Notifications Management
     Route::get('/send-notifications', [\App\Http\Controllers\AdminController::class, 'sendNotifications'])->name('send-notifications');
