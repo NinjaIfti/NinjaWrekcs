@@ -38,7 +38,7 @@ class AnalyticsService
                 default => "DATE(created_at)",
             };
 
-            $data = $query->select(
+            $rawData = $query->select(
                 DB::raw("{$groupBy} as period"),
                 DB::raw('COUNT(*) as total_orders'),
                 DB::raw('SUM(total) as total_revenue'),
@@ -48,12 +48,32 @@ class AnalyticsService
             ->orderBy('period', 'desc')
             ->get();
 
+            $totalOrders = $rawData->sum('total_orders');
+            $totalRevenue = $rawData->sum('total_revenue');
+
+            // Transform data to match view expectations
+            $formattedData = $rawData->map(function ($item) use ($period) {
+                $date = match($period) {
+                    'daily' => Carbon::parse($item->period)->format('M d, Y'),
+                    'weekly' => 'Week ' . substr($item->period, -2) . ', ' . substr($item->period, 0, 4),
+                    'monthly' => Carbon::parse($item->period . '-01')->format('M Y'),
+                    default => $item->period,
+                };
+
+                return [
+                    'date' => $date,
+                    'orders' => $item->total_orders,
+                    'revenue' => $item->total_revenue,
+                    'average' => $item->avg_order_value,
+                ];
+            });
+
             return [
-                'data' => $data,
+                'data' => $formattedData,
                 'summary' => [
-                    'total_orders' => $data->sum('total_orders'),
-                    'total_revenue' => $data->sum('total_revenue'),
-                    'avg_order_value' => $data->avg('avg_order_value'),
+                    'total_orders' => $totalOrders,
+                    'total_revenue' => $totalRevenue,
+                    'average_order_value' => $totalOrders > 0 ? $totalRevenue / $totalOrders : 0,
                 ],
             ];
         });
