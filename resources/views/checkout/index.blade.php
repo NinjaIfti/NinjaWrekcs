@@ -174,7 +174,7 @@
 
                             <label class="flex items-start space-x-3 cursor-pointer">
                                 <input type="checkbox" name="terms_accepted" value="1" required class="mt-1 rounded border-violet-500/50 bg-black/50 text-violet-600">
-                                <span class="text-gray-300">I accept that the order will take <span class="text-violet-400 font-semibold">10-15 days</span> to arrive *</span>
+                                <span class="text-gray-300">I accept that the order will take <span class="text-violet-400 font-semibold">1-2 days</span> to arrive *</span>
                             </label>
                             @error('terms_accepted')
                                 <p class="text-sm text-red-400">{{ $message }}</p>
