@@ -63,6 +63,9 @@
                 </main>
             </div>
         </div>
+
+        <!-- Page Scripts -->
+        @stack('scripts')
     </body>
 </html>
 
