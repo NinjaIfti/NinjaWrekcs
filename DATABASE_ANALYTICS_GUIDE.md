@@ -496,3 +496,4 @@ php artisan migrate
 
 
 
+

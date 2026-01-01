@@ -27,19 +27,6 @@
                 </div>
 
                 <div>
-                    <h2 class="text-2xl font-bold text-violet-400 mb-4">Pre-Orders</h2>
-                    <p class="text-gray-300 leading-relaxed mb-4">
-                        When placing a pre-order:
-                    </p>
-                    <ul class="list-disc list-inside text-gray-300 space-y-2 ml-4">
-                        <li>You agree to pay ৳200 upfront as a deposit</li>
-                        <li>The remaining balance will be collected via Cash on Delivery (COD) upon delivery</li>
-                        <li>Delivery typically takes 10-15 business days</li>
-                        <li>You accept that pre-orders may be subject to availability</li>
-                    </ul>
-                </div>
-
-                <div>
                     <h2 class="text-2xl font-bold text-violet-400 mb-4">Payment Terms</h2>
                     <p class="text-gray-300 leading-relaxed">
                         All payments must be made through approved methods (bKash/Nagad). Payment information is processed securely. By providing payment information, you represent that you are authorized to use the payment method.
@@ -88,6 +75,7 @@
     @include('home.styles')
 </body>
 </html>
+
 
 
 

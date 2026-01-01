@@ -8,11 +8,11 @@
     
     @include('components.seo', [
         'title' => $product->name . ' - NinjaWrekcs | Valorant Collectibles',
-        'description' => $product->description ? \Illuminate\Support\Str::limit(strip_tags($product->description), 160) : 'Buy ' . $product->name . ' - Authentic Valorant collectible. Pre-order now and get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
+        'description' => $product->description ? \Illuminate\Support\Str::limit(strip_tags($product->description), 160) : 'Buy ' . $product->name . ' - Authentic Valorant collectible. Get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
         'image' => $product->image ? asset('storage/' . $product->image) : asset('img/fav.png'),
         'url' => route('shop.show', $product->slug ?? $product->id),
         'type' => 'product',
-        'keywords' => $product->name . ', Valorant collectibles, ' . ($product->category ?? 'gaming merchandise') . ', pre-order Valorant, Bangladesh',
+        'keywords' => $product->name . ', Valorant collectibles, ' . ($product->category ?? 'gaming merchandise') . ', Valorant Bangladesh, Bangladesh gaming store',
         'product' => $product
     ])
     
@@ -190,8 +190,6 @@
     <!-- Include Footer -->
     @include('home.components.footer')
     
-    <!-- Pre-Order Popup -->
-    @include('components.pre-order-popup')
     
     <!-- Include Styles -->
     @include('home.styles')

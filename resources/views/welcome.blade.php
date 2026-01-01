@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>NinjaWrekcs - Valorant Gaming Collectibles | Pre-Order Now</title>
+    <title>NinjaWrekcs - Valorant Gaming Collectibles</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
     
     @include('components.seo', [
-        'title' => 'NinjaWrekcs - Valorant Gaming Collectibles | Pre-Order Now',
-        'description' => 'Shop authentic Valorant collectibles including agent figures, knives, weapons, stickers, and keychains. Pre-order now and get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
+        'title' => 'NinjaWrekcs - Valorant Gaming Collectibles',
+        'description' => 'Shop authentic Valorant collectibles including agent figures, knives, weapons, stickers, and keychains. Get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
         'url' => url('/')
     ])
     
@@ -35,8 +35,6 @@
     <!-- Include Footer -->
     @include('home.components.footer')
     
-    <!-- Pre-Order Popup -->
-    @include('components.pre-order-popup')
     
     <!-- Include Styles -->
     @include('home.styles')

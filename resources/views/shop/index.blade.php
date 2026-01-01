@@ -8,7 +8,7 @@
     
     @include('components.seo', [
         'title' => 'Shop Valorant Collectibles - NinjaWrekcs | Agent Figures, Knives & Weapons',
-        'description' => 'Browse our complete collection of Valorant collectibles. Shop agent figures, knives, weapons, stickers, and keychains. Pre-order now with special discounts.',
+        'description' => 'Browse our complete collection of Valorant collectibles. Shop agent figures, knives, weapons, stickers, and keychains. Get special discounts.',
         'url' => route('shop.index'),
         'keywords' => 'Valorant shop, buy Valorant collectibles, Valorant agent figures, Valorant knives, Valorant weapons, Valorant merchandise store, Bangladesh'
     ])
@@ -358,8 +358,6 @@
     <!-- Include Footer -->
     @include('home.components.footer')
     
-    <!-- Pre-Order Popup -->
-    @include('components.pre-order-popup')
     
     <!-- Include Styles -->
     @include('home.styles')

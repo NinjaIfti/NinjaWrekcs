@@ -20,7 +20,7 @@
                 <div>
                     <h2 class="text-2xl font-bold text-violet-400 mb-4">Delivery Time</h2>
                     <p class="text-gray-300 leading-relaxed">
-                        All pre-orders will be delivered within <strong class="text-white">10-15 business days</strong> after order confirmation. We process orders as quickly as possible to ensure you receive your collectibles in perfect condition.
+                        All orders will be delivered within <strong class="text-white">10-15 business days</strong> after order confirmation. We process orders as quickly as possible to ensure you receive your collectibles in perfect condition.
                     </p>
                 </div>
 

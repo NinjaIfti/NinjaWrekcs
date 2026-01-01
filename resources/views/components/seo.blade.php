@@ -1,10 +1,10 @@
 @props([
     'title' => 'NinjaWrekcs - Valorant Gaming Collectibles',
-    'description' => 'Shop authentic Valorant collectibles including agent figures, knives, weapons, stickers, and keychains. Pre-order now and get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
+    'description' => 'Shop authentic Valorant collectibles including agent figures, knives, weapons, stickers, and keychains. Get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
     'image' => asset('img/fav.png'),
     'url' => url()->current(),
     'type' => 'website',
-    'keywords' => 'Valorant collectibles, Valorant figures, Valorant merchandise, gaming collectibles, agent figures, Valorant knives, Valorant weapons, Valorant stickers, Valorant keychains, pre-order Valorant, Bangladesh gaming store',
+    'keywords' => 'Valorant collectibles, Valorant figures, Valorant merchandise, gaming collectibles, agent figures, Valorant knives, Valorant weapons, Valorant stickers, Valorant keychains, Valorant Bangladesh, Bangladesh gaming store',
     'product' => null
 ])
 

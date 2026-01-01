@@ -18,23 +18,16 @@
 
             <div class="bg-black/50 backdrop-blur-xl rounded-2xl border border-violet-500/30 p-8 md:p-12 space-y-6">
                 <div>
-                    <h2 class="text-xl font-bold text-violet-400 mb-3">What is a pre-order?</h2>
-                    <p class="text-gray-300 leading-relaxed">
-                        A pre-order allows you to reserve your collectibles before they are in stock. You pay a partial amount (৳200) now and the rest on delivery (COD). This ensures you get your items as soon as they arrive.
-                    </p>
-                </div>
-
-                <div>
                     <h2 class="text-xl font-bold text-violet-400 mb-3">How long does delivery take?</h2>
                     <p class="text-gray-300 leading-relaxed">
-                        Pre-orders typically take 10-15 business days to arrive after order confirmation. We'll keep you updated on your order status.
+                        Orders typically take 10-15 business days to arrive after order confirmation. We'll keep you updated on your order status.
                     </p>
                 </div>
 
                 <div>
                     <h2 class="text-xl font-bold text-violet-400 mb-3">What payment methods do you accept?</h2>
                     <p class="text-gray-300 leading-relaxed">
-                        We accept bKash and Nagad payments. For pre-orders, you pay ৳200 upfront, and the remaining amount can be paid via Cash on Delivery (COD) when your order arrives.
+                        We accept bKash, Nagad, and Cash on Delivery (COD) payment methods. You can choose your preferred payment method at checkout.
                     </p>
                 </div>
 
@@ -46,9 +39,9 @@
                 </div>
 
                 <div>
-                    <h2 class="text-xl font-bold text-violet-400 mb-3">Can I cancel my pre-order?</h2>
+                    <h2 class="text-xl font-bold text-violet-400 mb-3">Can I cancel my order?</h2>
                     <p class="text-gray-300 leading-relaxed">
-                        Yes, you can cancel your pre-order before it ships. Contact us at 01533133309 or via WhatsApp to cancel. Refunds will be processed within 5-7 business days.
+                        Yes, you can cancel your order before it ships. Contact us at 01533133309 or via WhatsApp to cancel. Refunds will be processed within 5-7 business days.
                     </p>
                 </div>
 
@@ -80,6 +73,7 @@
     @include('home.styles')
 </body>
 </html>
+
 
 
 
