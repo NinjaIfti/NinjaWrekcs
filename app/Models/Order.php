@@ -60,6 +60,11 @@ class Order extends Model
         return $this->belongsTo(Coupon::class);
     }
 
+    public function changes(): HasMany
+    {
+        return $this->hasMany(OrderChange::class);
+    }
+
     /**
      * Scope to get only non-deleted orders (for admin panel)
      */

@@ -207,6 +207,194 @@ class AdminController extends Controller
         }
     }
 
+    public function orderEdit(Order $order): View
+    {
+        $products = Product::where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        
+        $coupons = Coupon::where('is_active', true)
+            ->orderBy('code')
+            ->get();
+
+        // Load order relationships
+        $order->load(['items.product', 'changes.user']);
+
+        return view('admin.order-edit', [
+            'order' => $order,
+            'products' => $products,
+            'coupons' => $coupons,
+        ]);
+    }
+
+    public function orderUpdate(Request $request, Order $order): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string|max:500',
+            'email' => 'nullable|email|max:255',
+            'payment_method' => 'required|in:bkash,nagad,rocket,cod',
+            'transaction_number' => 'nullable|string|max:255',
+            'sending_number' => 'nullable|string|max:20',
+            'coupon_code' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:1000',
+            'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
+            'products' => 'required|array|min:1',
+            'products.*.id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Track original order items
+            $originalItems = $order->items->keyBy('product_id');
+            $changes = [];
+
+            // Calculate new subtotal
+            $subtotal = 0;
+            $newItemsData = [];
+            
+            foreach ($validated['products'] as $productData) {
+                $product = Product::findOrFail($productData['id']);
+                $quantity = $productData['quantity'];
+                
+                $itemSubtotal = $product->price * $quantity;
+                $subtotal += $itemSubtotal;
+                
+                $newItemsData[$product->id] = [
+                    'product' => $product,
+                    'quantity' => $quantity,
+                    'subtotal' => $itemSubtotal,
+                ];
+            }
+
+            // Detect item changes
+            foreach ($newItemsData as $productId => $newItem) {
+                if ($originalItems->has($productId)) {
+                    // Item exists - check quantity change
+                    $originalItem = $originalItems[$productId];
+                    if ($originalItem->quantity != $newItem['quantity']) {
+                        $changes[] = [
+                            'type' => 'item_quantity_changed',
+                            'description' => "Changed quantity of '{$newItem['product']->name}' from {$originalItem->quantity} to {$newItem['quantity']}",
+                            'old_data' => ['product_id' => $productId, 'quantity' => $originalItem->quantity],
+                            'new_data' => ['product_id' => $productId, 'quantity' => $newItem['quantity']],
+                        ];
+                        
+                        // Return old quantity to stock and deduct new quantity
+                        $newItem['product']->increment('quantity', $originalItem->quantity);
+                        $newItem['product']->decrement('quantity', $newItem['quantity']);
+                    }
+                } else {
+                    // New item added
+                    $changes[] = [
+                        'type' => 'item_added',
+                        'description' => "Added '{$newItem['product']->name}' x{$newItem['quantity']}",
+                        'old_data' => null,
+                        'new_data' => ['product_id' => $productId, 'quantity' => $newItem['quantity']],
+                    ];
+                    
+                    // Deduct from stock
+                    if ($newItem['product']->quantity < $newItem['quantity']) {
+                        throw new \Exception("Insufficient stock for {$newItem['product']->name}");
+                    }
+                    $newItem['product']->decrement('quantity', $newItem['quantity']);
+                }
+            }
+
+            // Detect removed items
+            foreach ($originalItems as $productId => $originalItem) {
+                if (!isset($newItemsData[$productId])) {
+                    $changes[] = [
+                        'type' => 'item_removed',
+                        'description' => "Removed '{$originalItem->product_name}' x{$originalItem->quantity}",
+                        'old_data' => ['product_id' => $productId, 'quantity' => $originalItem->quantity],
+                        'new_data' => null,
+                    ];
+                    
+                    // Return to stock
+                    if ($originalItem->product) {
+                        $originalItem->product->increment('quantity', $originalItem->quantity);
+                    }
+                }
+            }
+
+            // Apply coupon if provided
+            $coupon = null;
+            $couponDiscount = 0;
+            $totalDiscount = 0;
+            
+            if (!empty($validated['coupon_code'])) {
+                $coupon = Coupon::where('code', strtoupper($validated['coupon_code']))->first();
+                if ($coupon && $coupon->isValid()) {
+                    if (!$coupon->minimum_order || $subtotal >= $coupon->minimum_order) {
+                        $couponDiscount = $coupon->calculateDiscount($subtotal);
+                        $totalDiscount = $couponDiscount;
+                    }
+                }
+            }
+            
+            $finalTotal = max(0, $subtotal - $totalDiscount);
+
+            // Delete old order items
+            $order->items()->delete();
+
+            // Create new order items
+            foreach ($newItemsData as $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item['product']->id,
+                    'product_name' => $item['product']->name,
+                    'price' => $item['product']->price,
+                    'quantity' => $item['quantity'],
+                    'subtotal' => $item['subtotal'],
+                ]);
+            }
+
+            // Update order details
+            $order->update([
+                'name' => $validated['name'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+                'email' => $validated['email'],
+                'payment_method' => $validated['payment_method'],
+                'transaction_number' => $validated['transaction_number'],
+                'sending_number' => $validated['sending_number'],
+                'coupon_id' => $coupon?->id,
+                'coupon_code' => $coupon?->code,
+                'coupon_discount' => $couponDiscount,
+                'subtotal' => $subtotal,
+                'discount' => $totalDiscount,
+                'total' => $finalTotal,
+                'status' => $validated['status'],
+                'notes' => $validated['notes'],
+            ]);
+
+            // Log all changes
+            foreach ($changes as $change) {
+                \App\Models\OrderChange::create([
+                    'order_id' => $order->id,
+                    'user_id' => \Auth::id(),
+                    'change_type' => $change['type'],
+                    'description' => $change['description'],
+                    'old_data' => $change['old_data'],
+                    'new_data' => $change['new_data'],
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.orders')->with('success', 'Order #' . $order->id . ' updated successfully!');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to update order: ' . $e->getMessage());
+        }
+    }
+
     public function users(): View
     {
         $users = User::latest()->paginate(20);
