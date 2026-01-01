@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\Visitor;
 use App\Models\Coupon;
@@ -63,6 +64,147 @@ class AdminController extends Controller
             'orders' => $orders,
             'selectedStatus' => $status,
         ]);
+    }
+
+    public function orderCreate(): View
+    {
+        $products = Product::where('is_active', true)
+            ->where('quantity', '>', 0)
+            ->orderBy('name')
+            ->get();
+        
+        $coupons = Coupon::where('is_active', true)
+            ->orderBy('code')
+            ->get();
+
+        return view('admin.order-create', [
+            'products' => $products,
+            'coupons' => $coupons,
+        ]);
+    }
+
+    public function orderStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string|max:500',
+            'email' => 'nullable|email|max:255',
+            'payment_method' => 'required|in:bkash,nagad,rocket,cod',
+            'transaction_number' => 'nullable|string|max:255',
+            'sending_number' => 'nullable|string|max:20',
+            'coupon_code' => 'nullable|string|max:50',
+            'notes' => 'nullable|string|max:1000',
+            'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
+            'products' => 'required|array|min:1',
+            'products.*.id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Calculate subtotal
+            $subtotal = 0;
+            $orderItems = [];
+            
+            foreach ($validated['products'] as $productData) {
+                $product = Product::findOrFail($productData['id']);
+                
+                // Check stock
+                if ($product->quantity < $productData['quantity']) {
+                    throw new \Exception("Insufficient stock for {$product->name}. Only {$product->quantity} available.");
+                }
+                
+                $itemSubtotal = $product->price * $productData['quantity'];
+                $subtotal += $itemSubtotal;
+                
+                $orderItems[] = [
+                    'product' => $product,
+                    'quantity' => $productData['quantity'],
+                    'subtotal' => $itemSubtotal,
+                ];
+            }
+
+            // Apply coupon if provided
+            $coupon = null;
+            $couponDiscount = 0;
+            $totalDiscount = 0;
+            
+            if (!empty($validated['coupon_code'])) {
+                $coupon = Coupon::where('code', strtoupper($validated['coupon_code']))->first();
+                if ($coupon && $coupon->isValid()) {
+                    // Check minimum order requirement
+                    if (!$coupon->minimum_order || $subtotal >= $coupon->minimum_order) {
+                        $couponDiscount = $coupon->calculateDiscount($subtotal);
+                        $totalDiscount = $couponDiscount;
+                    }
+                }
+            }
+            
+            $finalTotal = max(0, $subtotal - $totalDiscount);
+
+            // Create order (without user_id - guest order)
+            $order = Order::create([
+                'user_id' => null,
+                'coupon_id' => $coupon?->id,
+                'coupon_code' => $coupon?->code,
+                'coupon_discount' => $couponDiscount,
+                'name' => $validated['name'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+                'email' => $validated['email'],
+                'subtotal' => $subtotal,
+                'discount' => $totalDiscount,
+                'total' => $finalTotal,
+                'payment_method' => $validated['payment_method'],
+                'transaction_number' => $validated['transaction_number'] ?? null,
+                'sending_number' => $validated['sending_number'] ?? null,
+                'status' => $validated['status'],
+                'save_info' => false,
+                'terms_accepted' => true,
+                'notes' => $validated['notes'],
+            ]);
+            
+            // Increment coupon usage
+            if ($coupon) {
+                $coupon->incrementUsage();
+            }
+
+            // Create order items and update stock
+            foreach ($orderItems as $item) {
+                \App\Models\OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item['product']->id,
+                    'product_name' => $item['product']->name,
+                    'price' => $item['product']->price,
+                    'quantity' => $item['quantity'],
+                    'subtotal' => $item['subtotal'],
+                ]);
+
+                // Update product quantity
+                $item['product']->decrement('quantity', $item['quantity']);
+            }
+
+            DB::commit();
+
+            // Send order confirmation email if email provided
+            if ($order->email) {
+                $order->load('items');
+                EmailService::sendWithFallback(
+                    new \App\Mail\OrderConfirmation($order),
+                    $order->email,
+                    'manual order confirmation'
+                );
+            }
+
+            return redirect()->route('admin.orders')->with('success', 'Manual order created successfully! Order #' . $order->id);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create order: ' . $e->getMessage());
+        }
     }
 
     public function users(): View
@@ -304,7 +446,7 @@ class AdminController extends Controller
             'price' => 'required|numeric|min:0',
             'category' => 'required|in:figures,knives,stickers',
             'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
             'rating' => 'nullable|integer|min:0|max:5',
             'reviews' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
@@ -361,7 +503,7 @@ class AdminController extends Controller
             'price' => 'required|numeric|min:0',
             'category' => 'required|in:figures,knives,stickers',
             'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
             'delete_images' => 'nullable|array',
             'delete_images.*' => 'integer',
             'rating' => 'nullable|integer|min:0|max:5',

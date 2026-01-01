@@ -99,15 +99,15 @@ class CheckoutController extends Controller
             'coupon_code' => 'nullable|string|exists:coupons,code',
         ];
 
-        // Add password and email fields only for non-logged-in users
+        // Add email and password fields for non-logged-in users (required)
         if (!$isLoggedIn) {
-            $rules['email'] = 'required|email';
+            $rules['email'] = 'required|email|max:255';
             $rules['password'] = 'required|string|min:8';
         }
 
         $validated = $request->validate($rules);
 
-        // Check if email already exists (for guest checkout)
+        // Check if email already exists (for guest checkout with email)
         if (!$isLoggedIn && !empty($validated['email'])) {
             $existingUser = \App\Models\User::where('email', $validated['email'])->first();
             if ($existingUser) {
@@ -131,7 +131,7 @@ class CheckoutController extends Controller
                     'phone' => $validated['phone'],
                     'address' => $validated['address'],
                     'password' => Hash::make($validated['password']),
-                    'email_verified_at' => now(), // Auto-verify since they're making a purchase
+                    'email_verified_at' => now(),
                 ]);
 
                 $accountCreated = true;
@@ -235,8 +235,8 @@ class CheckoutController extends Controller
 
             DB::commit();
 
-            // Send order confirmation email with improved error handling
-            $order->load('items'); // Load items for email
+            // Send order confirmation email
+            $order->load('items');
             $emailResult = EmailService::sendWithFallback(
                 new OrderConfirmation($order),
                 $order->email,
@@ -290,7 +290,8 @@ class CheckoutController extends Controller
 
     public function success(Order $order): View
     {
-        if (Auth::id() !== $order->user_id) {
+        // For checkout success, only allow if user owns the order OR if it's a guest order
+        if ($order->user_id && Auth::id() !== $order->user_id) {
             abort(403);
         }
 

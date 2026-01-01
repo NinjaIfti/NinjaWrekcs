@@ -71,7 +71,7 @@
                             @error('images.*')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Upload one or more images. Max size: 2MB each. Formats: JPEG, PNG, JPG, GIF</p>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Upload one or more images. Max size: 10MB each. Formats: JPEG, PNG, JPG, GIF</p>
                         </div>
 
                         <!-- Rating & Reviews -->

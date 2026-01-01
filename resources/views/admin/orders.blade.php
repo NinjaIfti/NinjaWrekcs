@@ -1,12 +1,20 @@
 <x-admin-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ __('User Orders') }}
-            </h2>
-            <div class="text-sm text-gray-500 dark:text-gray-400">
-                Total Orders: <span class="font-bold text-gray-900 dark:text-white">{{ $orders->count() }}</span>
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                    {{ __('User Orders') }}
+                </h2>
+                <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Total Orders: <span class="font-bold text-gray-900 dark:text-white">{{ $orders->count() }}</span>
+                </div>
             </div>
+            <a href="{{ route('admin.orders.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Create Manual Order
+            </a>
         </div>
     </x-slot>
 
