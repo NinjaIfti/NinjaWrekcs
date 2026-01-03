@@ -141,7 +141,7 @@ class CheckoutController extends Controller
 
                 // Send welcome notification
                 NotificationService::create(
-                    $user->id,
+                    $user,
                     NotificationService::TYPE_ORDER_UPDATE,
                     '🎉 Welcome to NinjaWrekcs!',
                     "Your account has been created successfully! You can now track your orders and enjoy exclusive benefits.",
