@@ -32,7 +32,14 @@ class AdminController extends Controller
         $totalProducts = Product::count();
         $totalOrders = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->count();
         $totalCustomers = \App\Models\User::where('email', '!=', 'ifti3061@gmail.com')->count();
-        $totalRevenue = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->sum('total');
+        
+        // Calculate revenue excluding delivery charges (subtotal - discount)
+        $orders = Order::where('status', '!=', 'pending')
+            ->where('status', '!=', 'cancelled')
+            ->get();
+        $totalRevenue = $orders->sum(function($order) {
+            return $order->subtotal - $order->discount;
+        });
         
         $recentOrders = Order::with(['user', 'items'])->latest()->take(5)->get();
         $recentProducts = Product::latest()->take(5)->get();
@@ -50,9 +57,16 @@ class AdminController extends Controller
     public function orders(Request $request): View
     {
         $status = $request->query('status', '');
+        $view = $request->query('view', 'active'); // 'active' or 'hidden'
 
-        $query = Order::with(['user', 'items.product'])
-            ->notDeleted(); // Only show non-deleted orders
+        $query = Order::with(['user', 'items.product']);
+
+        // Filter by deleted status
+        if ($view === 'hidden') {
+            $query->where('is_deleted', true);
+        } else {
+            $query->notDeleted(); // Only show non-deleted orders
+        }
 
         if ($status && in_array($status, ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])) {
             $query->where('status', $status);
@@ -63,6 +77,7 @@ class AdminController extends Controller
         return view('admin.orders', [
             'orders' => $orders,
             'selectedStatus' => $status,
+            'currentView' => $view,
         ]);
     }
 
@@ -125,6 +140,9 @@ class AdminController extends Controller
                 ];
             }
 
+            // Calculate delivery charge
+            $deliveryCharge = $validated['delivery_location'] === 'inside_dhaka' ? 80 : 120;
+            
             // Apply coupon if provided
             $coupon = null;
             $couponDiscount = 0;
@@ -141,7 +159,7 @@ class AdminController extends Controller
                 }
             }
             
-            $finalTotal = max(0, $subtotal - $totalDiscount);
+            $finalTotal = max(0, $subtotal + $deliveryCharge - $totalDiscount);
 
             // Create order (without user_id - guest order)
             $order = Order::create([
@@ -152,6 +170,8 @@ class AdminController extends Controller
                 'name' => $validated['name'],
                 'phone' => $validated['phone'],
                 'address' => $validated['address'],
+                'delivery_location' => $validated['delivery_location'],
+                'delivery_charge' => $deliveryCharge,
                 'email' => $validated['email'],
                 'subtotal' => $subtotal,
                 'discount' => $totalDiscount,
@@ -233,6 +253,7 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'address' => 'required|string|max:500',
+            'delivery_location' => 'required|in:inside_dhaka,outside_dhaka',
             'email' => 'nullable|email|max:255',
             'payment_method' => 'required|in:bkash,nagad,rocket,cod',
             'transaction_number' => 'nullable|string|max:255',
@@ -320,6 +341,9 @@ class AdminController extends Controller
                 }
             }
 
+            // Calculate delivery charge
+            $deliveryCharge = $validated['delivery_location'] === 'inside_dhaka' ? 80 : 120;
+            
             // Apply coupon if provided
             $coupon = null;
             $couponDiscount = 0;
@@ -335,7 +359,7 @@ class AdminController extends Controller
                 }
             }
             
-            $finalTotal = max(0, $subtotal - $totalDiscount);
+            $finalTotal = max(0, $subtotal + $deliveryCharge - $totalDiscount);
 
             // Delete old order items
             $order->items()->delete();
@@ -376,6 +400,8 @@ class AdminController extends Controller
                 'name' => $validated['name'],
                 'phone' => $validated['phone'],
                 'address' => $validated['address'],
+                'delivery_location' => $validated['delivery_location'],
+                'delivery_charge' => $deliveryCharge,
                 'email' => $validated['email'],
                 'payment_method' => $validated['payment_method'],
                 'transaction_number' => $validated['transaction_number'],
@@ -894,27 +920,33 @@ class AdminController extends Controller
 
     public function financial(): View
     {
-        // Total Revenue (excluding pending, cancelled, and deleted orders)
-        $totalRevenue = Order::notDeleted()
+        // Get confirmed orders (excluding pending, cancelled, and deleted orders)
+        $confirmedOrders = Order::notDeleted()
             ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
-            ->sum('total');
+            ->get();
+
+        // Total Revenue (subtotal - discount, excluding delivery charges)
+        $totalRevenue = $confirmedOrders->sum(function($order) {
+            return $order->subtotal - $order->discount;
+        });
 
         // This Month Revenue
-        $thisMonthRevenue = Order::notDeleted()
+        $thisMonthOrders = Order::notDeleted()
             ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->sum('total');
+            ->get();
+        
+        $thisMonthRevenue = $thisMonthOrders->sum(function($order) {
+            return $order->subtotal - $order->discount;
+        });
 
         // Total Orders
-        $totalOrders = Order::notDeleted()
-            ->where('status', '!=', 'pending')
-            ->where('status', '!=', 'cancelled')
-            ->count();
+        $totalOrders = $confirmedOrders->count();
 
-        // Average Order Value
+        // Average Order Value (excluding delivery)
         $averageOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
         // Recent Transactions (last 20 orders)
@@ -929,7 +961,7 @@ class AdminController extends Controller
                 return [
                     'transaction_id' => $order->transaction_number ?? 'N/A',
                     'order_id' => $order->id,
-                    'amount' => $order->total,
+                    'amount' => $order->subtotal - $order->discount, // Revenue without delivery
                     'payment_method' => strtoupper($order->payment_method ?? 'N/A'),
                     'status' => ucfirst($order->status),
                     'date' => $order->created_at->format('Y-m-d H:i:s'),
@@ -940,12 +972,16 @@ class AdminController extends Controller
         $revenueByMonth = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
-            $revenue = Order::notDeleted()
+            $monthOrders = Order::notDeleted()
                 ->where('status', '!=', 'pending')
                 ->where('status', '!=', 'cancelled')
                 ->whereMonth('created_at', $month->month)
                 ->whereYear('created_at', $month->year)
-                ->sum('total');
+                ->get();
+            
+            $revenue = $monthOrders->sum(function($order) {
+                return $order->subtotal - $order->discount;
+            });
             
             $revenueByMonth[] = [
                 'month' => $month->format('M Y'),

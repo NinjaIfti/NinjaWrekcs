@@ -73,6 +73,32 @@
                             @enderror
                         </div>
 
+                        <!-- Delivery Location -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Delivery Location *</label>
+                            <div class="space-y-3">
+                                <label class="flex items-center p-3 border border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                                    <input type="radio" name="delivery_location" value="inside_dhaka" checked onchange="updateDeliveryCharge()" 
+                                        class="text-blue-600 focus:ring-blue-500">
+                                    <div class="ml-3 flex-1">
+                                        <span class="block text-sm font-semibold text-gray-900 dark:text-white">Inside Dhaka</span>
+                                        <span class="block text-xs text-gray-500 dark:text-gray-400">Delivery Charge: ৳80</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center p-3 border border-gray-300 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                                    <input type="radio" name="delivery_location" value="outside_dhaka" onchange="updateDeliveryCharge()" 
+                                        class="text-blue-600 focus:ring-blue-500">
+                                    <div class="ml-3 flex-1">
+                                        <span class="block text-sm font-semibold text-gray-900 dark:text-white">Outside Dhaka</span>
+                                        <span class="block text-xs text-gray-500 dark:text-gray-400">Delivery Charge: ৳120</span>
+                                    </div>
+                                </label>
+                            </div>
+                            @error('delivery_location')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
                         <!-- Payment Information -->
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Information</h3>
@@ -150,13 +176,17 @@
                                     <span class="font-semibold text-gray-900 dark:text-white">৳<span id="subtotal-amount">0.00</span></span>
                                 </div>
                                 <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400">Delivery Charge (<span id="delivery-location-text">Inside Dhaka</span>):</span>
+                                    <span class="font-semibold text-gray-900 dark:text-white">+৳<span id="delivery-charge-amount">80.00</span></span>
+                                </div>
+                                <div class="flex justify-between">
                                     <span class="text-gray-600 dark:text-gray-400">Discount:</span>
-                                    <span class="font-semibold text-green-600 dark:text-green-400">৳<span id="discount-amount">0.00</span></span>
+                                    <span class="font-semibold text-green-600 dark:text-green-400">-৳<span id="discount-amount">0.00</span></span>
                                 </div>
                                 <div class="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
                                     <div class="flex justify-between text-lg">
                                         <span class="font-bold text-gray-900 dark:text-white">Total:</span>
-                                        <span class="font-bold text-blue-600 dark:text-blue-400">৳<span id="total-amount">0.00</span></span>
+                                        <span class="font-bold text-blue-600 dark:text-blue-400">৳<span id="total-amount">80.00</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -313,6 +343,10 @@
                 subtotal += price * quantity;
             });
             
+            // Get delivery charge
+            const deliveryLocation = document.querySelector('input[name="delivery_location"]:checked').value;
+            const deliveryCharge = deliveryLocation === 'inside_dhaka' ? 80 : 120;
+            
             let discount = 0;
             if (appliedCoupon) {
                 if (appliedCoupon.type === 'percentage') {
@@ -323,11 +357,20 @@
                 discount = Math.min(discount, subtotal);
             }
             
-            const total = Math.max(0, subtotal - discount);
+            const total = Math.max(0, subtotal + deliveryCharge - discount);
             
             document.getElementById('subtotal-amount').textContent = subtotal.toFixed(2);
+            document.getElementById('delivery-charge-amount').textContent = deliveryCharge.toFixed(2);
             document.getElementById('discount-amount').textContent = discount.toFixed(2);
             document.getElementById('total-amount').textContent = total.toFixed(2);
+        }
+        
+        // Handle delivery charge change
+        function updateDeliveryCharge() {
+            const deliveryLocation = document.querySelector('input[name="delivery_location"]:checked').value;
+            const locationText = deliveryLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka';
+            document.getElementById('delivery-location-text').textContent = locationText;
+            updateOrderSummary();
         }
 
         // Apply coupon
@@ -401,6 +444,7 @@
     </script>
     @endpush
 </x-admin-layout>
+
 
 
 

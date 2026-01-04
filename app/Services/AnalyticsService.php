@@ -41,8 +41,8 @@ class AnalyticsService
             $rawData = $query->select(
                 DB::raw("{$groupBy} as period"),
                 DB::raw('COUNT(*) as total_orders'),
-                DB::raw('SUM(total) as total_revenue'),
-                DB::raw('AVG(total) as avg_order_value')
+                DB::raw('SUM(subtotal - discount) as total_revenue'),
+                DB::raw('AVG(subtotal - discount) as avg_order_value')
             )
             ->groupBy('period')
             ->orderBy('period', 'desc')
@@ -222,7 +222,10 @@ class AnalyticsService
             $todayRevenue = Order::whereDate('created_at', $today)
                 ->where('status', '!=', 'pending')
                 ->where('status', '!=', 'cancelled')
-                ->sum('total');
+                ->get()
+                ->sum(function($order) {
+                    return $order->subtotal - $order->discount;
+                });
 
             // This month stats
             $thisMonthOrders = Order::where('created_at', '>=', $thisMonth)
@@ -233,7 +236,10 @@ class AnalyticsService
             $thisMonthRevenue = Order::where('created_at', '>=', $thisMonth)
                 ->where('status', '!=', 'pending')
                 ->where('status', '!=', 'cancelled')
-                ->sum('total');
+                ->get()
+                ->sum(function($order) {
+                    return $order->subtotal - $order->discount;
+                });
 
             // Last month stats for comparison
             $lastMonthOrders = Order::whereBetween('created_at', [$lastMonth, $thisMonth])
@@ -244,7 +250,10 @@ class AnalyticsService
             $lastMonthRevenue = Order::whereBetween('created_at', [$lastMonth, $thisMonth])
                 ->where('status', '!=', 'pending')
                 ->where('status', '!=', 'cancelled')
-                ->sum('total');
+                ->get()
+                ->sum(function($order) {
+                    return $order->subtotal - $order->discount;
+                });
 
             // Calculate growth
             $orderGrowth = $lastMonthOrders > 0 
@@ -291,6 +300,8 @@ class AnalyticsService
         Cache::flush();
     }
 }
+
+
 
 
 

@@ -90,6 +90,18 @@
                                                     <span class="text-violet-400">৳{{ number_format($item->subtotal, 2) }}</span>
                                                 </div>
                                             @endforeach
+                                            @if($order->delivery_charge && $order->delivery_charge > 0)
+                                                <div class="flex justify-between text-sm border-t border-violet-500/20 pt-2">
+                                                    <span class="text-gray-400">Delivery Charge ({{ $order->delivery_location === 'outside_dhaka' ? 'Outside Dhaka' : 'Inside Dhaka' }}):</span>
+                                                    <span class="text-violet-400">+৳{{ number_format($order->delivery_charge, 2) }}</span>
+                                                </div>
+                                            @endif
+                                            @if($order->discount && $order->discount > 0)
+                                                <div class="flex justify-between text-sm">
+                                                    <span class="text-gray-400">Discount:</span>
+                                                    <span class="text-green-400">-৳{{ number_format($order->discount, 2) }}</span>
+                                                </div>
+                                            @endif
                                         </div>
 
                                         <div class="pt-4 border-t border-violet-500/20 flex justify-between items-center">
