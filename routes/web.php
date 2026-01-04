@@ -235,9 +235,9 @@ Route::get('/dashboard', function () {
     }
     // Regular users go to profile instead of old dashboard
     return redirect()->route('profile.index');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth'])->name('dashboard');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [\App\Http\Controllers\UserProfileController::class, 'index'])->name('profile.index');
     Route::get('/profile/orders/{order}', [\App\Http\Controllers\UserProfileController::class, 'showOrder'])->name('profile.orders.show');
     Route::post('/profile/personal-info', [\App\Http\Controllers\UserProfileController::class, 'updatePersonalInfo'])->name('profile.update.personal');
