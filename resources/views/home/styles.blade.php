@@ -19,6 +19,12 @@
         font-family: 'Edo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
     
+    /* Email inputs use default font to properly display @ symbol and other special characters */
+    input[type="email"],
+    input[type="email"]::placeholder {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    }
+    
     /* Glitch Text Effect */
     .glitch-text {
         position: relative;

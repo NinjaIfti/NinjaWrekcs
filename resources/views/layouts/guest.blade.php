@@ -59,8 +59,17 @@
         <!-- Include Glitch Styles -->
         @include('home.styles')
         
-        <!-- Password Input Styles -->
+        <!-- Input Styles -->
         <style>
+            /* Email input uses default font to display @ symbol correctly */
+            input[type="email"] {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+            }
+            
+            input[type="email"]::placeholder {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+            }
+            
             input[type="password"] {
                 -webkit-text-security: disc !important;
                 text-security: disc !important;
