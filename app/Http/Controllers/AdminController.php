@@ -352,6 +352,25 @@ class AdminController extends Controller
                 ]);
             }
 
+            // Check if order is being cancelled (restore stock if not already cancelled)
+            $oldStatus = $order->status;
+            $beingCancelled = ($validated['status'] === 'cancelled' && $oldStatus !== 'cancelled');
+            
+            // If being cancelled, we need to restore the NEW items that were just added
+            // (The old items were already returned to stock above in the item removal/change logic)
+            if ($beingCancelled) {
+                foreach ($newItemsData as $item) {
+                    $item['product']->increment('quantity', $item['quantity']);
+                }
+                
+                $changes[] = [
+                    'type' => 'order_updated',
+                    'description' => "Order cancelled - all items returned to stock",
+                    'old_data' => ['status' => $oldStatus],
+                    'new_data' => ['status' => 'cancelled'],
+                ];
+            }
+            
             // Update order details
             $order->update([
                 'name' => $validated['name'],
@@ -560,6 +579,19 @@ class AdminController extends Controller
         ]);
 
         $oldStatus = $order->status;
+        
+        // Restore stock if order is being cancelled (and wasn't cancelled before)
+        if ($validated['status'] === 'cancelled' && $oldStatus !== 'cancelled') {
+            $order->load('items.product');
+            
+            foreach ($order->items as $item) {
+                if ($item->product) {
+                    // Return items back to stock
+                    $item->product->increment('quantity', $item->quantity);
+                }
+            }
+        }
+        
         $order->update(['status' => $validated['status']]);
 
         // Send email notification if status changed and order has email
@@ -580,12 +612,17 @@ class AdminController extends Controller
             // Show email status in admin notification
             if (!$emailResult['success']) {
                 return redirect()->route('admin.orders')
-                    ->with('success', 'Order status updated successfully!')
+                    ->with('success', 'Order status updated successfully!' . ($validated['status'] === 'cancelled' ? ' Stock has been restored.' : ''))
                     ->with('warning', 'Status updated but email notification could not be sent to customer.');
             }
         }
 
-        return redirect()->route('admin.orders')->with('success', 'Order status updated successfully!');
+        $successMessage = 'Order status updated successfully!';
+        if ($validated['status'] === 'cancelled' && $oldStatus !== 'cancelled') {
+            $successMessage .= ' Stock has been restored.';
+        }
+
+        return redirect()->route('admin.orders')->with('success', $successMessage);
     }
 
     public function products(Request $request): View

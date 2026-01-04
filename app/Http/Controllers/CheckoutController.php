@@ -108,49 +108,61 @@ class CheckoutController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Check if email already exists (for guest checkout with email)
-        if (!$isLoggedIn && !empty($validated['email'])) {
-            $existingUser = \App\Models\User::where('email', $validated['email'])->first();
-            if ($existingUser) {
-                return redirect()->back()
-                    ->withInput()
-                    ->withErrors(['email' => 'This email is already registered. Please login to continue or use a different email.'])
-                    ->with('error', 'An account with this email already exists. Please login to checkout.');
-            }
-        }
-
         DB::beginTransaction();
         try {
             $user = null;
 
-            // Create user account if not logged in
+            // Handle user account
             $accountCreated = false;
+            $passwordUpdated = false;
+            
             if (!$isLoggedIn) {
-                $user = \App\Models\User::create([
-                    'name' => $validated['name'],
-                    'email' => $validated['email'],
-                    'phone' => $validated['phone'],
-                    'address' => $validated['address'],
-                    'password' => Hash::make($validated['password']),
-                    'email_verified_at' => now(),
-                ]);
+                // Check if email already exists
+                $existingUser = \App\Models\User::where('email', $validated['email'])->first();
+                
+                if ($existingUser) {
+                    // Email exists - update the existing account with new password and info
+                    $existingUser->update([
+                        'name' => $validated['name'],
+                        'phone' => $validated['phone'],
+                        'address' => $validated['address'],
+                        'password' => Hash::make($validated['password']),
+                    ]);
+                    
+                    $user = $existingUser;
+                    $passwordUpdated = true;
+                    
+                    // Auto-login the user with updated credentials
+                    Auth::login($user);
+                    
+                } else {
+                    // Create new user account
+                    $user = \App\Models\User::create([
+                        'name' => $validated['name'],
+                        'email' => $validated['email'],
+                        'phone' => $validated['phone'],
+                        'address' => $validated['address'],
+                        'password' => Hash::make($validated['password']),
+                        'email_verified_at' => now(),
+                    ]);
 
-                $accountCreated = true;
+                    $accountCreated = true;
 
-                // Auto-login the new user
-                Auth::login($user);
+                    // Auto-login the new user
+                    Auth::login($user);
 
-                // Send welcome notification
-                NotificationService::create(
-                    $user,
-                    NotificationService::TYPE_ORDER_UPDATE,
-                    '🎉 Welcome to NinjaWrekcs!',
-                    "Your account has been created successfully! You can now track your orders and enjoy exclusive benefits.",
-                    ['account_created' => true],
-                    route('profile.index'),
-                    '🎮',
-                    'green'
-                );
+                    // Send welcome notification
+                    NotificationService::create(
+                        $user,
+                        NotificationService::TYPE_ORDER_UPDATE,
+                        '🎉 Welcome to NinjaWrekcs!',
+                        "Your account has been created successfully! You can now track your orders and enjoy exclusive benefits.",
+                        ['account_created' => true],
+                        route('profile.index'),
+                        '🎮',
+                        'green'
+                    );
+                }
             } else {
                 $user = Auth::user();
                 
@@ -261,13 +273,18 @@ class CheckoutController extends Controller
             \Cart::clear();
 
             // Success message
-            $successMessage = $accountCreated 
-                ? 'Order placed successfully! Your account has been created and you are now logged in.'
-                : 'Order placed successfully!';
+            if ($accountCreated) {
+                $successMessage = 'Order placed successfully! Your account has been created and you are now logged in.';
+            } elseif ($passwordUpdated) {
+                $successMessage = 'Order placed successfully! Your account password has been updated and you are now logged in.';
+            } else {
+                $successMessage = 'Order placed successfully!';
+            }
 
             return redirect()->route('checkout.success', $order)
                 ->with('success', $successMessage)
-                ->with('account_created', $accountCreated);
+                ->with('account_created', $accountCreated)
+                ->with('password_updated', $passwordUpdated);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             return redirect()->back()->withErrors($e->errors())->withInput();
