@@ -6,6 +6,20 @@
     <title>Checkout - NinjaWrekcs</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        .delivery-option {
+            position: relative;
+        }
+        .delivery-option input[type="radio"]:checked ~ .radio-indicator::after {
+            content: '✓';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            color: #8b5cf6;
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+    </style>
 </head>
 <body class="antialiased bg-black text-white">
     @include('home.components.navigation')
@@ -55,6 +69,39 @@
                                 <label for="address" class="block text-sm font-medium text-gray-300 mb-2">Delivery Address *</label>
                                 <textarea name="address" id="address" rows="3" required class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">{{ old('address', auth()->user()->address ?? '') }}</textarea>
                                 @error('address')
+                                    <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Delivery Location -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-3">Delivery Location *</label>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <label class="relative flex items-center p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg cursor-pointer hover:border-violet-500/60 transition delivery-option">
+                                        <input type="radio" name="delivery_location" value="inside_dhaka" data-charge="80" checked onchange="updateDeliveryCharge()" class="sr-only">
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-white font-semibold">Inside Dhaka</span>
+                                                <span class="text-violet-400 font-bold">৳80</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs mt-1">Dhaka city delivery</p>
+                                        </div>
+                                        <div class="radio-indicator"></div>
+                                    </label>
+
+                                    <label class="relative flex items-center p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg cursor-pointer hover:border-violet-500/60 transition delivery-option">
+                                        <input type="radio" name="delivery_location" value="outside_dhaka" data-charge="120" onchange="updateDeliveryCharge()" class="sr-only">
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-white font-semibold">Outside Dhaka</span>
+                                                <span class="text-violet-400 font-bold">৳120</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs mt-1">Nationwide delivery</p>
+                                        </div>
+                                        <div class="radio-indicator"></div>
+                                    </label>
+                                </div>
+                                @error('delivery_location')
                                     <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                                 @enderror
                             </div>
@@ -235,6 +282,10 @@
                                     <span>Subtotal</span>
                                     <span id="subtotal_display">৳{{ number_format($cartSubTotal, 2) }}</span>
                                 </div>
+                                <div class="flex justify-between text-gray-300">
+                                    <span>Delivery Charge</span>
+                                    <span id="delivery_charge_display" class="text-violet-400 font-semibold">+৳80.00</span>
+                                </div>
                                 <div id="coupon_discount_row" class="flex justify-between text-green-400" style="display: none;">
                                     <span>Coupon Discount</span>
                                     <span id="coupon_discount_display">-৳0.00</span>
@@ -242,7 +293,7 @@
                                 <div class="border-t border-violet-500/20 pt-2">
                                     <div class="flex justify-between text-xl font-bold">
                                         <span>Total</span>
-                                        <span class="text-violet-400" id="total_display">৳{{ number_format($finalTotal, 2) }}</span>
+                                        <span class="text-violet-400" id="total_display">৳{{ number_format($finalTotal + 80, 2) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -270,6 +321,35 @@
     @include('home.styles')
 
     <script>
+        let deliveryCharge = 80; // Default: Inside Dhaka
+        const baseSubtotal = {{ $cartSubTotal }};
+        let currentDiscount = 0;
+
+        // Update delivery charge
+        function updateDeliveryCharge() {
+            const selectedLocation = document.querySelector('input[name="delivery_location"]:checked');
+            deliveryCharge = parseFloat(selectedLocation.dataset.charge);
+            
+            // Update delivery charge display
+            document.getElementById('delivery_charge_display').textContent = '+৳' + deliveryCharge.toFixed(2);
+            
+            // Update visual selection
+            document.querySelectorAll('.delivery-option').forEach(option => {
+                option.classList.remove('border-violet-500', 'bg-violet-500/10');
+                option.classList.add('border-violet-500/30');
+            });
+            selectedLocation.closest('.delivery-option').classList.remove('border-violet-500/30');
+            selectedLocation.closest('.delivery-option').classList.add('border-violet-500', 'bg-violet-500/10');
+            
+            updateTotal();
+        }
+
+        // Update total calculation
+        function updateTotal() {
+            const total = baseSubtotal + deliveryCharge - currentDiscount;
+            document.getElementById('total_display').textContent = '৳' + total.toFixed(2);
+        }
+
         // Toggle payment fields based on payment method
         function togglePaymentFields() {
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
@@ -279,23 +359,15 @@
             const sendingNumber = document.getElementById('sending_number');
 
             if (paymentMethod === 'cod') {
-                // Hide mobile banking fields
                 mobileBankingDetails.classList.add('hidden');
                 codDetails.classList.remove('hidden');
-                
-                // Remove required attribute from payment fields
                 transactionNumber.removeAttribute('required');
                 sendingNumber.removeAttribute('required');
-                
-                // Clear values
                 transactionNumber.value = '';
                 sendingNumber.value = '';
             } else {
-                // Show mobile banking fields
                 mobileBankingDetails.classList.remove('hidden');
                 codDetails.classList.add('hidden');
-                
-                // Add required attribute back
                 transactionNumber.setAttribute('required', 'required');
                 sendingNumber.setAttribute('required', 'required');
             }
@@ -304,13 +376,12 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             togglePaymentFields();
+            updateDeliveryCharge(); // Set initial delivery charge styling
         });
     </script>
 
     <script>
         let appliedCoupon = null;
-        const baseSubtotal = {{ $cartSubTotal }};
-        const baseTotal = {{ $cartSubTotal }};
 
         function applyCoupon() {
             const couponInput = document.getElementById('coupon_code_input');
@@ -356,17 +427,19 @@
         }
 
         function updatePricing(couponDiscount) {
-            const newTotal = Math.max(0, baseTotal - couponDiscount);
+            currentDiscount = couponDiscount;
             
             document.getElementById('coupon_discount_row').style.display = 'flex';
             document.getElementById('coupon_discount_display').textContent = '-৳' + couponDiscount.toFixed(2);
-            document.getElementById('total_display').textContent = '৳' + newTotal.toFixed(2);
+            
+            updateTotal();
         }
 
         function resetCoupon() {
             appliedCoupon = null;
+            currentDiscount = 0;
             document.getElementById('coupon_discount_row').style.display = 'none';
-            document.getElementById('total_display').textContent = '৳' + baseTotal.toFixed(2);
+            updateTotal();
         }
 
         function showMessage(message, type) {

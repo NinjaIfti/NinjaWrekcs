@@ -92,6 +92,7 @@ class CheckoutController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
+            'delivery_location' => 'required|in:inside_dhaka,outside_dhaka',
             'payment_method' => 'required|in:bkash,cod',
             'transaction_number' => 'required_if:payment_method,bkash|nullable|string|max:50',
             'sending_number' => 'required_if:payment_method,bkash|nullable|string|max:20',
@@ -167,6 +168,9 @@ class CheckoutController extends Controller
             $cartSubTotal = \Cart::getSubTotal();
             $totalDiscount = 0;
             
+            // Calculate delivery charge
+            $deliveryCharge = $validated['delivery_location'] === 'inside_dhaka' ? 80 : 120;
+            
             // Apply coupon if provided
             $coupon = null;
             $couponDiscount = 0;
@@ -178,7 +182,7 @@ class CheckoutController extends Controller
                 }
             }
             
-            $finalTotal = max(0, $cartSubTotal - $totalDiscount);
+            $finalTotal = max(0, $cartSubTotal + $deliveryCharge - $totalDiscount);
 
             // Create order
             $order = Order::create([
@@ -189,6 +193,8 @@ class CheckoutController extends Controller
                 'name' => $validated['name'],
                 'phone' => $validated['phone'],
                 'address' => $validated['address'],
+                'delivery_location' => $validated['delivery_location'],
+                'delivery_charge' => $deliveryCharge,
                 'email' => $user->email,
                 'subtotal' => $cartSubTotal,
                 'discount' => $totalDiscount,
