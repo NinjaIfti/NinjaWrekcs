@@ -111,6 +111,7 @@ class AdminController extends Controller
             'coupon_code' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:1000',
             'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
+            'delivery_location' => 'required|in:inside_dhaka,outside_dhaka',
             'products' => 'required|array|min:1',
             'products.*.id' => 'required|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1',
