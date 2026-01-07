@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>About Us - NinjaWrekcs | Valorant Collectibles Store</title>
+    <title>About Us - NinjaWrecks | Valorant Collectibles Store</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
     
     @include('components.seo', [
-        'title' => 'About Us - NinjaWrekcs | Valorant Collectibles Store',
-        'description' => 'Learn about NinjaWrekcs - your trusted source for premium Valorant gaming collectibles. We bring authentic agent figures, knives, weapons, and more to Valorant fans in Bangladesh.',
+        'title' => 'About Us - NinjaWrecks | Valorant Collectibles Store',
+        'description' => 'Learn about NinjaWrecks - your trusted source for premium Valorant gaming collectibles. We bring authentic agent figures, knives, weapons, and more to Valorant fans in Bangladesh.',
         'url' => route('about')
     ])
     
@@ -30,7 +30,7 @@
         
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
             <h1 class="text-5xl md:text-7xl font-bold mb-6">
-                <span class="glitch-text-large" data-text="About NinjaWrekcs">About NinjaWrekcs</span>
+                <span class="glitch-text-large" data-text="About NinjaWrecks">About NinjaWrecks</span>
             </h1>
             <p class="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto">
                 Your trusted source for premium Valorant gaming collectibles
@@ -47,7 +47,7 @@
                         <span class="glitch-text" data-text="Our Story">Our Story</span>
                     </h2>
                     <p class="text-lg text-gray-300 leading-relaxed mb-4">
-                        NinjaWrekcs was born from a passion for Valorant and the gaming community. We started with a simple mission: to bring high-quality, authentic Valorant collectibles to fans who share our love for the game.
+                        NinjaWrecks was born from a passion for Valorant and the gaming community. We started with a simple mission: to bring high-quality, authentic Valorant collectibles to fans who share our love for the game.
                     </p>
                     <p class="text-lg text-gray-300 leading-relaxed mb-4">
                         From agent figures to weapon replicas, stickers, and keychains, we curate the finest collection of Valorant merchandise. Every product is carefully selected to ensure authenticity and quality that matches the excellence of the game itself.
@@ -190,7 +190,7 @@
                         <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
-                        <a href="mailto:support@ninjawrekcs.com" class="text-violet-400 hover:text-violet-300 transition">support@ninjawrekcs.com</a>
+                        <a href="mailto:support@NinjaWrecks.com" class="text-violet-400 hover:text-violet-300 transition">support@NinjaWrecks.com</a>
                     </div>
                     <div class="flex items-center justify-center space-x-3">
                         <svg class="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

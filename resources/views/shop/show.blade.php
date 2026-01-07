@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $product->name }} - NinjaWrekcs | Valorant Collectibles</title>
+    <title>{{ $product->name }} - NinjaWrecks | Valorant Collectibles</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
     
     @include('components.seo', [
-        'title' => $product->name . ' - NinjaWrekcs | Valorant Collectibles',
+        'title' => $product->name . ' - NinjaWrecks | Valorant Collectibles',
         'description' => $product->description ? \Illuminate\Support\Str::limit(strip_tags($product->description), 160) : 'Buy ' . $product->name . ' - Authentic Valorant collectible. Get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
         'image' => $product->image ? asset('storage/' . $product->image) : asset('img/fav.png'),
         'url' => route('shop.show', $product->slug ?? $product->id),

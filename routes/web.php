@@ -72,9 +72,9 @@ Route::get('/test-email', function () {
             
         } else {
             // Simple test email
-            Mail::raw('This is a test email from NinjaWrekcs! Your Brevo SMTP configuration is working correctly. Sent at: ' . now()->format('Y-m-d H:i:s'), function ($message) use ($toEmail) {
+            Mail::raw('This is a test email from NinjaWrecks! Your Brevo SMTP configuration is working correctly. Sent at: ' . now()->format('Y-m-d H:i:s'), function ($message) use ($toEmail) {
                 $message->to($toEmail)
-                        ->subject('Test Email from NinjaWrekcs - Brevo SMTP');
+                        ->subject('Test Email from NinjaWrecks - Brevo SMTP');
             });
             
             return response()->json([
@@ -281,6 +281,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Featured Products Management
     Route::get('/featured-products', [\App\Http\Controllers\AdminController::class, 'featuredProducts'])->name('featured-products');
     Route::post('/featured-products', [\App\Http\Controllers\AdminController::class, 'updateFeaturedProducts'])->name('featured-products.update');
+    
+    // Reviews Management
+    Route::get('/reviews', [\App\Http\Controllers\AdminController::class, 'reviews'])->name('reviews');
+    Route::get('/reviews/create', [\App\Http\Controllers\AdminController::class, 'reviewCreate'])->name('reviews.create');
+    Route::post('/reviews', [\App\Http\Controllers\AdminController::class, 'reviewStore'])->name('reviews.store');
+    Route::get('/reviews/{review}/edit', [\App\Http\Controllers\AdminController::class, 'reviewEdit'])->name('reviews.edit');
+    Route::put('/reviews/{review}', [\App\Http\Controllers\AdminController::class, 'reviewUpdate'])->name('reviews.update');
+    Route::delete('/reviews/{review}', [\App\Http\Controllers\AdminController::class, 'reviewDestroy'])->name('reviews.destroy');
+    Route::post('/reviews/{review}/toggle', [\App\Http\Controllers\AdminController::class, 'reviewToggle'])->name('reviews.toggle');
     
     // Coupons Management
     Route::get('/coupons', [\App\Http\Controllers\AdminController::class, 'coupons'])->name('coupons');

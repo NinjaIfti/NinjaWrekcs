@@ -2,8 +2,8 @@
 <footer class="md:hidden bg-black border-t border-violet-500/20 text-gray-300 pt-10 pb-16">
     <div class="max-w-4xl mx-auto px-4 space-y-8">
         <div class="flex items-center space-x-3">
-            <img src="{{ asset('img/fav.png') }}" alt="NinjaWrekcs" class="h-10 w-10 rounded-lg border border-violet-500/50">
-            <span class="text-2xl font-bold glitch-text-large" data-text="NinjaWrekcs">NinjaWrekcs</span>
+            <img src="{{ asset('img/fav.png') }}" alt="NinjaWrecks" class="h-10 w-10 rounded-lg border border-violet-500/50">
+            <span class="text-2xl font-bold glitch-text-large" data-text="NinjaWrecks">NinjaWrecks</span>
         </div>
 
         <p class="text-gray-400 leading-relaxed">
@@ -57,7 +57,7 @@
         </div>
 
         <div class="border-t border-violet-500/20 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-            <p class="text-gray-400 text-sm">© 2025 NinjaWrekcs. All rights reserved.</p>
+            <p class="text-gray-400 text-sm">© 2025 NinjaWrecks. All rights reserved.</p>
             <div class="flex space-x-4">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" class="h-6 opacity-70">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-6 opacity-70">

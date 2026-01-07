@@ -11,6 +11,7 @@ use App\Models\Visitor;
 use App\Models\Coupon;
 use App\Models\PopupSetting;
 use App\Models\SpecialOffer;
+use App\Models\Review;
 use App\Mail\OrderStatusUpdated;
 use App\Services\AnalyticsService;
 use App\Services\NotificationService;
@@ -1340,6 +1341,127 @@ class AdminController extends Controller
         $specialOffer->delete();
         
         return redirect()->route('admin.special-offers')->with('success', 'Special offer deleted successfully!');
+    }
+
+    /**
+     * Display reviews management
+     */
+    public function reviews(): View
+    {
+        $reviews = Review::orderBy('order', 'asc')->get();
+        
+        return view('admin.reviews', compact('reviews'));
+    }
+
+    /**
+     * Show create review form
+     */
+    public function reviewCreate(): View
+    {
+        $nextOrder = Review::max('order') + 1;
+        
+        return view('admin.review-create', compact('nextOrder'));
+    }
+
+    /**
+     * Store new review
+     */
+    public function reviewStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'customer_name' => 'required|string|max:255',
+            'review_text' => 'nullable|string|max:1000',
+            'rating' => 'required|integer|min:1|max:5',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'order' => 'required|integer|min:0',
+        ]);
+
+        // Store image
+        $imagePath = $request->file('image')->store('reviews', 'public');
+
+        Review::create([
+            'customer_name' => $validated['customer_name'],
+            'review_text' => $validated['review_text'],
+            'rating' => $validated['rating'],
+            'image_path' => $imagePath,
+            'order' => $validated['order'],
+            'is_active' => $request->has('is_active'),
+        ]);
+
+        return redirect()->route('admin.reviews')->with('success', 'Review added successfully!');
+    }
+
+    /**
+     * Show edit review form
+     */
+    public function reviewEdit(Review $review): View
+    {
+        return view('admin.review-edit', compact('review'));
+    }
+
+    /**
+     * Update review
+     */
+    public function reviewUpdate(Request $request, Review $review): RedirectResponse
+    {
+        $validated = $request->validate([
+            'customer_name' => 'required|string|max:255',
+            'review_text' => 'nullable|string|max:1000',
+            'rating' => 'required|integer|min:1|max:5',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'order' => 'required|integer|min:0',
+        ]);
+
+        $imagePath = $review->image_path;
+
+        // Update image if new one uploaded
+        if ($request->hasFile('image')) {
+            // Delete old image
+            if ($review->image_path) {
+                Storage::delete('public/' . $review->image_path);
+            }
+            $imagePath = $request->file('image')->store('reviews', 'public');
+        }
+
+        $review->update([
+            'customer_name' => $validated['customer_name'],
+            'review_text' => $validated['review_text'],
+            'rating' => $validated['rating'],
+            'image_path' => $imagePath,
+            'order' => $validated['order'],
+            'is_active' => $request->has('is_active'),
+        ]);
+
+        return redirect()->route('admin.reviews')->with('success', 'Review updated successfully!');
+    }
+
+    /**
+     * Delete review
+     */
+    public function reviewDestroy(Review $review): RedirectResponse
+    {
+        // Delete image
+        if ($review->image_path) {
+            Storage::delete('public/' . $review->image_path);
+        }
+        
+        $review->delete();
+        
+        return redirect()->route('admin.reviews')->with('success', 'Review deleted successfully!');
+    }
+
+    /**
+     * Toggle review active status
+     */
+    public function reviewToggle(Review $review): RedirectResponse
+    {
+        $review->update([
+            'is_active' => !$review->is_active,
+        ]);
+
+        $status = $review->is_active ? 'activated' : 'deactivated';
+        
+        return redirect()->route('admin.reviews')->with('success', "Review {$status} successfully!");
     }
 }
 

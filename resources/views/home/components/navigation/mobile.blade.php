@@ -2,8 +2,8 @@
 <div class="md:hidden fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-b border-violet-500/40 shadow-lg">
     <div class="flex items-center justify-center px-4 py-3">
         <a href="/" class="flex items-center space-x-3">
-            <img src="{{ asset('img/fav.png') }}" alt="NinjaWrekcs" class="h-10 w-10 rounded-lg border border-violet-500/50">
-            <span class="text-xl font-bold glitch-text-large" data-text="NinjaWrekcs">NinjaWrekcs</span>
+            <img src="{{ asset('img/fav.png') }}" alt="NinjaWrecks" class="h-10 w-10 rounded-lg border border-violet-500/50">
+            <span class="text-xl font-bold glitch-text-large" data-text="NinjaWrecks">NinjaWrecks</span>
         </a>
     </div>
 </div>

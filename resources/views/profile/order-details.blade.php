@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Order #{{ $order->id }} - NinjaWrekcs</title>
+    <title>Order #{{ $order->id }} - NinjaWrecks</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -191,7 +191,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Order #{{ $order->id }} - NinjaWrekcs</title>
+    <title>Order #{{ $order->id }} - NinjaWrecks</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased bg-black text-white">

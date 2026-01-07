@@ -5,8 +5,8 @@
             <!-- Logo with Text -->
             <div class="flex items-center">
                 <a href="/" class="flex items-center space-x-3">
-                    <img src="{{ asset('img/fav.png') }}" alt="NinjaWrekcs" class="h-12 w-auto">
-                    <span class="text-2xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</span>
+                    <img src="{{ asset('img/fav.png') }}" alt="NinjaWrecks" class="h-12 w-auto">
+                    <span class="text-2xl font-bold glitch-text" data-text="NinjaWrecks">NinjaWrecks</span>
                 </a>
             </div>
 

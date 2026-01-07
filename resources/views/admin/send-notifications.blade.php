@@ -60,7 +60,7 @@
                         </label>
                         <input type="url" 
                                name="url" 
-                               placeholder="https://ninjawrekcs.com/shop"
+                               placeholder="https://NinjaWrecks.com/shop"
                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
                     </div>
 
@@ -122,6 +122,8 @@
         </ul>
     </div>
 </x-admin-layout>
+
+
 
 
 

@@ -114,10 +114,12 @@ Website: {{ config('app.url') }}
 Thank you for shopping with us!
 
 Best regards,  
-**NinjaWrekcs Team** 🎮
+**NinjaWrecks Team** 🎮
 
 <small style="color: #9ca3af;">Order ID: {{ $order->id }} | Placed on {{ $order->created_at->format('M d, Y') }}</small>
 </x-mail::message>
+
+
 
 
 

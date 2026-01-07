@@ -6,7 +6,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid md:grid-cols-4 gap-12 mb-12">
             <div class="space-y-4">
-                <h3 class="text-2xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</h3>
+                <h3 class="text-2xl font-bold glitch-text" data-text="NinjaWrecks">NinjaWrecks</h3>
                 <p class="text-gray-400">Your trusted destination for premium Valorant gaming collectibles and exceptional service.</p>
                 <div class="flex space-x-4">
                     <a href="https://www.facebook.com/ninjawrecks" target="_blank" rel="noopener noreferrer" class="w-10 h-10 bg-violet-900/50 rounded-lg flex items-center justify-center hover:bg-violet-600 transition-colors border border-violet-500/30" title="Facebook">
@@ -60,7 +60,7 @@
 
         <div class="border-t border-violet-500/20 pt-8">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <p class="text-gray-400">© 2025 NinjaWrekcs. All rights reserved.</p>
+                <p class="text-gray-400">© 2025 NinjaWrecks. All rights reserved.</p>
                 <div class="flex space-x-6 mt-4 md:mt-0">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" class="h-8 opacity-70">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" class="h-8 opacity-70">

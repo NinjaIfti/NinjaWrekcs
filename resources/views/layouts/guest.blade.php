@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'NinjaWrekcs') }} - Login</title>
+        <title>{{ config('app.name', 'NinjaWrecks') }} - Login</title>
         <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
 
         <!-- Scripts -->
@@ -33,7 +33,7 @@
                 <!-- Logo with Glitch Effect -->
                 <div class="flex justify-center mb-8">
                     <a href="/" class="flex items-center space-x-3 group">
-                        <span class="text-3xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</span>
+                        <span class="text-3xl font-bold glitch-text" data-text="NinjaWrecks">NinjaWrecks</span>
                     </a>
                 </div>
 
@@ -51,7 +51,7 @@
 
                 <!-- Footer -->
                 <div class="text-center mt-8 text-sm text-gray-400">
-                    <p>&copy; {{ date('Y') }} {{ config('app.name', 'NinjaWrekcs') }}. All rights reserved.</p>
+                    <p>&copy; {{ date('Y') }} {{ config('app.name', 'NinjaWrecks') }}. All rights reserved.</p>
                 </div>
             </div>
         </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Terms of Service - NinjaWrekcs</title>
+    <title>Terms of Service - NinjaWrecks</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -22,7 +22,7 @@
                 <div>
                     <h2 class="text-2xl font-bold text-violet-400 mb-4">Acceptance of Terms</h2>
                     <p class="text-gray-300 leading-relaxed">
-                        By accessing and using NinjaWrekcs, you accept and agree to be bound by these Terms of Service. If you do not agree, please do not use our services.
+                        By accessing and using NinjaWrecks, you accept and agree to be bound by these Terms of Service. If you do not agree, please do not use our services.
                     </p>
                 </div>
 
@@ -50,7 +50,7 @@
                 <div>
                     <h2 class="text-2xl font-bold text-violet-400 mb-4">Limitation of Liability</h2>
                     <p class="text-gray-300 leading-relaxed">
-                        NinjaWrekcs shall not be liable for any indirect, incidental, or consequential damages arising from the use of our services or products.
+                        NinjaWrecks shall not be liable for any indirect, incidental, or consequential damages arising from the use of our services or products.
                     </p>
                 </div>
 

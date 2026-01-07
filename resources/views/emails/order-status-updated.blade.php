@@ -164,10 +164,10 @@ If you have any questions about your order, we're here to help!
 Our support team typically responds within 24 hours.
 </x-mail::panel>
 
-Thank you for choosing NinjaWrekcs for your Valorant collectibles!
+Thank you for choosing NinjaWrecks for your Valorant collectibles!
 
 Best regards,  
-**The NinjaWrekcs Team** 🎮
+**The NinjaWrecks Team** 🎮
 
 <small style="color: #9ca3af;">Order #{{ $order->id }} | {{ $order->created_at->format('M d, Y') }}</small>
 </x-mail::message>

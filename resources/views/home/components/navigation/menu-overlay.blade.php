@@ -4,8 +4,8 @@
         <!-- Header -->
         <div class="flex justify-between items-center p-4 border-b border-violet-500/20 bg-black/50">
             <div class="flex items-center space-x-2">
-                <img src="{{ asset('img/fav.png') }}" alt="NinjaWrekcs" class="h-10 w-auto">
-                <span class="text-xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</span>
+                <img src="{{ asset('img/fav.png') }}" alt="NinjaWrecks" class="h-10 w-auto">
+                <span class="text-xl font-bold glitch-text" data-text="NinjaWrecks">NinjaWrecks</span>
             </div>
             <button id="mobileMenuClose" class="p-2 text-gray-300 hover:text-violet-400 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,8 +107,8 @@
         <!-- Header -->
         <div class="flex justify-between items-center p-4 border-b border-violet-500/20 bg-black/50">
             <div class="flex items-center space-x-2">
-                <img src="{{ asset('img/fav.png') }}" alt="NinjaWrekcs" class="h-10 w-auto">
-                <span class="text-xl font-bold glitch-text" data-text="NinjaWrekcs">NinjaWrekcs</span>
+                <img src="{{ asset('img/fav.png') }}" alt="NinjaWrecks" class="h-10 w-auto">
+                <span class="text-xl font-bold glitch-text" data-text="NinjaWrecks">NinjaWrecks</span>
             </div>
             <button id="mobileMenuClose" class="p-2 text-gray-300 hover:text-violet-400 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
