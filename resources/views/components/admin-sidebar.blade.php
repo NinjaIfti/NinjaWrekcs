@@ -15,8 +15,9 @@
 
 <!-- Sidebar -->
 <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-       class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 fixed h-screen overflow-y-auto z-30 transition-transform duration-300 ease-in-out lg:translate-x-0">
-    <div class="p-6">
+       class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 fixed h-screen overflow-y-auto overflow-x-hidden z-30 transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col"
+       style="overflow-y: scroll; -webkit-overflow-scrolling: touch;">
+    <div class="p-6 pb-0 flex-1 overflow-y-auto" style="overflow-y: auto; -webkit-overflow-scrolling: touch;">
         <!-- Logo and Close Button -->
         <div class="mb-8 flex items-center justify-between">
             <a href="{{ route('admin.dashboard') }}" class="flex items-center">
@@ -32,7 +33,7 @@
         </div>
 
         <!-- Navigation -->
-        <nav class="space-y-2">
+        <nav class="space-y-2 pb-4">
             <!-- Dashboard -->
             <a href="{{ route('admin.dashboard') }}" 
                @click="sidebarOpen = false"
@@ -167,7 +168,7 @@
     </div>
 
     <!-- User Section -->
-    <div class="absolute bottom-0 w-64 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div class="w-full p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 mt-auto sticky bottom-0">
         <div class="flex items-center mb-4">
             <div class="flex-shrink-0">
                 <div class="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
