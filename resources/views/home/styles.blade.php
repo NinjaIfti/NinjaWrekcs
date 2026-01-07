@@ -480,6 +480,32 @@
         flex-shrink: 0;
     }
     
+    /* Mobile Individual Product Cards */
+    .featured-products-mobile-container,
+    .featured-products-mobile-container-simple {
+        position: relative;
+        min-height: 450px;
+    }
+    
+    .featured-products-mobile-card,
+    .featured-products-mobile-card-simple {
+        position: absolute !important;
+        top: 0;
+        left: 0;
+        width: 100%;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+        z-index: 1;
+    }
+    
+    .featured-products-mobile-card.active,
+    .featured-products-mobile-card-simple.active {
+        opacity: 1;
+        visibility: visible;
+        z-index: 2;
+    }
+    
     @media (max-width: 768px) {
         .featured-products-prev,
         .featured-products-next {
@@ -746,6 +772,137 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize
     showSlide(0);
     startSlideshow();
+});
+
+// Mobile Featured Products Slideshow
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle mobile slideshow for products > 4
+    const mobileContainer = document.querySelector('.featured-products-mobile-container');
+    if (mobileContainer) {
+        const mobileCards = mobileContainer.querySelectorAll('.featured-products-mobile-card');
+        const mobileDots = document.querySelectorAll('.featured-mobile-dot');
+        let currentMobileSlide = 0;
+        
+        function showMobileSlide(index) {
+            mobileCards.forEach((card, i) => {
+                if (i === index) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+            
+            mobileDots.forEach((dot, i) => {
+                dot.classList.toggle('bg-violet-400', i === index);
+                dot.classList.toggle('bg-violet-500/40', i !== index);
+            });
+            
+            currentMobileSlide = index;
+        }
+        
+        function nextMobileSlide() {
+            currentMobileSlide = (currentMobileSlide + 1) % mobileCards.length;
+            showMobileSlide(currentMobileSlide);
+        }
+        
+        function prevMobileSlide() {
+            currentMobileSlide = (currentMobileSlide - 1 + mobileCards.length) % mobileCards.length;
+            showMobileSlide(currentMobileSlide);
+        }
+        
+        mobileDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                showMobileSlide(index);
+            });
+        });
+        
+        // Touch swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        mobileContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        mobileContainer.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX - 50) {
+                nextMobileSlide();
+            }
+            if (touchEndX > touchStartX + 50) {
+                prevMobileSlide();
+            }
+        });
+    }
+    
+    // Handle simple grid mobile slideshow (4 or fewer products)
+    const simpleContainer = document.querySelector('.featured-products-mobile-container-simple');
+    if (simpleContainer) {
+        const simpleCards = simpleContainer.querySelectorAll('.featured-products-mobile-card-simple');
+        const simpleDots = document.querySelectorAll('.featured-simple-dot');
+        const simplePrev = document.querySelector('.featured-simple-prev');
+        const simpleNext = document.querySelector('.featured-simple-next');
+        let currentSimpleSlide = 0;
+        
+        function showSimpleSlide(index) {
+            simpleCards.forEach((card, i) => {
+                if (i === index) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+            
+            simpleDots.forEach((dot, i) => {
+                dot.classList.toggle('bg-violet-400', i === index);
+                dot.classList.toggle('bg-violet-500/40', i !== index);
+            });
+            
+            currentSimpleSlide = index;
+        }
+        
+        function nextSimpleSlide() {
+            currentSimpleSlide = (currentSimpleSlide + 1) % simpleCards.length;
+            showSimpleSlide(currentSimpleSlide);
+        }
+        
+        function prevSimpleSlide() {
+            currentSimpleSlide = (currentSimpleSlide - 1 + simpleCards.length) % simpleCards.length;
+            showSimpleSlide(currentSimpleSlide);
+        }
+        
+        if (simplePrev) {
+            simplePrev.addEventListener('click', prevSimpleSlide);
+        }
+        
+        if (simpleNext) {
+            simpleNext.addEventListener('click', nextSimpleSlide);
+        }
+        
+        simpleDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                showSimpleSlide(index);
+            });
+        });
+        
+        // Touch swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        simpleContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        simpleContainer.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX - 50) {
+                nextSimpleSlide();
+            }
+            if (touchEndX > touchStartX + 50) {
+                prevSimpleSlide();
+            }
+        });
+    }
 });
 </script>
 
