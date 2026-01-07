@@ -57,6 +57,11 @@ class NotificationService
      */
     public static function orderStatusUpdated(Order $order, string $oldStatus): ?Notification
     {
+        // Skip notification if order has no user (manual orders)
+        if (!$order->user) {
+            return null;
+        }
+
         $statusMessages = [
             'confirmed' => [
                 'title' => 'Order Confirmed! 🎉',
@@ -112,6 +117,11 @@ class NotificationService
      */
     public static function orderPlaced(Order $order): ?Notification
     {
+        // Skip notification if order has no user (manual orders)
+        if (!$order->user) {
+            return null;
+        }
+
         return self::create(
             $order->user,
             self::TYPE_ORDER_UPDATE,
@@ -284,6 +294,8 @@ class NotificationService
             ->count();
     }
 }
+
+
 
 
 
