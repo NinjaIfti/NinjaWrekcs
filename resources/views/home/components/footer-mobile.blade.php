@@ -10,36 +10,36 @@
             Premium Valorant collectibles with fast delivery across Bangladesh.
         </p>
 
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-3 gap-4">
             <div class="space-y-3">
-                <h4 class="text-white font-semibold">Shop</h4>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="{{ route('shop.index') }}" class="hover:text-violet-400 transition-colors">All Collectibles</a></li>
-                    <li><a href="{{ route('shop.index', ['category' => 'figures']) }}" class="hover:text-violet-400 transition-colors">Agent Figures</a></li>
-                    <li><a href="{{ route('shop.index', ['category' => 'knives']) }}" class="hover:text-violet-400 transition-colors">Knives & Weapons</a></li>
+                <h4 class="text-white font-semibold text-sm">Shop</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="{{ route('shop.index') }}" class="hover:text-violet-400 transition-colors">All</a></li>
+                    <li><a href="{{ route('shop.index', ['category' => 'figures']) }}" class="hover:text-violet-400 transition-colors">Figures</a></li>
+                    <li><a href="{{ route('shop.index', ['category' => 'knives']) }}" class="hover:text-violet-400 transition-colors">Knives</a></li>
                 </ul>
             </div>
 
             <div class="space-y-3">
-                <h4 class="text-white font-semibold">Support</h4>
-                <ul class="space-y-2 text-sm">
+                <h4 class="text-white font-semibold text-sm">Support</h4>
+                <ul class="space-y-2 text-xs">
                     <li><a href="{{ route('contact') }}" class="hover:text-violet-400 transition-colors">Contact</a></li>
                     <li><a href="{{ route('shipping') }}" class="hover:text-violet-400 transition-colors">Shipping</a></li>
                     <li><a href="{{ route('returns') }}" class="hover:text-violet-400 transition-colors">Returns</a></li>
                     <li><a href="{{ route('faq') }}" class="hover:text-violet-400 transition-colors">FAQ</a></li>
                 </ul>
             </div>
-        </div>
 
-        <div class="space-y-3">
-            <h4 class="text-white font-semibold">Contact</h4>
-            <div class="space-y-2 text-sm">
-                <a href="tel:+8801533133309" class="flex items-center space-x-2 hover:text-violet-300 transition">
-                    <span>+880 1533 133309</span>
-                </a>
-                <a href="https://wa.me/8801533133309" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 hover:text-violet-300 transition">
-                    <span>WhatsApp</span>
-                </a>
+            <div class="space-y-3">
+                <h4 class="text-white font-semibold text-sm">Contact</h4>
+                <div class="space-y-2 text-xs">
+                    <a href="tel:+8801533133309" class="block hover:text-violet-300 transition">
+                        <span>Phone</span>
+                    </a>
+                    <a href="https://wa.me/8801533133309" target="_blank" rel="noopener noreferrer" class="block hover:text-violet-300 transition">
+                        <span>WhatsApp</span>
+                    </a>
+                </div>
             </div>
         </div>
 

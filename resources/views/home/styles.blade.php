@@ -243,13 +243,19 @@
         scroll-behavior: smooth;
     }
     
+    /* Hide scrollbar by default, show only when needed */
+    html, body {
+        overflow-x: hidden;
+        scrollbar-gutter: stable;
+    }
+    
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
-        width: 10px;
+        width: 8px;
     }
     
     ::-webkit-scrollbar-track {
-        background: #000;
+        background: transparent;
     }
     
     ::-webkit-scrollbar-thumb {
@@ -259,6 +265,12 @@
     
     ::-webkit-scrollbar-thumb:hover {
         background: linear-gradient(to bottom, #a78bfa, #c4b5fd);
+    }
+    
+    /* For Firefox */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #7c3aed transparent;
     }
     
     /* Cart Dropdown Styles */
@@ -667,7 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Featured Products Slideshow
+// Featured Products Slideshow (Desktop)
 document.addEventListener('DOMContentLoaded', function() {
     const slideshow = document.querySelector('.featured-products-slideshow');
     if (!slideshow) return;
@@ -678,7 +690,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const prevBtn = slideshow.querySelector('.featured-products-prev');
     const nextBtn = slideshow.querySelector('.featured-products-next');
     
-    if (slides.length === 0) return;
+    if (!track || slides.length === 0) return;
     
     let currentSlide = 0;
     let slideInterval;
@@ -687,7 +699,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (slides.length === 0) return;
         const safeIndex = ((index % slides.length) + slides.length) % slides.length;
         
-        track.style.transform = `translateX(-${safeIndex * 100}%)`;
+        if (track) {
+            track.style.transform = `translateX(-${safeIndex * 100}%)`;
+        }
         
         dots.forEach((dot, i) => {
             dot.classList.toggle('bg-violet-400', i === safeIndex);
@@ -720,7 +734,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             nextSlide();
             stopSlideshow();
             startSlideshow();
@@ -728,7 +743,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             prevSlide();
             stopSlideshow();
             startSlideshow();
