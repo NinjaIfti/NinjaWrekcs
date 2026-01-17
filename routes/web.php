@@ -138,6 +138,9 @@ Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
 
+// Sitemap
+Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
+
 // Robots.txt
 Route::get('/robots.txt', function () {
     $sitemapUrl = url('/sitemap.xml');

@@ -16,6 +16,8 @@
         'product' => $product
     ])
     
+    @include('components.analytics')
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased bg-black text-white">
