@@ -36,6 +36,21 @@
                 </div>
             @endif
 
+            @guest
+                <div class="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-start gap-3">
+                    <svg class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <p class="text-blue-300 font-semibold">Already have an account?</p>
+                        <p class="text-gray-300 text-sm mt-1">
+                            <a href="{{ route('login') }}" class="text-violet-400 hover:text-violet-300 underline">Log in here</a> 
+                            to checkout faster with saved information. Otherwise, we'll create a new account for you automatically.
+                        </p>
+                    </div>
+                </div>
+            @endguest
+
             <form action="{{ route('checkout.store') }}" method="POST" class="grid lg:grid-cols-3 gap-8">
                 @csrf
 
@@ -106,21 +121,54 @@
                                 @enderror
                             </div>
 
-                            <!-- Email (for non-logged users) -->
+                            <!-- Account Creation Section (for non-logged users) -->
                             @guest
+                            <!-- Divider -->
+                            <div class="relative my-6">
+                                <div class="absolute inset-0 flex items-center">
+                                    <div class="w-full border-t border-violet-500/30"></div>
+                                </div>
+                                <div class="relative flex justify-center text-sm">
+                                    <span class="px-4 bg-black text-gray-400">Account Details</span>
+                                </div>
+                            </div>
+
+                            <!-- Info Box -->
+                            <div class="p-4 bg-violet-500/10 border-l-4 border-violet-500 rounded-lg">
+                                <div class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 text-violet-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-violet-300 font-semibold text-sm">Creating New Account</p>
+                                        <p class="text-gray-300 text-xs mt-1">We'll automatically create an account for you to track your order easily</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
-                                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email *</label>
-                                <input type="email" name="email" id="email" value="{{ old('email') }}" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">
+                                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
+                                    Email Address *
+                                    <span class="text-xs font-normal text-gray-400">(for your new account)</span>
+                                </label>
+                                <input type="email" name="email" id="email" value="{{ old('email') }}" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="example@email.com">
                                 @error('email')
                                     <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                                 @enderror
                             </div>
 
-                            <!-- Password (only for non-logged users) -->
                             <div>
-                                <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password *</label>
-                                <input type="password" name="password" id="password" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-text-security: disc !important; text-security: disc !important;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">
-                                <p class="mt-1 text-xs text-gray-400">A new account will be created with this password</p>
+                                <label for="password" class="block text-sm font-medium text-gray-300 mb-2">
+                                    Create Password *
+                                    <span class="text-xs font-normal text-gray-400">(min. 8 characters)</span>
+                                </label>
+                                <input type="password" name="password" id="password" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-text-security: disc !important; text-security: disc !important;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Choose a secure password">
+                                <p class="mt-2 text-xs text-gray-400 flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span>You'll be automatically logged in after placing your order</span>
+                                </p>
                                 @error('password')
                                     <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                                 @enderror

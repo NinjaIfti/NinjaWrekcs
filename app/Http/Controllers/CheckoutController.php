@@ -274,9 +274,9 @@ class CheckoutController extends Controller
 
             // Success message
             if ($accountCreated) {
-                $successMessage = 'Order placed successfully! Your account has been created and you are now logged in.';
+                $successMessage = 'Order placed successfully! 🎉 Your account has been created and you are now logged in. You can track your order from your profile.';
             } elseif ($passwordUpdated) {
-                $successMessage = 'Order placed successfully! Your account password has been updated and you are now logged in.';
+                $successMessage = 'Order placed successfully! We found an existing account with your email, so we updated your password and logged you in.';
             } else {
                 $successMessage = 'Order placed successfully!';
             }
