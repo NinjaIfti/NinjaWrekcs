@@ -28,4 +28,4 @@ Allow: /*.gif
 Allow: /*.webp
 
 # Sitemap location
-Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://www.ninjawrecks.me/sitemap.xml
