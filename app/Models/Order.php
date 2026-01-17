@@ -29,6 +29,7 @@ class Order extends Model
         'transaction_number',
         'sending_number',
         'status',
+        'tracking_link',
         'save_info',
         'terms_accepted',
         'notes',

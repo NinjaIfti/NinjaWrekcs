@@ -158,10 +158,11 @@
                                         </p>
                                     </div>
                                     <div class="text-right">
-                                        <form action="{{ route('admin.orders.update-status', $order) }}" method="POST" class="inline-block">
+                                        <form action="{{ route('admin.orders.update-status', $order) }}" method="POST" class="inline-block order-status-form" data-order-id="{{ $order->id }}" data-has-email="{{ $order->email ? '1' : '0' }}">
                                             @csrf
                                             @method('PUT')
-                                            <select name="status" onchange="this.form.submit()" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm font-semibold
+                                            <input type="hidden" name="tracking_link" class="tracking-link-input">
+                                            <select name="status" onchange="handleStatusChange(this, {{ $order->id }}, '{{ $order->email }}')" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm font-semibold
                                                 {{ $order->status === 'pending' ? 'text-yellow-600' : '' }}
                                                 {{ $order->status === 'confirmed' ? 'text-blue-600' : '' }}
                                                 {{ $order->status === 'processing' ? 'text-purple-600' : '' }}
@@ -304,4 +305,142 @@
             @endif
         </div>
     </div>
+
+    <!-- Tracking Link Modal -->
+    <div id="trackingLinkModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Add Tracking Link
+                    </h3>
+                    <button type="button" onclick="closeTrackingModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        You can add a tracking link for this shipment. The customer will receive it via email.
+                    </p>
+                    <label for="modalTrackingLink" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tracking Link (Optional)
+                    </label>
+                    <input 
+                        type="url" 
+                        id="modalTrackingLink" 
+                        placeholder="https://tracking.example.com/..."
+                        class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        💡 You can skip this and send a normal shipped notification by leaving it empty
+                    </p>
+                </div>
+
+                <div class="flex gap-3 justify-end">
+                    <button 
+                        type="button" 
+                        onclick="closeTrackingModal()" 
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="button" 
+                        onclick="submitWithTracking()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                        Update Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentForm = null;
+        let originalStatus = null;
+
+        function handleStatusChange(selectElement, orderId, hasEmail) {
+            const newStatus = selectElement.value;
+            const form = selectElement.closest('form');
+            
+            // Store original status if not already stored
+            if (originalStatus === null) {
+                originalStatus = selectElement.querySelector('option[selected]')?.value || '';
+            }
+            
+            // Only show modal for "shipped" status AND if order has email
+            if (newStatus === 'shipped' && hasEmail && hasEmail.trim() !== '') {
+                currentForm = form;
+                document.getElementById('trackingLinkModal').classList.remove('hidden');
+                document.getElementById('modalTrackingLink').value = '';
+                document.getElementById('modalTrackingLink').focus();
+            } else {
+                // For all other statuses OR orders without email, submit form normally
+                form.submit();
+            }
+        }
+
+        function closeTrackingModal() {
+            document.getElementById('trackingLinkModal').classList.add('hidden');
+            
+            // Reset the select back to original status
+            if (currentForm && originalStatus !== null) {
+                const select = currentForm.querySelector('select[name="status"]');
+                if (select) {
+                    select.value = originalStatus;
+                }
+            }
+            
+            currentForm = null;
+            originalStatus = null;
+        }
+
+        function submitWithTracking() {
+            if (!currentForm) return;
+            
+            const trackingLink = document.getElementById('modalTrackingLink').value.trim();
+            const trackingInput = currentForm.querySelector('.tracking-link-input');
+            
+            if (trackingInput) {
+                trackingInput.value = trackingLink;
+            }
+            
+            // Close modal and submit form
+            document.getElementById('trackingLinkModal').classList.add('hidden');
+            currentForm.submit();
+            
+            // Reset
+            currentForm = null;
+            originalStatus = null;
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('trackingLinkModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeTrackingModal();
+            }
+        });
+
+        // Handle Enter key in tracking link input
+        document.getElementById('modalTrackingLink')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitWithTracking();
+            }
+        });
+
+        // Handle Escape key to close modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !document.getElementById('trackingLinkModal').classList.contains('hidden')) {
+                closeTrackingModal();
+            }
+        });
+    </script>
 </x-admin-layout>

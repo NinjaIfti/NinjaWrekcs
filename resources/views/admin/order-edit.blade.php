@@ -264,6 +264,23 @@
                             @enderror
                         </div>
 
+                        <!-- Tracking Link -->
+                        <div>
+                            <label for="tracking_link" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Tracking Link (Optional)
+                                <span class="text-xs text-gray-500 dark:text-gray-400">- For shipped orders</span>
+                            </label>
+                            <input type="url" name="tracking_link" id="tracking_link" value="{{ old('tracking_link', $order->tracking_link) }}" 
+                                placeholder="https://tracking.example.com/..."
+                                class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                This link will be sent to the customer when the order is marked as shipped
+                            </p>
+                            @error('tracking_link')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
                         <!-- Notes -->
                         <div>
                             <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Order Notes (Optional)</label>

@@ -263,6 +263,7 @@ class AdminController extends Controller
             'coupon_code' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:1000',
             'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
+            'tracking_link' => 'nullable|string|max:500',
             'products' => 'required|array|min:1',
             'products.*.id' => 'required|exists:products,id',
             'products.*.quantity' => 'required|integer|min:1',
@@ -415,6 +416,7 @@ class AdminController extends Controller
                 'discount' => $totalDiscount,
                 'total' => $finalTotal,
                 'status' => $validated['status'],
+                'tracking_link' => $validated['tracking_link'],
                 'notes' => $validated['notes'],
             ]);
 
@@ -604,6 +606,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
+            'tracking_link' => 'nullable|string|max:500',
         ]);
 
         $oldStatus = $order->status;
@@ -620,7 +623,15 @@ class AdminController extends Controller
             }
         }
         
-        $order->update(['status' => $validated['status']]);
+        // Update order status and tracking link
+        $updateData = ['status' => $validated['status']];
+        
+        // Only update tracking link if status is shipped
+        if ($validated['status'] === 'shipped' && isset($validated['tracking_link'])) {
+            $updateData['tracking_link'] = $validated['tracking_link'];
+        }
+        
+        $order->update($updateData);
 
         // Send email notification if status changed and order has email
         if ($oldStatus !== $validated['status'] && $order->email) {

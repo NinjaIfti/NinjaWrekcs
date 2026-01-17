@@ -100,6 +100,15 @@ We're carefully preparing your Valorant collectibles for shipment. Quality check
 
 Your order is on its way! Our delivery partner will contact you shortly to arrange the delivery.
 
+@if($order->tracking_link)
+**Track Your Order:**  
+You can track your shipment using the link below:
+
+<x-mail::button :url="$order->tracking_link" color="success">
+Track Shipment
+</x-mail::button>
+@endif
+
 **Estimated Delivery:** 3-7 business days
 
 Please keep your phone available for delivery coordination.
