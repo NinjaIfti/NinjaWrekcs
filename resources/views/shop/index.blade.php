@@ -494,7 +494,7 @@
     </div>
 
     <!-- Live Purchase Notification -->
-    <div id="liveNotification" class="fixed bottom-6 left-6 z-40 transition-all duration-500 ease-out" style="display: none;">
+    <div id="liveNotification" class="fixed bottom-6 left-6 z-[9999] transition-all duration-500 ease-out" style="display: none;">
         <div class="bg-gray-900 border border-violet-500/30 rounded-xl shadow-2xl shadow-violet-500/20 p-4 flex items-center gap-4 max-w-sm backdrop-blur-sm">
             <div class="flex-shrink-0">
                 <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -805,10 +805,10 @@
                         
                         notificationShown = true;
                         
-                        // Auto-hide after 8 seconds
+                        // Auto-hide after 6 seconds
                         notificationTimeout = setTimeout(() => {
                             closeLiveNotification();
-                        }, 8000);
+                        }, 6000);
                     }
                 })
                 .catch(error => console.log('Failed to fetch recent purchases:', error));

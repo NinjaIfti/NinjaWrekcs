@@ -17,7 +17,7 @@
 <meta name="language" content="English">
 <meta name="revisit-after" content="7 days">
 <meta name="theme-color" content="#8b5cf6">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <!-- Open Graph / Facebook -->

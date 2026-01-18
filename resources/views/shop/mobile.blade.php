@@ -332,12 +332,17 @@
 
     <!-- Load More Button -->
     @if($products->hasMorePages())
-    <div class="text-center mt-8" id="loadMoreContainer">
-        <button id="loadMoreBtn" 
-                class="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all">
-            Load More Products
+    <div class="text-center mt-8" id="mobile-load-more-container">
+        <button id="mobile-load-more-btn" 
+                class="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all inline-flex items-center gap-2"
+                data-next-page="{{ $products->currentPage() + 1 }}"
+                data-base-url="{{ route('shop.index') }}">
+            <span>Load More Products</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
         </button>
-        <div id="loadingSpinner" class="hidden">
+        <div id="mobile-loading-spinner" class="hidden">
             <div class="inline-flex items-center gap-2 px-8 py-3 bg-gray-800 text-gray-400 rounded-lg">
                 <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -361,59 +366,68 @@ function updateURLParameter(url, param, value) {
     return urlObj.toString();
 }
 
-// Infinite scroll functionality
-let currentPage = {{ $products->currentPage() }};
-const lastPage = {{ $products->lastPage() }};
-let loading = false;
-
-document.getElementById('loadMoreBtn')?.addEventListener('click', loadMoreProducts);
-
-async function loadMoreProducts() {
-    if (loading || currentPage >= lastPage) return;
+// Mobile Load More Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const loadMoreBtn = document.getElementById('mobile-load-more-btn');
+    const loadingSpinner = document.getElementById('mobile-loading-spinner');
+    const productsContainer = document.querySelector('.grid.grid-cols-2');
     
-    loading = true;
-    document.getElementById('loadMoreBtn').classList.add('hidden');
-    document.getElementById('loadingSpinner').classList.remove('hidden');
-    
-    try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('page', currentPage + 1);
-        url.searchParams.set('view_type', 'mobile');
-        
-        const response = await fetch(url.toString(), {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (data.html) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = data.html;
-            const newProducts = tempDiv.children;
-            const grid = document.querySelector('.grid.grid-cols-2');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', function() {
+            const nextPage = this.getAttribute('data-next-page');
+            const baseUrl = this.getAttribute('data-base-url');
             
-            Array.from(newProducts).forEach(product => {
-                grid.appendChild(product);
+            // Build URL with current filters and mobile view type
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('page', nextPage);
+            urlParams.set('view_type', 'mobile');
+            const fetchUrl = `${baseUrl}?${urlParams.toString()}`;
+            
+            // Show loading, hide button
+            loadMoreBtn.style.display = 'none';
+            loadingSpinner.classList.remove('hidden');
+            
+            // Fetch next page
+            fetch(fetchUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Append new products
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.html;
+                const newProducts = tempDiv.children;
+                
+                Array.from(newProducts).forEach(product => {
+                    productsContainer.appendChild(product);
+                });
+                
+                // Update button state
+                if (data.hasMore) {
+                    loadMoreBtn.setAttribute('data-next-page', data.nextPage);
+                    loadMoreBtn.style.display = 'inline-flex';
+                } else {
+                    // Remove button container if no more pages
+                    document.getElementById('mobile-load-more-container').remove();
+                }
+                
+                loadingSpinner.classList.add('hidden');
+                
+                // Smooth scroll animation
+                setTimeout(() => {
+                    newProducts[0]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            })
+            .catch(error => {
+                console.error('Error loading products:', error);
+                loadingSpinner.classList.add('hidden');
+                loadMoreBtn.style.display = 'inline-flex';
+                alert('Failed to load more products. Please try again.');
             });
-            
-            currentPage++;
-            
-            if (currentPage >= lastPage) {
-                document.getElementById('loadMoreContainer').remove();
-            } else {
-                document.getElementById('loadMoreBtn').classList.remove('hidden');
-                document.getElementById('loadingSpinner').classList.add('hidden');
-            }
-        }
-    } catch (error) {
-        console.error('Error loading more products:', error);
-        alert('Failed to load more products. Please try again.');
-    } finally {
-        loading = false;
-        document.getElementById('loadMoreBtn')?.classList.remove('hidden');
-        document.getElementById('loadingSpinner')?.classList.add('hidden');
+        });
     }
-}
+});
 </script>
