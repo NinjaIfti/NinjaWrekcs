@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->id();
-            $table->string('category'); // shipping, ads, courier, packaging, other
+            $table->string('category'); // sshipping, ads, courier, packaging, other
             $table->string('description');
             $table->decimal('amount', 10, 2);
             $table->foreignId('order_id')->nullable()->constrained()->onDelete('set null');
