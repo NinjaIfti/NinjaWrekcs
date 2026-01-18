@@ -329,6 +329,25 @@
             </div>
         @endforelse
     </div>
+
+    <!-- Load More Button -->
+    @if($products->hasMorePages())
+    <div class="text-center mt-8" id="loadMoreContainer">
+        <button id="loadMoreBtn" 
+                class="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all">
+            Load More Products
+        </button>
+        <div id="loadingSpinner" class="hidden">
+            <div class="inline-flex items-center gap-2 px-8 py-3 bg-gray-800 text-gray-400 rounded-lg">
+                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading...
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 
 <script>
@@ -340,5 +359,58 @@ function updateURLParameter(url, param, value) {
         urlObj.searchParams.delete(param);
     }
     return urlObj.toString();
+}
+
+// Infinite scroll functionality
+let currentPage = {{ $products->currentPage() }};
+const lastPage = {{ $products->lastPage() }};
+let loading = false;
+
+document.getElementById('loadMoreBtn')?.addEventListener('click', loadMoreProducts);
+
+async function loadMoreProducts() {
+    if (loading || currentPage >= lastPage) return;
+    
+    loading = true;
+    document.getElementById('loadMoreBtn').classList.add('hidden');
+    document.getElementById('loadingSpinner').classList.remove('hidden');
+    
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('page', currentPage + 1);
+        
+        const response = await fetch(url.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = data.html;
+            const newProducts = tempDiv.querySelectorAll('.grid > div');
+            const grid = document.querySelector('.grid.grid-cols-2');
+            
+            newProducts.forEach(product => {
+                grid.appendChild(product);
+            });
+            
+            currentPage++;
+            
+            if (currentPage >= lastPage) {
+                document.getElementById('loadMoreContainer').remove();
+            } else {
+                document.getElementById('loadMoreBtn').classList.remove('hidden');
+                document.getElementById('loadingSpinner').classList.add('hidden');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading more products:', error);
+        alert('Failed to load more products. Please try again.');
+    } finally {
+        loading = false;
+    }
 }
 </script>
