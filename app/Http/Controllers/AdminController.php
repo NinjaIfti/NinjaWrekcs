@@ -12,6 +12,7 @@ use App\Models\Coupon;
 use App\Models\PopupSetting;
 use App\Models\SpecialOffer;
 use App\Models\Review;
+use App\Models\StockNotification;
 use App\Mail\OrderStatusUpdated;
 use App\Services\AnalyticsService;
 use App\Services\NotificationService;
@@ -1186,7 +1187,14 @@ class AdminController extends Controller
         $products = Product::where('is_active', true)->latest()->get();
         $totalUsers = User::where('email', '!=', 'ifti3061@gmail.com')->count();
         
-        return view('admin.send-notifications', compact('products', 'totalUsers'));
+        // Get stock notifications grouped by product
+        $stockNotifications = StockNotification::with('product')
+            ->where('notified', false)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy('product_id');
+        
+        return view('admin.send-notifications', compact('products', 'totalUsers', 'stockNotifications'));
     }
 
     /**

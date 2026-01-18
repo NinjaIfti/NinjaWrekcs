@@ -110,6 +110,100 @@
         </div>
     </div>
 
+    <!-- Stock Notification Requests -->
+    <div class="mt-6 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <span class="text-4xl mr-3">🔔</span>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Stock Notification Requests</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Customers waiting for out-of-stock products</p>
+                    </div>
+                </div>
+                <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-semibold">
+                    {{ $stockNotifications->sum(fn($group) => $group->count()) }} waiting
+                </span>
+            </div>
+
+            @if($stockNotifications->count() > 0)
+                <div class="space-y-4">
+                    @foreach($stockNotifications as $productId => $notifications)
+                        @php
+                            $product = $notifications->first()->product;
+                        @endphp
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <h4 class="font-semibold text-gray-900 dark:text-white">{{ $product->name }}</h4>
+                                        @if($product->quantity == 0)
+                                            <span class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded text-xs font-semibold">Out of Stock</span>
+                                        @else
+                                            <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-xs font-semibold">✓ In Stock</span>
+                                        @endif
+                                    </div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        {{ $notifications->count() }} {{ Str::plural('person', $notifications->count()) }} waiting
+                                    </p>
+                                </div>
+                                <a href="{{ route('admin.product-edit', $product) }}" 
+                                   class="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 transition">
+                                    Edit Product
+                                </a>
+                            </div>
+                            
+                            <!-- Email List -->
+                            <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <details class="group">
+                                    <summary class="cursor-pointer text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-2">
+                                        <svg class="w-4 h-4 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                        View Email Addresses ({{ $notifications->count() }})
+                                    </summary>
+                                    <div class="mt-3 space-y-2">
+                                        @foreach($notifications as $notification)
+                                            <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                                <div class="flex items-center gap-3">
+                                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
+                                                    </svg>
+                                                    <span class="text-sm text-gray-900 dark:text-white font-mono">{{ $notification->email }}</span>
+                                                </div>
+                                                <div class="flex items-center gap-4">
+                                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $notification->created_at->diffForHumans() }}</span>
+                                                    <button onclick="copyEmail('{{ $notification->email }}')" 
+                                                            class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                                                        Copy
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                
+                <!-- Copy All Emails Button -->
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button onclick="copyAllEmails()" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                        📋 Copy All Email Addresses
+                    </button>
+                </div>
+            @else
+                <div class="text-center py-12">
+                    <span class="text-6xl mb-4 block">📭</span>
+                    <p class="text-gray-500 dark:text-gray-400">No stock notification requests yet</p>
+                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Customers can request notifications when products are out of stock</p>
+                </div>
+            @endif
+        </div>
+    </div>
+
     <!-- Tips -->
     <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <h4 class="font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 Tips for Effective Notifications:</h4>
@@ -121,6 +215,29 @@
             <li>Don't over-notify - space out notifications to avoid spam</li>
         </ul>
     </div>
+
+    <!-- JavaScript for Copy Functions -->
+    <script>
+        function copyEmail(email) {
+            navigator.clipboard.writeText(email).then(() => {
+                alert('Email copied: ' + email);
+            });
+        }
+
+        function copyAllEmails() {
+            const emails = [
+                @foreach($stockNotifications as $notifications)
+                    @foreach($notifications as $notification)
+                        '{{ $notification->email }}',
+                    @endforeach
+                @endforeach
+            ];
+            const emailList = emails.join(', ');
+            navigator.clipboard.writeText(emailList).then(() => {
+                alert('Copied ' + emails.length + ' email addresses!');
+            });
+        }
+    </script>
 </x-admin-layout>
 
 

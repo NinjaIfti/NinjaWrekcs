@@ -314,18 +314,18 @@
                                     :class="viewMode === 'grid-3' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
                                     class="p-2 rounded transition-colors"
                                     title="3 Columns">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM11 5a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-1a1 1 0 01-1-1V5zM11 15a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-1a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
-                                </svg>
-                            </button>
+                                                </svg>
+                                            </button>
                             <button @click="viewMode = 'grid-4'; localStorage.setItem('shopViewMode', 'grid-4')" 
                                     :class="viewMode === 'grid-4' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
                                     class="p-2 rounded transition-colors"
                                     title="4 Columns">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM10 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM16 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM4 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM10 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2zM16 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"/>
-                                </svg>
-                            </button>
+                                                        </svg>
+                                                </button>
                             <button @click="viewMode = 'list'; localStorage.setItem('shopViewMode', 'list')" 
                                     :class="viewMode === 'list' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
                                     class="p-2 rounded transition-colors"
@@ -333,9 +333,9 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                                 </svg>
-                            </button>
-                        </div>
-                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
 
                     <div id="products-container" 
                          class="grid gap-8 transition-all duration-300"
@@ -410,12 +410,6 @@
                     </div>
                     
                     <h2 id="qv-name" class="text-3xl font-bold text-white"></h2>
-                    
-                    <!-- Rating -->
-                    <div class="flex items-center space-x-2">
-                        <div id="qv-stars" class="flex items-center space-x-1"></div>
-                        <span id="qv-reviews" class="text-sm text-gray-400"></span>
-                    </div>
                     
                     <!-- Price -->
                     <div id="qv-price-container" class="flex items-center gap-3"></div>
@@ -602,18 +596,6 @@
             document.getElementById('qv-name').textContent = product.name;
             document.getElementById('qv-category').textContent = product.category_name;
             document.getElementById('qv-description').textContent = product.description || 'No description available.';
-            
-            // Set rating
-            const starsContainer = document.getElementById('qv-stars');
-            starsContainer.innerHTML = '';
-            for (let i = 1; i <= 5; i++) {
-                const star = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                star.setAttribute('class', `w-5 h-5 ${i <= product.rating ? 'text-yellow-400' : 'text-gray-600'} fill-current`);
-                star.setAttribute('viewBox', '0 0 20 20');
-                star.innerHTML = '<path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>';
-                starsContainer.appendChild(star);
-            }
-            document.getElementById('qv-reviews').textContent = `(${product.reviews} reviews)`;
             
             // Set badges
             const badgesContainer = document.getElementById('qv-badges');
