@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -125,5 +127,74 @@ class ShopController extends Controller
         $product->load('images');
 
         return view('shop.show', compact('product'));
+    }
+
+    public function recentPurchases()
+    {
+        // Get a random recent order item from the last 7 days
+        $orderItem = OrderItem::whereHas('order', function($query) {
+                $query->where('created_at', '>=', now()->subDays(7))
+                      ->where('status', '!=', 'cancelled');
+            })
+            ->with(['order', 'product'])
+            ->inRandomOrder()
+            ->first();
+
+        if (!$orderItem) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No recent purchases found'
+            ]);
+        }
+
+        $order = $orderItem->order;
+        $timeAgo = $this->getTimeAgo($order->created_at);
+        
+        // Extract first name from full name or use email username
+        $customerName = $order->name ?? 'Someone';
+        if ($customerName !== 'Someone') {
+            $nameParts = explode(' ', $customerName);
+            $customerName = $nameParts[0];
+        }
+
+        return response()->json([
+            'success' => true,
+            'purchase' => [
+                'customer_name' => $customerName,
+                'product_name' => $orderItem->product->name ?? 'a product',
+                'time_ago' => $timeAgo,
+                'location' => $order->address ? $this->extractCity($order->address) : null,
+            ]
+        ]);
+    }
+
+    private function getTimeAgo($datetime)
+    {
+        $now = now();
+        $diff = $datetime->diffInMinutes($now);
+
+        if ($diff < 60) {
+            return $diff . ' min ago';
+        } elseif ($diff < 1440) {
+            $hours = floor($diff / 60);
+            return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+        } else {
+            $days = floor($diff / 1440);
+            return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+        }
+    }
+
+    private function extractCity($address)
+    {
+        // Try to extract city from address
+        $cities = ['Dhaka', 'Chittagong', 'Sylhet', 'Rajshahi', 'Khulna', 'Barisal', 'Rangpur', 'Mymensingh'];
+        
+        foreach ($cities as $city) {
+            if (stripos($address, $city) !== false) {
+                return $city;
+            }
+        }
+        
+        return null;
     }
 }

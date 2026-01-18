@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\ProductImage;
+use App\Models\OrderItem;
 
 class Product extends Model
 {
@@ -45,6 +46,16 @@ class Product extends Model
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
     }
 
+    public function stockNotifications(): HasMany
+    {
+        return $this->hasMany(StockNotification::class);
+    }
+
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
     public function getCategoryNameAttribute()
     {
         return match($this->category) {
@@ -80,5 +91,15 @@ class Product extends Model
     public function getIsLowStockAttribute()
     {
         return $this->quantity > 0 && $this->quantity < 5;
+    }
+
+    // Get recent sales count in last 24 hours
+    public function getRecentSalesAttribute()
+    {
+        return $this->orderItems()
+            ->whereHas('order', function($query) {
+                $query->where('created_at', '>=', now()->subDay());
+            })
+            ->sum('quantity');
     }
 }

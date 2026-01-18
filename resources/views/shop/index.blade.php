@@ -588,6 +588,83 @@
         </div>
     </div>
 
+    <!-- Stock Notification Modal -->
+    <div id="notifyModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style="display: none;">
+        <div class="relative bg-gray-900 rounded-2xl border border-violet-500/30 max-w-md w-full shadow-2xl shadow-violet-500/20" onclick="event.stopPropagation();">
+            <!-- Close Button -->
+            <button onclick="closeNotifyModal()" class="absolute top-4 right-4 z-10 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            
+            <!-- Modal Content -->
+            <div class="p-8">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </div>
+                    <h3 id="notify-product-name" class="text-2xl font-bold text-white mb-2"></h3>
+                    <p class="text-gray-400">Get notified when this product is back in stock</p>
+                </div>
+                
+                <form id="notifyForm" class="space-y-4">
+                    @csrf
+                    <input type="hidden" id="notify-product-id" name="product_id">
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-300 mb-2">Email Address</label>
+                        <input type="email" name="email" required 
+                               class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/50 transition-all"
+                               placeholder="your@email.com"
+                               value="{{ auth()->user()->email ?? '' }}">
+                    </div>
+                    
+                    <button type="submit" class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all">
+                        <span class="flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            Notify Me
+                        </span>
+                    </button>
+                </form>
+                
+                <div id="notify-success" class="hidden mt-4 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+                    <p class="text-green-400 text-center font-semibold">✓ You'll be notified when this product is back in stock!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Purchase Notification -->
+    <div id="liveNotification" class="fixed bottom-6 left-6 z-40 transform translate-y-32 transition-transform duration-500 ease-out" style="display: none;">
+        <div class="bg-gray-900 border border-violet-500/30 rounded-xl shadow-2xl shadow-violet-500/20 p-4 flex items-center gap-4 max-w-sm backdrop-blur-sm">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-white truncate" id="live-customer-name"></p>
+                <p class="text-xs text-gray-400" id="live-product-name"></p>
+                <p class="text-xs text-violet-400 mt-1">
+                    <span id="live-time-ago"></span> • 
+                    <span id="live-location"></span>
+                </p>
+            </div>
+            <button onclick="closeLiveNotification()" class="flex-shrink-0 text-gray-500 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
     <!-- Include Footer -->
     @include('home.components.footer')
     
@@ -762,6 +839,157 @@
                 closeQuickView();
             }
         });
+    </script>
+    
+    <!-- Stock Notification JavaScript -->
+    <script>
+        function openNotifyModal(productId, productName) {
+            const modal = document.getElementById('notifyModal');
+            document.getElementById('notify-product-id').value = productId;
+            document.getElementById('notify-product-name').textContent = productName;
+            document.getElementById('notify-success').classList.add('hidden');
+            document.getElementById('notifyForm').reset();
+            document.getElementById('notify-product-id').value = productId;
+            @auth
+            document.querySelector('#notifyForm input[name="email"]').value = '{{ auth()->user()->email }}';
+            @endauth
+            modal.style.display = 'flex';
+            modal.classList.add('modal-show');
+        }
+        
+        function closeNotifyModal() {
+            const modal = document.getElementById('notifyModal');
+            modal.classList.remove('modal-show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+        
+        // Handle form submission
+        document.getElementById('notifyForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="flex items-center justify-center"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Processing...</span>';
+            
+            fetch('{{ route("stock-notification.store") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: formData.get('product_id'),
+                    email: formData.get('email')
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('notifyForm').classList.add('hidden');
+                    document.getElementById('notify-success').classList.remove('hidden');
+                    setTimeout(() => {
+                        closeNotifyModal();
+                        setTimeout(() => {
+                            document.getElementById('notifyForm').classList.remove('hidden');
+                        }, 500);
+                    }, 2000);
+                } else {
+                    alert(data.message || 'Something went wrong. Please try again.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to submit request. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+        
+        // Close modal on background click
+        document.getElementById('notifyModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeNotifyModal();
+            }
+        });
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeNotifyModal();
+            }
+        });
+    </script>
+    
+    <!-- Live Purchase Notification JavaScript -->
+    <script>
+        const locations = ['Dhaka', 'Chittagong', 'Sylhet', 'Rajshahi', 'Khulna', 'Barisal', 'Rangpur', 'Mymensingh'];
+        const names = ['Fahim', 'Rafi', 'Adnan', 'Sakib', 'Mehedi', 'Tasnim', 'Nusrat', 'Anika', 'Rifat', 'Imran', 'Sadman', 'Tanvir'];
+        
+        let notificationShown = false;
+        let notificationTimeout;
+        
+        function showLiveNotification() {
+            if (notificationShown) return;
+            
+            // Fetch recent orders
+            fetch('{{ route("shop.recent-purchases") }}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.purchase) {
+                        const purchase = data.purchase;
+                        const notification = document.getElementById('liveNotification');
+                        
+                        // Use actual customer name or generate a random one
+                        const customerName = purchase.customer_name || names[Math.floor(Math.random() * names.length)];
+                        const location = purchase.location || locations[Math.floor(Math.random() * locations.length)];
+                        
+                        document.getElementById('live-customer-name').textContent = customerName;
+                        document.getElementById('live-product-name').textContent = `just purchased ${purchase.product_name}`;
+                        document.getElementById('live-time-ago').textContent = purchase.time_ago;
+                        document.getElementById('live-location').textContent = location;
+                        
+                        // Show notification
+                        notification.style.display = 'block';
+                        setTimeout(() => {
+                            notification.style.transform = 'translateY(0)';
+                        }, 100);
+                        
+                        notificationShown = true;
+                        
+                        // Auto-hide after 8 seconds
+                        notificationTimeout = setTimeout(() => {
+                            closeLiveNotification();
+                        }, 8000);
+                    }
+                })
+                .catch(error => console.log('Failed to fetch recent purchases:', error));
+        }
+        
+        function closeLiveNotification() {
+            const notification = document.getElementById('liveNotification');
+            notification.style.transform = 'translateY(32rem)';
+            setTimeout(() => {
+                notification.style.display = 'none';
+                notificationShown = false;
+            }, 500);
+            clearTimeout(notificationTimeout);
+        }
+        
+        // Show first notification after 5 seconds
+        setTimeout(showLiveNotification, 5000);
+        
+        // Show subsequent notifications every 30 seconds
+        setInterval(function() {
+            if (!notificationShown) {
+                showLiveNotification();
+            }
+        }, 30000);
     </script>
     
     <!-- Image Zoom CSS -->

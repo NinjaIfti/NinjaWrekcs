@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\StockNotificationController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Mail;
@@ -217,6 +218,10 @@ Route::get('/sitemap.xml', function () {
 
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product}', [ShopController::class, 'show'])->name('shop.show');
+Route::get('/shop/api/recent-purchases', [ShopController::class, 'recentPurchases'])->name('shop.recent-purchases');
+
+// Stock Notification Routes
+Route::post('/stock-notification', [StockNotificationController::class, 'store'])->name('stock-notification.store');
 
 // Cart Routes
 Route::get('/cart', [\App\Http\Controllers\CartController::class, 'index'])->name('cart.index');
