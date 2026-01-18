@@ -29,7 +29,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Breadcrumbs -->
             <nav class="mb-6 hidden lg:flex items-center text-sm text-gray-400" aria-label="Breadcrumb">
-                <a href="{{ route('home') }}" class="hover:text-violet-400 transition-colors">Home</a>
+                <a href="{{ url('/') }}" class="hover:text-violet-400 transition-colors">Home</a>
                 <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>

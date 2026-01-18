@@ -1,7 +1,7 @@
 <div class="space-y-6" x-data="{ filtersOpen: false }" x-cloak>
     <!-- Breadcrumbs Mobile -->
     <nav class="flex items-center text-xs text-gray-400 mb-4" aria-label="Breadcrumb">
-        <a href="{{ route('home') }}" class="hover:text-violet-400 transition-colors">Home</a>
+        <a href="{{ url('/') }}" class="hover:text-violet-400 transition-colors">Home</a>
         <svg class="w-3 h-3 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
