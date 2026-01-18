@@ -1,9 +1,26 @@
-<div class="space-y-6" x-data="{ filtersOpen: false }">
+<div class="space-y-6" x-data="{ filtersOpen: false }" x-cloak>
+    <!-- Breadcrumbs Mobile -->
+    <nav class="flex items-center text-xs text-gray-400 mb-4" aria-label="Breadcrumb">
+        <a href="{{ route('home') }}" class="hover:text-violet-400 transition-colors">Home</a>
+        <svg class="w-3 h-3 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        @if($selectedCategory)
+            <a href="{{ route('shop.index') }}" class="hover:text-violet-400 transition-colors">Shop</a>
+            <svg class="w-3 h-3 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-white font-semibold">{{ $categories[$selectedCategory] }}</span>
+        @else
+            <span class="text-white font-semibold">Shop</span>
+        @endif
+    </nav>
+
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div class="space-y-1">
             <span class="glitch-text-large block text-3xl font-bold" data-text="Shop">Shop</span>
-            <p class="text-gray-400 text-sm">{{ $products->count() }} products found</p>
+            <p class="text-gray-400 text-sm">{{ $products->total() }} products found</p>
         </div>
     </div>
 
@@ -104,10 +121,15 @@
         <div class="relative w-full bg-gray-900 rounded-t-3xl max-h-[80vh] overflow-y-auto">
             <form action="{{ route('shop.index') }}" method="GET" class="p-6 space-y-6">
                 <!-- Header -->
-                <div class="flex items-center justify-between">
-                    <h3 class="text-xl font-bold text-white">Filters</h3>
-                    <button type="button" @click="filtersOpen = false" class="text-gray-400 hover:text-white">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center justify-between pb-4 border-b border-violet-500/30">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        <h3 class="text-xl font-bold text-white">Filters</h3>
+                    </div>
+                    <button type="button" @click="filtersOpen = false" class="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-500 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
@@ -119,14 +141,24 @@
                 <div>
                     <h4 class="text-sm font-semibold text-gray-300 mb-3 uppercase">Category</h4>
                     <div class="space-y-2">
-                        <label class="flex items-center">
-                            <input type="radio" name="category" value="" {{ !$selectedCategory ? 'checked' : '' }} class="mr-3 text-violet-600">
-                            <span class="text-gray-400">All Products</span>
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <div class="flex items-center">
+                                <input type="radio" name="category" value="" {{ !$selectedCategory ? 'checked' : '' }} class="mr-3 text-violet-600">
+                                <span class="text-gray-400 group-hover:text-white transition-colors">All Products</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
+                                {{ array_sum($categoryCounts ?? []) }}
+                            </span>
                         </label>
                         @foreach($categories as $key => $name)
-                        <label class="flex items-center">
-                            <input type="radio" name="category" value="{{ $key }}" {{ $selectedCategory === $key ? 'checked' : '' }} class="mr-3 text-violet-600">
-                            <span class="text-gray-400">{{ $name }}</span>
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <div class="flex items-center">
+                                <input type="radio" name="category" value="{{ $key }}" {{ $selectedCategory === $key ? 'checked' : '' }} class="mr-3 text-violet-600">
+                                <span class="text-gray-400 group-hover:text-white transition-colors">{{ $name }}</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
+                                {{ $categoryCounts[$key] ?? 0 }}
+                            </span>
                         </label>
                         @endforeach
                     </div>
@@ -184,6 +216,56 @@
                             $cover = $product->images->first()->path ?? $product->image;
                         @endphp
                         <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-40 object-cover">
+                        
+                        <!-- Product Badges -->
+                        <div class="absolute top-2 left-2 flex flex-col gap-1">
+                            @if($product->has_discount)
+                                <span class="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full shadow-lg">
+                                    -{{ $product->discount_percentage }}%
+                                </span>
+                            @endif
+                            @if($product->is_new)
+                                <span class="px-2 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full shadow-lg">
+                                    NEW
+                                </span>
+                            @endif
+                            @if($product->is_bestseller)
+                                <span class="px-2 py-0.5 bg-orange-500 text-white text-[10px] font-bold rounded-full shadow-lg">
+                                    🔥
+                                </span>
+                            @endif
+                            @if($product->is_limited_edition)
+                                <span class="px-2 py-0.5 bg-purple-500 text-white text-[10px] font-bold rounded-full shadow-lg">
+                                    ⭐
+                                </span>
+                            @endif
+                        </div>
+                        
+                        <!-- Quick View Button -->
+                        <button onclick="event.preventDefault(); openQuickView({{ json_encode([
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'description' => $product->description,
+                            'price' => $product->price,
+                            'sale_price' => $product->sale_price,
+                            'display_price' => $product->display_price,
+                            'has_discount' => $product->has_discount,
+                            'discount_percentage' => $product->discount_percentage,
+                            'quantity' => $product->quantity,
+                            'is_low_stock' => $product->is_low_stock,
+                            'rating' => $product->rating,
+                            'reviews' => $product->reviews,
+                            'category_name' => $product->category_name,
+                            'image' => $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg',
+                            'url' => route('shop.show', $product),
+                            'add_to_cart_url' => route('cart.add', $product)
+                        ]) }});" class="absolute top-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-violet-600 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                        
                         @if($product->quantity <= 0)
                             <div class="absolute inset-0 bg-black/70 flex items-center justify-center text-red-300 font-semibold text-sm">
                                 Out of Stock
@@ -195,20 +277,40 @@
                     <a href="{{ route('shop.show', $product) }}">
                         <h3 class="text-sm font-semibold text-white line-clamp-2">{{ $product->name }}</h3>
                     </a>
-                    @if($product->price)
-                        <p class="text-base font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
-                    @endif
+                    
+                    <!-- Price with Discount -->
+                    <div class="flex items-center gap-1 flex-wrap">
+                        @if($product->has_discount)
+                            <p class="text-base font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
+                            <p class="text-xs text-gray-500 line-through">৳{{ number_format($product->price, 2) }}</p>
+                        @else
+                            <p class="text-base font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                        @endif
+                    </div>
+                    
+                    <!-- Stock Status with Urgency -->
                     <div class="flex items-center justify-between">
                         @if($product->quantity > 0)
-                            <span class="text-xs text-violet-200">Stock: {{ $product->quantity }}</span>
+                            @if($product->is_low_stock)
+                                <div class="flex items-center gap-1">
+                                    <span class="relative flex h-2 w-2">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                    </span>
+                                    <span class="text-xs font-semibold text-orange-400">{{ $product->quantity }} left</span>
+                                </div>
+                            @else
+                                <span class="text-xs text-green-400">✓ In Stock</span>
+                            @endif
                         @else
-                            <span class="text-xs text-red-300">Out of stock</span>
+                            <span class="text-xs text-red-300">✗ Out of stock</span>
                         @endif
+                        
                         @if($product->quantity > 0)
                             <form action="{{ route('cart.add', $product) }}" method="POST" onclick="event.stopPropagation();">
                                 @csrf
                                 <button type="submit" class="px-3 py-2 text-xs font-semibold bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg hover:scale-105 transition">
-                                    Add to Cart
+                                    Add
                                 </button>
                             </form>
                         @endif

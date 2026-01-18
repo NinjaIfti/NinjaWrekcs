@@ -22,8 +22,28 @@
     @include('home.components.navigation')
     
     <!-- Shop Section -->
-    <section class="pt-24 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-24 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black" x-data="{ 
+        viewMode: localStorage.getItem('shopViewMode') || 'grid-3',
+        filtersCollapsed: false 
+    }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Breadcrumbs -->
+            <nav class="mb-6 hidden lg:flex items-center text-sm text-gray-400" aria-label="Breadcrumb">
+                <a href="{{ route('home') }}" class="hover:text-violet-400 transition-colors">Home</a>
+                <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                @if($selectedCategory)
+                    <a href="{{ route('shop.index') }}" class="hover:text-violet-400 transition-colors">Shop</a>
+                    <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                    <span class="text-white font-semibold">{{ $categories[$selectedCategory] }}</span>
+                @else
+                    <span class="text-white font-semibold">Shop</span>
+                @endif
+            </nav>
+
             <!-- Page Header with Search -->
             <div class="mb-8 hidden lg:block">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">
@@ -195,14 +215,24 @@
                             <div>
                                 <h3 class="text-sm font-semibold text-gray-300 mb-3 uppercase">Category</h3>
                                 <div class="space-y-2">
-                                    <label class="flex items-center cursor-pointer">
+                                    <label class="flex items-center justify-between cursor-pointer group">
+                                        <div class="flex items-center">
                                         <input type="radio" name="category" value="" {{ !$selectedCategory ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
-                                        <span class="text-gray-400">All Products</span>
+                                            <span class="text-gray-400 group-hover:text-white transition-colors">All Products</span>
+                                        </div>
+                                        <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
+                                            {{ array_sum($categoryCounts) }}
+                                        </span>
                                     </label>
                                     @foreach($categories as $key => $name)
-                                    <label class="flex items-center cursor-pointer">
+                                    <label class="flex items-center justify-between cursor-pointer group">
+                                        <div class="flex items-center">
                                         <input type="radio" name="category" value="{{ $key }}" {{ $selectedCategory === $key ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
-                                        <span class="text-gray-400">{{ $name }}</span>
+                                            <span class="text-gray-400 group-hover:text-white transition-colors">{{ $name }}</span>
+                                        </div>
+                                        <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
+                                            {{ $categoryCounts[$key] ?? 0 }}
+                                        </span>
                                     </label>
                                     @endforeach
                                 </div>
@@ -264,28 +294,124 @@
 
                 <!-- Products Grid -->
                 <div class="flex-1">
-                    <!-- Results Count -->
+                    <!-- Results Count & View Toggle -->
                     <div class="mb-6 flex items-center justify-between">
                         <p class="text-gray-400">
-                            Showing <span class="text-white font-semibold">{{ $products->count() }}</span> {{ $products->count() === 1 ? 'product' : 'products' }}
+                            Showing <span class="text-white font-semibold">{{ $products->count() }}</span> of <span class="text-white font-semibold">{{ $products->total() }}</span> {{ $products->total() === 1 ? 'product' : 'products' }}
                         </p>
+                        
+                        <!-- View Toggle -->
+                        <div class="flex items-center gap-2 bg-black/50 border border-violet-500/30 rounded-lg p-1">
+                            <button @click="viewMode = 'grid-2'; localStorage.setItem('shopViewMode', 'grid-2')" 
+                                    :class="viewMode === 'grid-2' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
+                                    class="p-2 rounded transition-colors"
+                                    title="2 Columns">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4z"/>
+                                </svg>
+                            </button>
+                            <button @click="viewMode = 'grid-3'; localStorage.setItem('shopViewMode', 'grid-3')" 
+                                    :class="viewMode === 'grid-3' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
+                                    class="p-2 rounded transition-colors"
+                                    title="3 Columns">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM11 5a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-1a1 1 0 01-1-1V5zM11 15a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-1a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
+                                </svg>
+                            </button>
+                            <button @click="viewMode = 'grid-4'; localStorage.setItem('shopViewMode', 'grid-4')" 
+                                    :class="viewMode === 'grid-4' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
+                                    class="p-2 rounded transition-colors"
+                                    title="4 Columns">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM10 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM16 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM4 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM10 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2zM16 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"/>
+                                </svg>
+                            </button>
+                            <button @click="viewMode = 'list'; localStorage.setItem('shopViewMode', 'list')" 
+                                    :class="viewMode === 'list' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
+                                    class="p-2 rounded transition-colors"
+                                    title="List View">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div id="products-container" 
+                         class="grid gap-8 transition-all duration-300"
+                         :class="{
+                             'sm:grid-cols-2': viewMode === 'grid-2',
+                             'sm:grid-cols-2 lg:grid-cols-3': viewMode === 'grid-3',
+                             'sm:grid-cols-2 lg:grid-cols-4': viewMode === 'grid-4',
+                             'grid-cols-1': viewMode === 'list'
+                         }">
                         @if($products->count() > 0)
-                            @foreach($products as $product)
+                            @include('shop.partials.product-grid', ['products' => $products])
                             <div class="group">
                                 <a href="{{ route('shop.show', $product) }}" class="block">
-                                    <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20">
+                                    <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20 product-card-zoom">
                                         @php
                                             $cover = $product->images->first()->path ?? $product->image;
                                         @endphp
-                                        <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
+                                        <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" 
+                                             alt="{{ $product->name }}" 
+                                             class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500 product-image-zoom">
                                         <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                        <div class="absolute top-4 right-4 z-10">
-                                            <button class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30" onclick="event.preventDefault();">
+                                        
+                                        <!-- Product Badges -->
+                                        <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                                            @if($product->has_discount)
+                                                <span class="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+                                                    -{{ $product->discount_percentage }}% OFF
+                                                </span>
+                                            @endif
+                                            @if($product->is_new)
+                                                <span class="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold rounded-full shadow-lg">
+                                                    🆕 NEW
+                                                </span>
+                                            @endif
+                                            @if($product->is_bestseller)
+                                                <span class="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
+                                                    🔥 BEST SELLER
+                                                </span>
+                                            @endif
+                                            @if($product->is_limited_edition)
+                                                <span class="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-lg">
+                                                    ⭐ LIMITED
+                                                </span>
+                                            @endif
+                                        </div>
+                                        
+                                        <!-- Wishlist & Quick View Buttons -->
+                                        <div class="absolute top-4 right-4 z-10 flex gap-2">
+                                            <button class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30" onclick="event.preventDefault();" title="Add to Wishlist">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                                </svg>
+                                            </button>
+                                            <button class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30 quick-view-btn" 
+                                                    onclick="event.preventDefault(); openQuickView({{ json_encode([
+                                                        'id' => $product->id,
+                                                        'name' => $product->name,
+                                                        'description' => $product->description,
+                                                        'price' => $product->price,
+                                                        'sale_price' => $product->sale_price,
+                                                        'display_price' => $product->display_price,
+                                                        'has_discount' => $product->has_discount,
+                                                        'discount_percentage' => $product->discount_percentage,
+                                                        'quantity' => $product->quantity,
+                                                        'is_low_stock' => $product->is_low_stock,
+                                                        'rating' => $product->rating,
+                                                        'reviews' => $product->reviews,
+                                                        'category_name' => $product->category_name,
+                                                        'image' => $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg',
+                                                        'url' => route('shop.show', $product),
+                                                        'add_to_cart_url' => route('cart.add', $product)
+                                                    ]) }});" 
+                                                    title="Quick View">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                 </svg>
                                             </button>
                                         </div>
@@ -332,17 +458,35 @@
                                     @if($product->description)
                                         <p class="text-sm text-gray-400 line-clamp-2">{{ $product->description }}</p>
                                     @endif
-                                    @if($product->price)
+                                    
+                                    <!-- Price with Discount -->
+                                    <div class="flex items-center gap-2">
+                                        @if($product->has_discount)
+                                            <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
+                                            <p class="text-sm text-gray-500 line-through">৳{{ number_format($product->price, 2) }}</p>
+                                        @else
                                         <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
                                     @endif
+                                    </div>
+                                    
+                                    <!-- Stock Status with Urgency -->
                                     @if($product->quantity > 0)
-                                        <p class="text-sm text-violet-400">In Stock: {{ $product->quantity }}</p>
+                                        @if($product->is_low_stock)
+                                            <div class="flex items-center gap-2">
+                                                <span class="relative flex h-3 w-3">
+                                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                                                </span>
+                                                <p class="text-sm font-semibold text-orange-400">Only {{ $product->quantity }} left!</p>
+                                            </div>
+                                        @else
+                                            <p class="text-sm text-green-400">✓ In Stock</p>
+                                        @endif
                                     @else
-                                        <p class="text-sm text-red-400">Out of Stock</p>
+                                        <p class="text-sm text-red-400">✗ Out of Stock</p>
                                     @endif
                                 </div>
                             </div>
-                            @endforeach
                         @else
                             <div class="col-span-full text-center py-12">
                                 <p class="text-gray-400 text-lg">No products found in this category.</p>
@@ -352,14 +496,348 @@
                             </div>
                         @endif
                     </div>
+                    
+                    <!-- Load More Button -->
+                    @if($products->hasMorePages())
+                    <div class="mt-12 text-center">
+                        <button id="load-more-btn" 
+                                class="px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all inline-flex items-center gap-2"
+                                data-next-page="{{ $products->currentPage() + 1 }}"
+                                data-base-url="{{ route('shop.index') }}">
+                            <span>Load More Products</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="loading-spinner" class="hidden mt-4">
+                            <svg class="animate-spin h-8 w-8 text-violet-500 mx-auto" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="text-gray-400 text-sm mt-2">Loading more products...</p>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- Quick View Modal -->
+    <div id="quickViewModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style="display: none;">
+        <div class="relative bg-gray-900 rounded-2xl border border-violet-500/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl shadow-violet-500/20" onclick="event.stopPropagation();">
+            <!-- Close Button -->
+            <button onclick="closeQuickView()" class="absolute top-4 right-4 z-10 w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            
+            <!-- Modal Content -->
+            <div class="grid md:grid-cols-2 gap-8 p-8">
+                <!-- Product Image -->
+                <div class="relative">
+                    <div class="relative rounded-xl overflow-hidden border border-violet-500/20 bg-black/50">
+                        <img id="qv-image" src="" alt="" class="w-full h-auto object-cover">
+                        <div id="qv-badges" class="absolute top-4 left-4 flex flex-col gap-2"></div>
+                    </div>
+                </div>
+                
+                <!-- Product Info -->
+                <div class="space-y-4">
+                    <div>
+                        <span id="qv-category" class="px-3 py-1 bg-violet-500/20 text-violet-300 rounded-full text-sm font-semibold border border-violet-500/30"></span>
+                    </div>
+                    
+                    <h2 id="qv-name" class="text-3xl font-bold text-white"></h2>
+                    
+                    <!-- Rating -->
+                    <div class="flex items-center space-x-2">
+                        <div id="qv-stars" class="flex items-center space-x-1"></div>
+                        <span id="qv-reviews" class="text-sm text-gray-400"></span>
+                    </div>
+                    
+                    <!-- Price -->
+                    <div id="qv-price-container" class="flex items-center gap-3"></div>
+                    
+                    <!-- Stock Status -->
+                    <div id="qv-stock" class="flex items-center gap-2"></div>
+                    
+                    <!-- Description -->
+                    <div class="border-t border-violet-500/20 pt-4">
+                        <p id="qv-description" class="text-gray-300 leading-relaxed"></p>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex gap-3 pt-4">
+                        <form id="qv-add-to-cart-form" method="POST" class="flex-1">
+                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                            <button type="submit" id="qv-add-to-cart-btn" class="w-full px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition-all flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                Add to Cart
+                            </button>
+                        </form>
+                        <a id="qv-view-details" href="#" class="px-6 py-3 bg-black/50 border border-violet-500/30 text-white rounded-lg font-semibold hover:bg-violet-500/20 transition-all">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Include Footer -->
     @include('home.components.footer')
     
+    <!-- Infinite Scroll Load More JavaScript -->
+    <script>
+        // Load More Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const productsContainer = document.getElementById('products-container');
+            
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function() {
+                    const nextPage = this.getAttribute('data-next-page');
+                    const baseUrl = this.getAttribute('data-base-url');
+                    
+                    // Build URL with current filters
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set('page', nextPage);
+                    const fetchUrl = `${baseUrl}?${urlParams.toString()}`;
+                    
+                    // Show loading, hide button
+                    loadMoreBtn.style.display = 'none';
+                    loadingSpinner.classList.remove('hidden');
+                    
+                    // Fetch next page
+                    fetch(fetchUrl, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Append new products
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = data.html;
+                        const newProducts = tempDiv.querySelectorAll('.product-item');
+                        newProducts.forEach(product => {
+                            productsContainer.appendChild(product);
+                        });
+                        
+                        // Update button state
+                        if (data.hasMore) {
+                            loadMoreBtn.setAttribute('data-next-page', data.nextPage);
+                            loadMoreBtn.style.display = 'inline-flex';
+                        }
+                        
+                        loadingSpinner.classList.add('hidden');
+                        
+                        // Smooth scroll animation
+                        setTimeout(() => {
+                            newProducts[0]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 100);
+                    })
+                    .catch(error => {
+                        console.error('Error loading products:', error);
+                        loadingSpinner.classList.add('hidden');
+                        loadMoreBtn.style.display = 'inline-flex';
+                        alert('Failed to load more products. Please try again.');
+                    });
+                });
+            }
+        });
+    </script>
+    
+    <!-- Quick View & Image Zoom JavaScript -->
+    <script>
+        function openQuickView(product) {
+            const modal = document.getElementById('quickViewModal');
+            
+            // Set product data
+            document.getElementById('qv-image').src = product.image;
+            document.getElementById('qv-image').alt = product.name;
+            document.getElementById('qv-name').textContent = product.name;
+            document.getElementById('qv-category').textContent = product.category_name;
+            document.getElementById('qv-description').textContent = product.description || 'No description available.';
+            
+            // Set rating
+            const starsContainer = document.getElementById('qv-stars');
+            starsContainer.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const star = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                star.setAttribute('class', `w-5 h-5 ${i <= product.rating ? 'text-yellow-400' : 'text-gray-600'} fill-current`);
+                star.setAttribute('viewBox', '0 0 20 20');
+                star.innerHTML = '<path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>';
+                starsContainer.appendChild(star);
+            }
+            document.getElementById('qv-reviews').textContent = `(${product.reviews} reviews)`;
+            
+            // Set badges
+            const badgesContainer = document.getElementById('qv-badges');
+            badgesContainer.innerHTML = '';
+            if (product.has_discount) {
+                badgesContainer.innerHTML += `<span class="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">-${product.discount_percentage}% OFF</span>`;
+            }
+            
+            // Set price
+            const priceContainer = document.getElementById('qv-price-container');
+            if (product.has_discount) {
+                priceContainer.innerHTML = `
+                    <p class="text-3xl font-bold text-violet-400">৳${parseFloat(product.display_price).toFixed(2)}</p>
+                    <p class="text-lg text-gray-500 line-through">৳${parseFloat(product.price).toFixed(2)}</p>
+                    <span class="px-2 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded">Save ${product.discount_percentage}%</span>
+                `;
+            } else {
+                priceContainer.innerHTML = `<p class="text-3xl font-bold text-violet-400">৳${parseFloat(product.price).toFixed(2)}</p>`;
+            }
+            
+            // Set stock status
+            const stockContainer = document.getElementById('qv-stock');
+            if (product.quantity > 0) {
+                if (product.is_low_stock) {
+                    stockContainer.innerHTML = `
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                        </span>
+                        <p class="text-sm font-semibold text-orange-400">⚠️ Only ${product.quantity} left in stock!</p>
+                    `;
+                } else {
+                    stockContainer.innerHTML = `<p class="text-sm text-green-400">✓ In Stock (${product.quantity} available)</p>`;
+                }
+            } else {
+                stockContainer.innerHTML = `<p class="text-sm text-red-400">✗ Out of Stock</p>`;
+            }
+            
+            // Set form action and button
+            const form = document.getElementById('qv-add-to-cart-form');
+            const addButton = document.getElementById('qv-add-to-cart-btn');
+            form.action = product.add_to_cart_url;
+            
+            if (product.quantity > 0) {
+                addButton.disabled = false;
+                addButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                addButton.innerHTML = `
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    Add to Cart
+                `;
+            } else {
+                addButton.disabled = true;
+                addButton.classList.add('opacity-50', 'cursor-not-allowed');
+                addButton.innerHTML = 'Out of Stock';
+            }
+            
+            // Set view details link
+            document.getElementById('qv-view-details').href = product.url;
+            
+            // Show modal
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('modal-show'), 10);
+        }
+        
+        function closeQuickView() {
+            const modal = document.getElementById('quickViewModal');
+            modal.classList.remove('modal-show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+        
+        // Close modal on background click
+        document.getElementById('quickViewModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeQuickView();
+            }
+        });
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeQuickView();
+            }
+        });
+    </script>
+    
+    <!-- Image Zoom CSS -->
+    <style>
+        /* Quick View Modal Animation */
+        #quickViewModal {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        #quickViewModal.modal-show {
+            display: flex !important;
+        }
+        
+        #quickViewModal > div {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Image Zoom on Hover */
+        .product-card-zoom {
+            cursor: pointer;
+        }
+        
+        .product-image-zoom {
+            transition: transform 0.5s ease;
+        }
+        
+        .product-card-zoom:hover .product-image-zoom {
+            transform: scale(1.15);
+        }
+        
+        /* Smooth badge animations */
+        @keyframes badge-pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .animate-pulse {
+            animation: badge-pulse 2s ease-in-out infinite;
+        }
+        
+        /* Low stock urgency animation */
+        @keyframes ping {
+            75%, 100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        
+        .animate-ping {
+            animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+    </style>
     
     <!-- Include Styles -->
     @include('home.styles')

@@ -8,7 +8,7 @@ use Illuminate\View\View;
 
 class ShopController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request)
     {
         // Get filter parameters
         $category = $request->query('category', '');
@@ -17,6 +17,7 @@ class ShopController extends Controller
         $maxPrice = $request->query('max_price', '');
         $sort = $request->query('sort', 'newest');
         $inStock = $request->query('in_stock', '');
+        $perPage = $request->query('per_page', 12);
         
         // Available categories
         $categories = [
@@ -24,6 +25,12 @@ class ShopController extends Controller
             'knives' => 'Knives & Weapons',
             'stickers' => 'Stickers & Keychains',
         ];
+        
+        // Get category counts
+        $categoryCounts = [];
+        foreach (array_keys($categories) as $cat) {
+            $categoryCounts[$cat] = Product::where('is_active', true)->where('category', $cat)->count();
+        }
         
         // Fetch products from database
         $query = Product::with('images')->where('is_active', true);
@@ -79,14 +86,25 @@ class ShopController extends Controller
                 break;
         }
         
-        $products = $query->get();
+        // Use pagination for infinite scroll
+        $products = $query->paginate($perPage);
         
         // Get price range for filter
         $priceRange = Product::where('is_active', true)->selectRaw('MIN(price) as min, MAX(price) as max')->first();
         
+        // For AJAX requests (infinite scroll), return JSON
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'html' => view('shop.partials.product-grid', ['products' => $products])->render(),
+                'hasMore' => $products->hasMorePages(),
+                'nextPage' => $products->currentPage() + 1,
+            ]);
+        }
+        
         return view('shop.index', [
             'selectedCategory' => $category,
             'categories' => $categories,
+            'categoryCounts' => $categoryCounts,
             'products' => $products,
             'search' => $search,
             'minPrice' => $minPrice,
