@@ -956,6 +956,43 @@ class AdminController extends Controller
             return $order->subtotal - $order->discount;
         });
 
+        // Calculate Total Expenses (product costs + operational expenses)
+        // Product costs from sold items
+        $productCosts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
+            ->where('orders.is_deleted', false)
+            ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
+            ->first();
+        
+        $totalProductCosts = $productCosts->total_cost ?? 0;
+        
+        // Operational expenses (ads, shipping, courier, packaging, etc.)
+        $totalOperationalExpenses = \App\Models\Expense::sum('amount');
+        
+        // Total Expenses = Product Costs + Operational Expenses
+        $totalExpenses = $totalProductCosts + $totalOperationalExpenses;
+        
+        // Pure Profit = Revenue - Total Expenses
+        $pureProfit = $totalRevenue - $totalExpenses;
+
+        // This Month Expenses
+        $thisMonthExpenses = \App\Models\Expense::whereMonth('expense_date', now()->month)
+            ->whereYear('expense_date', now()->year)
+            ->sum('amount');
+        
+        $thisMonthProductCosts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
+            ->where('orders.is_deleted', false)
+            ->whereMonth('orders.created_at', now()->month)
+            ->whereYear('orders.created_at', now()->year)
+            ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
+            ->first();
+        
+        $thisMonthTotalExpenses = ($thisMonthProductCosts->total_cost ?? 0) + $thisMonthExpenses;
+        $thisMonthProfit = $thisMonthRevenue - $thisMonthTotalExpenses;
+
         // Total Orders
         $totalOrders = $confirmedOrders->count();
 
@@ -1005,6 +1042,12 @@ class AdminController extends Controller
         return view('admin.financial', [
             'totalRevenue' => $totalRevenue,
             'thisMonthRevenue' => $thisMonthRevenue,
+            'totalExpenses' => $totalExpenses,
+            'totalProductCosts' => $totalProductCosts,
+            'totalOperationalExpenses' => $totalOperationalExpenses,
+            'pureProfit' => $pureProfit,
+            'thisMonthExpenses' => $thisMonthTotalExpenses,
+            'thisMonthProfit' => $thisMonthProfit,
             'totalOrders' => $totalOrders,
             'averageOrder' => $averageOrder,
             'recentTransactions' => $recentTransactions,
@@ -1163,28 +1206,102 @@ class AdminController extends Controller
     }
 
     /**
-     * Sales analytics and reports
+     * Costing & Expenses Management (formerly analytics)
      */
-    public function analytics(): View
+    public function costing(): View
     {
-        $period = request()->get('period', 'daily');
-        $startDate = request()->get('start_date');
-        $endDate = request()->get('end_date');
-        
-        $salesReport = AnalyticsService::getSalesReport($period, $startDate, $endDate);
-        $productPerformance = AnalyticsService::getProductPerformance();
-        $customerAnalytics = AnalyticsService::getCustomerAnalytics();
-        $dashboardSummary = AnalyticsService::getDashboardSummary();
-        
-        return view('admin.analytics', compact(
-            'salesReport',
-            'productPerformance',
-            'customerAnalytics',
-            'dashboardSummary',
-            'period',
-            'startDate',
-            'endDate'
+        // Get all expenses
+        $expenses = \App\Models\Expense::with(['order', 'product'])
+            ->orderBy('expense_date', 'desc')
+            ->take(50)
+            ->get();
+
+        // Calculate expense totals by category
+        $expensesByCategory = \App\Models\Expense::select('category', DB::raw('SUM(amount) as total'))
+            ->groupBy('category')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->category => $item->total];
+            });
+
+        // Total expenses
+        $totalExpenses = \App\Models\Expense::sum('amount');
+
+        // Calculate product costs (sold items only)
+        $productCosts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
+            ->where('orders.is_deleted', false)
+            ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
+            ->first();
+
+        $totalProductCosts = $productCosts->total_cost ?? 0;
+
+        // Get products with cost info
+        $products = Product::select('id', 'name', 'price', 'cost_price', 'quantity')
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'selling_price' => $product->price,
+                    'cost_price' => $product->cost_price,
+                    'profit_per_unit' => $product->price - $product->cost_price,
+                    'stock' => $product->quantity,
+                ];
+            });
+
+        return view('admin.costing', compact(
+            'expenses',
+            'expensesByCategory',
+            'totalExpenses',
+            'totalProductCosts',
+            'products'
         ));
+    }
+
+    /**
+     * Store new expense
+     */
+    public function storeExpense(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'category' => 'required|in:shipping,ads,courier,packaging,damaged,returned,lost,other',
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'order_id' => 'nullable|exists:orders,id',
+            'product_id' => 'nullable|exists:products,id',
+            'expense_date' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        \App\Models\Expense::create($validated);
+
+        return redirect()->back()->with('success', 'Expense added successfully!');
+    }
+
+    /**
+     * Delete expense
+     */
+    public function deleteExpense(\App\Models\Expense $expense): RedirectResponse
+    {
+        $expense->delete();
+        return redirect()->back()->with('success', 'Expense deleted successfully!');
+    }
+
+    /**
+     * Update product cost price
+     */
+    public function updateProductCost(Request $request, Product $product): RedirectResponse
+    {
+        $validated = $request->validate([
+            'cost_price' => 'required|numeric|min:0',
+        ]);
+
+        $product->update(['cost_price' => $validated['cost_price']]);
+
+        return redirect()->back()->with('success', 'Product cost updated successfully!');
     }
 
     /**

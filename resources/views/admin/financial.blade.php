@@ -7,7 +7,7 @@
 
     <div class="space-y-6">
         <!-- Financial Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
                     <div class="flex items-center">
@@ -19,6 +19,7 @@
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
                             <p class="text-2xl font-semibold text-gray-900 dark:text-white">৳{{ number_format($totalRevenue, 2) }}</p>
+                            <p class="text-xs text-gray-400 mt-1">This Month: ৳{{ number_format($thisMonthRevenue, 2) }}</p>
                         </div>
                     </div>
                 </div>
@@ -27,30 +28,32 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                        <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Expenses</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">৳{{ number_format($totalExpenses, 2) }}</p>
+                            <p class="text-xs text-gray-400 mt-1">This Month: ৳{{ number_format($thisMonthExpenses, 2) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 {{ $pureProfit >= 0 ? 'bg-blue-500' : 'bg-orange-500' }} rounded-md p-3">
                             <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                             </svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">This Month</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">৳{{ number_format($thisMonthRevenue, 2) }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Orders</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ number_format($totalOrders) }}</p>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Pure Profit</p>
+                            <p class="text-2xl font-semibold {{ $pureProfit >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400' }}">৳{{ number_format($pureProfit, 2) }}</p>
+                            <p class="text-xs text-gray-400 mt-1">This Month: ৳{{ number_format($thisMonthProfit, 2) }}</p>
                         </div>
                     </div>
                 </div>
@@ -61,14 +64,39 @@
                     <div class="flex items-center">
                         <div class="flex-shrink-0 bg-purple-500 rounded-md p-3">
                             <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                             </svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Average Order</p>
-                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">৳{{ number_format($averageOrder, 2) }}</p>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Profit Margin</p>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ $totalRevenue > 0 ? number_format(($pureProfit / $totalRevenue) * 100, 1) : 0 }}%</p>
+                            <p class="text-xs text-gray-400 mt-1">{{ $totalOrders }} Total Orders</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense Breakdown -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Expense Breakdown</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Product Costs (COGS)</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">৳{{ number_format($totalProductCosts, 2) }}</p>
+                        <p class="text-xs text-gray-400 mt-1">Cost of goods sold</p>
+                    </div>
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Operational Expenses</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">৳{{ number_format($totalOperationalExpenses, 2) }}</p>
+                        <p class="text-xs text-gray-400 mt-1">Shipping, ads, courier, packaging</p>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <a href="{{ route('admin.costing') }}" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-medium">
+                        View Detailed Costing & Expenses →
+                    </a>
                 </div>
             </div>
         </div>

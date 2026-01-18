@@ -319,10 +319,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/send-special-offer', [\App\Http\Controllers\AdminController::class, 'sendSpecialOffer'])->name('send-special-offer');
     Route::post('/send-new-product/{product}', [\App\Http\Controllers\AdminController::class, 'sendNewProductNotification'])->name('send-new-product');
     
-    // Analytics & Reports
-    Route::get('/analytics', [\App\Http\Controllers\AdminController::class, 'analytics'])->name('analytics');
-    Route::get('/analytics/export', [\App\Http\Controllers\AdminController::class, 'exportSalesReport'])->name('analytics.export');
-    Route::post('/analytics/clear-cache', [\App\Http\Controllers\AdminController::class, 'clearAnalyticsCache'])->name('analytics.clear-cache');
+    // Costing & Expenses Management (formerly Analytics)
+    Route::get('/costing', [\App\Http\Controllers\AdminController::class, 'costing'])->name('costing');
+    Route::post('/expenses', [\App\Http\Controllers\AdminController::class, 'storeExpense'])->name('expenses.store');
+    Route::delete('/expenses/{expense}', [\App\Http\Controllers\AdminController::class, 'deleteExpense'])->name('expenses.delete');
+    Route::put('/products/{product}/cost', [\App\Http\Controllers\AdminController::class, 'updateProductCost'])->name('product.update-cost');
     
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');

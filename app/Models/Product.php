@@ -17,6 +17,7 @@ class Product extends Model
         'notes',
         'quantity',
         'price',
+        'cost_price',
         'image',
         'category',
         'rating',
@@ -28,6 +29,7 @@ class Product extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'cost_price' => 'decimal:2',
     ];
 
     public function images(): HasMany
