@@ -180,6 +180,7 @@
             <div class="lg:hidden">
                 @include('shop.mobile', [
                     'categories' => $categories,
+                    'categoryCounts' => $categoryCounts,
                     'selectedCategory' => $selectedCategory,
                     'products' => $products,
                     'search' => $search,

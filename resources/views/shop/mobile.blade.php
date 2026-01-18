@@ -207,7 +207,7 @@
     </div>
 
     <!-- Products Grid -->
-    <div class="grid grid-cols-2 gap-4">
+    <div id="mobile-products-container" class="grid grid-cols-2 gap-4">
         @forelse($products as $product)
             <div class="bg-gray-900 border border-violet-500/20 rounded-xl overflow-hidden">
                 <a href="{{ route('shop.show', $product) }}" class="block">
@@ -332,9 +332,9 @@
 
     <!-- Load More Button -->
     @if($products->hasMorePages())
-    <div class="text-center mt-8" id="mobile-load-more-container">
+    <div class="text-center mt-8 mb-8" id="mobile-load-more-container">
         <button id="mobile-load-more-btn" 
-                class="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all inline-flex items-center gap-2"
+                class="w-full px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
                 data-next-page="{{ $products->currentPage() + 1 }}"
                 data-base-url="{{ route('shop.index') }}">
             <span>Load More Products</span>
@@ -342,7 +342,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
         </button>
-        <div id="mobile-loading-spinner" class="hidden">
+        <div id="mobile-loading-spinner" class="hidden mt-4">
             <div class="inline-flex items-center gap-2 px-8 py-3 bg-gray-800 text-gray-400 rounded-lg">
                 <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -351,6 +351,11 @@
                 Loading...
             </div>
         </div>
+    </div>
+    @else
+    <!-- Debug: No more pages -->
+    <div class="text-center mt-8 mb-8 text-gray-500 text-sm">
+        <!-- Showing all {{ $products->total() }} products (Page {{ $products->currentPage() }} of {{ $products->lastPage() }}) -->
     </div>
     @endif
 </div>
@@ -370,7 +375,13 @@ function updateURLParameter(url, param, value) {
 document.addEventListener('DOMContentLoaded', function() {
     const loadMoreBtn = document.getElementById('mobile-load-more-btn');
     const loadingSpinner = document.getElementById('mobile-loading-spinner');
-    const productsContainer = document.querySelector('.grid.grid-cols-2');
+    const productsContainer = document.getElementById('mobile-products-container');
+    
+    console.log('Mobile Load More:', { 
+        button: !!loadMoreBtn, 
+        spinner: !!loadingSpinner, 
+        container: !!productsContainer 
+    });
     
     if (loadMoreBtn) {
         loadMoreBtn.addEventListener('click', function() {
