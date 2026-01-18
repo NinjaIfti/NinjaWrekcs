@@ -147,7 +147,7 @@
                                         {{ $notifications->count() }} {{ Str::plural('person', $notifications->count()) }} waiting
                                     </p>
                                 </div>
-                                <a href="{{ route('admin.product-edit', $product) }}" 
+                                <a href="{{ route('products.edit', $product) }}" 
                                    class="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 transition">
                                     Edit Product
                                 </a>
