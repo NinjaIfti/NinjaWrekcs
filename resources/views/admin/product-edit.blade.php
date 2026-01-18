@@ -53,11 +53,58 @@
 
                         <!-- Price -->
                         <div>
-                            <label for="price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price (৳) *</label>
+                            <label for="price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Regular Price (৳) *</label>
                             <input type="number" name="price" id="price" value="{{ old('price', $product->price ?? 0) }}" step="0.01" min="0" required class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             @error('price')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
+                        </div>
+
+                        <!-- Limited Time Offer Section -->
+                        <div class="border-2 border-dashed border-orange-300 dark:border-orange-700 rounded-lg p-4 bg-orange-50 dark:bg-orange-900/20">
+                            <h3 class="text-sm font-semibold text-orange-700 dark:text-orange-300 mb-3 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Limited Time Offer (Optional)
+                                @if($product->has_active_offer)
+                                    <span class="ml-auto text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full">Active Now</span>
+                                @endif
+                            </h3>
+                            
+                            <!-- Offer Price -->
+                            <div class="mb-4">
+                                <label for="offer_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Offer Price (৳)</label>
+                                <input type="number" name="offer_price" id="offer_price" value="{{ old('offer_price', $product->offer_price) }}" step="0.01" min="0" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                @error('offer_price')
+                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Set a special price for limited time</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- Offer Start Date -->
+                                <div>
+                                    <label for="offer_starts_at" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date & Time</label>
+                                    <input type="datetime-local" name="offer_starts_at" id="offer_starts_at" value="{{ old('offer_starts_at', $product->offer_starts_at?->format('Y-m-d\TH:i')) }}" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    @error('offer_starts_at')
+                                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <!-- Offer End Date -->
+                                <div>
+                                    <label for="offer_ends_at" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date & Time</label>
+                                    <input type="datetime-local" name="offer_ends_at" id="offer_ends_at" value="{{ old('offer_ends_at', $product->offer_ends_at?->format('Y-m-d\TH:i')) }}" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    @error('offer_ends_at')
+                                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                            
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                ⏰ The offer will automatically activate and expire based on these dates
+                            </p>
                         </div>
 
                         <!-- Current Images -->

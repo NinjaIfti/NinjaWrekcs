@@ -20,6 +20,9 @@ class Product extends Model
         'price',
         'cost_price',
         'sale_price',
+        'offer_price',
+        'offer_starts_at',
+        'offer_ends_at',
         'image',
         'category',
         'rating',
@@ -39,6 +42,9 @@ class Product extends Model
         'is_limited_edition' => 'boolean',
         'cost_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
+        'offer_price' => 'decimal:2',
+        'offer_starts_at' => 'datetime',
+        'offer_ends_at' => 'datetime',
     ];
 
     public function images(): HasMany
@@ -66,15 +72,32 @@ class Product extends Model
         };
     }
 
-    // Get the final display price (sale price if available, otherwise regular price)
+    // Check if offer is currently active
+    public function getHasActiveOfferAttribute()
+    {
+        if (!$this->offer_price || !$this->offer_starts_at || !$this->offer_ends_at) {
+            return false;
+        }
+        
+        $now = now();
+        return $now->between($this->offer_starts_at, $this->offer_ends_at) && $this->offer_price < $this->price;
+    }
+
+    // Get the final display price (offer price if active, then sale price, otherwise regular price)
     public function getDisplayPriceAttribute()
     {
+        if ($this->has_active_offer) {
+            return $this->offer_price;
+        }
         return $this->sale_price ?? $this->price;
     }
 
     // Check if product has a discount
     public function getHasDiscountAttribute()
     {
+        if ($this->has_active_offer) {
+            return true;
+        }
         return $this->sale_price && $this->sale_price < $this->price;
     }
 
@@ -84,7 +107,21 @@ class Product extends Model
         if (!$this->has_discount) {
             return 0;
         }
-        return round((($this->price - $this->sale_price) / $this->price) * 100);
+        
+        $originalPrice = $this->price;
+        $discountedPrice = $this->has_active_offer ? $this->offer_price : $this->sale_price;
+        
+        return round((($originalPrice - $discountedPrice) / $originalPrice) * 100);
+    }
+
+    // Get time remaining for offer in seconds
+    public function getOfferTimeRemainingAttribute()
+    {
+        if (!$this->has_active_offer) {
+            return 0;
+        }
+        
+        return now()->diffInSeconds($this->offer_ends_at, false);
     }
 
     // Check if stock is low

@@ -104,8 +104,43 @@
 
                     <!-- Price -->
                     @if($product->price)
-                    <div class="text-3xl font-bold text-violet-400">
-                        ৳{{ number_format($product->price, 2) }}
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            @if($product->has_discount)
+                                <div class="text-3xl font-bold text-violet-400">
+                                    ৳{{ number_format($product->display_price, 2) }}
+                                </div>
+                                <div class="text-xl text-gray-500 line-through">
+                                    ৳{{ number_format($product->price, 2) }}
+                                </div>
+                                <span class="px-3 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded-full">
+                                    Save {{ $product->discount_percentage }}%
+                                </span>
+                            @else
+                                <div class="text-3xl font-bold text-violet-400">
+                                    ৳{{ number_format($product->price, 2) }}
+                                </div>
+                            @endif
+                        </div>
+                        
+                        <!-- Offer Countdown Timer -->
+                        @if($product->has_active_offer)
+                            <div class="bg-gradient-to-r from-orange-500/20 to-red-500/20 border-2 border-orange-500/40 rounded-xl px-5 py-4 shadow-lg">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <svg class="w-6 h-6 text-orange-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span class="text-orange-300 font-bold text-lg">Limited Time Offer!</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-orange-200 mb-2">
+                                    <span>⚡ This special price ends in:</span>
+                                </div>
+                                <div class="offer-countdown text-2xl font-bold text-white" 
+                                     data-end-time="{{ $product->offer_ends_at->timestamp }}">
+                                    <span class="countdown-timer">Calculating...</span>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                     @endif
 
@@ -225,6 +260,48 @@
 
             showSlide(0);
         });
+    </script>
+    
+    <!-- Offer Countdown Timer Script -->
+    <script>
+        function updateCountdowns() {
+            const countdowns = document.querySelectorAll('.offer-countdown');
+            const now = Math.floor(Date.now() / 1000);
+            
+            countdowns.forEach(countdown => {
+                const endTime = parseInt(countdown.dataset.endTime);
+                const timeLeft = endTime - now;
+                
+                if (timeLeft <= 0) {
+                    countdown.querySelector('.countdown-timer').textContent = 'Offer Ended - Refreshing...';
+                    // Reload page to update prices
+                    setTimeout(() => location.reload(), 2000);
+                    return;
+                }
+                
+                const days = Math.floor(timeLeft / 86400);
+                const hours = Math.floor((timeLeft % 86400) / 3600);
+                const minutes = Math.floor((timeLeft % 3600) / 60);
+                const seconds = timeLeft % 60;
+                
+                let timerHTML = '';
+                if (days > 0) {
+                    timerHTML = `<span class="bg-orange-600/40 px-3 py-2 rounded-lg">${days} Days</span> <span class="bg-orange-600/40 px-3 py-2 rounded-lg">${hours} Hours</span> <span class="bg-orange-600/40 px-3 py-2 rounded-lg">${minutes} Minutes</span>`;
+                } else if (hours > 0) {
+                    timerHTML = `<span class="bg-orange-600/40 px-3 py-2 rounded-lg">${hours} Hours</span> <span class="bg-orange-600/40 px-3 py-2 rounded-lg">${minutes} Minutes</span> <span class="bg-orange-600/40 px-3 py-2 rounded-lg">${seconds} Seconds</span>`;
+                } else {
+                    timerHTML = `<span class="bg-red-600/40 px-3 py-2 rounded-lg animate-pulse">${minutes} Minutes</span> <span class="bg-red-600/40 px-3 py-2 rounded-lg animate-pulse">${seconds} Seconds</span>`;
+                }
+                
+                countdown.querySelector('.countdown-timer').innerHTML = timerHTML;
+            });
+        }
+        
+        // Update every second
+        if (document.querySelectorAll('.offer-countdown').length > 0) {
+            updateCountdowns();
+            setInterval(updateCountdowns, 1000);
+        }
     </script>
 </body>
 </html>

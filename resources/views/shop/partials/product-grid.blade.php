@@ -45,6 +45,8 @@
                             'sale_price' => $product->sale_price,
                             'display_price' => $product->display_price,
                             'has_discount' => $product->has_discount,
+                            'has_active_offer' => $product->has_active_offer,
+                            'offer_ends_at' => $product->has_active_offer ? $product->offer_ends_at->timestamp : null,
                             'discount_percentage' => $product->discount_percentage,
                             'quantity' => $product->quantity,
                             'is_low_stock' => $product->is_low_stock,
@@ -113,6 +115,22 @@
                 <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
             @endif
         </div>
+        
+        <!-- Offer Countdown Timer -->
+        @if($product->has_active_offer)
+            <div class="bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg px-3 py-2">
+                <div class="flex items-center gap-2 text-xs">
+                    <svg class="w-4 h-4 text-orange-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-orange-300 font-semibold">Offer ends in:</span>
+                </div>
+                <div class="mt-1 flex items-center gap-2 text-sm font-bold text-white offer-countdown" 
+                     data-end-time="{{ $product->offer_ends_at->timestamp }}">
+                    <span class="countdown-timer">Calculating...</span>
+                </div>
+            </div>
+        @endif
         
         <!-- Stock Status with Urgency -->
         @if($product->quantity > 0)

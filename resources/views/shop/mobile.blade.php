@@ -441,4 +441,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Offer Countdown Timer Script
+function updateCountdowns() {
+    const countdowns = document.querySelectorAll('.offer-countdown');
+    const now = Math.floor(Date.now() / 1000);
+    
+    countdowns.forEach(countdown => {
+        const endTime = parseInt(countdown.dataset.endTime);
+        const timeLeft = endTime - now;
+        
+        if (timeLeft <= 0) {
+            countdown.querySelector('.countdown-timer').textContent = 'Offer Ended';
+            // Reload page to update prices
+            setTimeout(() => location.reload(), 2000);
+            return;
+        }
+        
+        const days = Math.floor(timeLeft / 86400);
+        const hours = Math.floor((timeLeft % 86400) / 3600);
+        const minutes = Math.floor((timeLeft % 3600) / 60);
+        const seconds = timeLeft % 60;
+        
+        let timerHTML = '';
+        if (days > 0) {
+            timerHTML = `<span class="bg-orange-600/30 px-1 py-0.5 rounded">${days}d</span> <span class="bg-orange-600/30 px-1 py-0.5 rounded">${hours}h</span>`;
+        } else if (hours > 0) {
+            timerHTML = `<span class="bg-orange-600/30 px-1 py-0.5 rounded">${hours}h</span> <span class="bg-orange-600/30 px-1 py-0.5 rounded">${minutes}m</span>`;
+        } else {
+            timerHTML = `<span class="bg-red-600/30 px-1 py-0.5 rounded animate-pulse">${minutes}m</span> <span class="bg-red-600/30 px-1 py-0.5 rounded animate-pulse">${seconds}s</span>`;
+        }
+        
+        countdown.querySelector('.countdown-timer').innerHTML = timerHTML;
+    });
+}
+
+// Update every second
+if (document.querySelectorAll('.offer-countdown').length > 0) {
+    updateCountdowns();
+    setInterval(updateCountdowns, 1000);
+}
 </script>

@@ -607,15 +607,35 @@
             
             // Set price
             const priceContainer = document.getElementById('qv-price-container');
+            let priceHTML = '';
             if (product.has_discount) {
-                priceContainer.innerHTML = `
+                priceHTML = `
                     <p class="text-3xl font-bold text-violet-400">৳${parseFloat(product.display_price).toFixed(2)}</p>
                     <p class="text-lg text-gray-500 line-through">৳${parseFloat(product.price).toFixed(2)}</p>
                     <span class="px-2 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded">Save ${product.discount_percentage}%</span>
                 `;
             } else {
-                priceContainer.innerHTML = `<p class="text-3xl font-bold text-violet-400">৳${parseFloat(product.price).toFixed(2)}</p>`;
+                priceHTML = `<p class="text-3xl font-bold text-violet-400">৳${parseFloat(product.price).toFixed(2)}</p>`;
             }
+            
+            // Add offer countdown if active
+            if (product.has_active_offer && product.offer_ends_at) {
+                priceHTML += `
+                    <div class="mt-3 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg px-4 py-3">
+                        <div class="flex items-center gap-2 text-sm mb-2">
+                            <svg class="w-5 h-5 text-orange-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-orange-300 font-semibold">Limited Time Offer!</span>
+                        </div>
+                        <div class="offer-countdown" data-end-time="${product.offer_ends_at}">
+                            <span class="countdown-timer text-white font-bold">Calculating...</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            priceContainer.innerHTML = priceHTML;
             
             // Set stock status
             const stockContainer = document.getElementById('qv-stock');
@@ -999,6 +1019,50 @@
             }
         }
     </style>
+    
+    <!-- Offer Countdown Timer Script -->
+    <script>
+        // Update all countdown timers
+        function updateCountdowns() {
+            const countdowns = document.querySelectorAll('.offer-countdown');
+            const now = Math.floor(Date.now() / 1000);
+            
+            countdowns.forEach(countdown => {
+                const endTime = parseInt(countdown.dataset.endTime);
+                const timeLeft = endTime - now;
+                
+                if (timeLeft <= 0) {
+                    countdown.querySelector('.countdown-timer').textContent = 'Offer Ended';
+                    countdown.closest('.product-item')?.classList.add('offer-expired');
+                    // Reload page to update prices
+                    setTimeout(() => location.reload(), 2000);
+                    return;
+                }
+                
+                const days = Math.floor(timeLeft / 86400);
+                const hours = Math.floor((timeLeft % 86400) / 3600);
+                const minutes = Math.floor((timeLeft % 3600) / 60);
+                const seconds = timeLeft % 60;
+                
+                let timerHTML = '';
+                if (days > 0) {
+                    timerHTML = `<span class="bg-orange-600/30 px-2 py-1 rounded">${days}d</span> <span class="bg-orange-600/30 px-2 py-1 rounded">${hours}h</span> <span class="bg-orange-600/30 px-2 py-1 rounded">${minutes}m</span>`;
+                } else if (hours > 0) {
+                    timerHTML = `<span class="bg-orange-600/30 px-2 py-1 rounded">${hours}h</span> <span class="bg-orange-600/30 px-2 py-1 rounded">${minutes}m</span> <span class="bg-orange-600/30 px-2 py-1 rounded">${seconds}s</span>`;
+                } else {
+                    timerHTML = `<span class="bg-red-600/30 px-2 py-1 rounded animate-pulse">${minutes}m</span> <span class="bg-red-600/30 px-2 py-1 rounded animate-pulse">${seconds}s</span>`;
+                }
+                
+                countdown.querySelector('.countdown-timer').innerHTML = timerHTML;
+            });
+        }
+        
+        // Update every second
+        if (document.querySelectorAll('.offer-countdown').length > 0) {
+            updateCountdowns();
+            setInterval(updateCountdowns, 1000);
+        }
+    </script>
     
     <!-- Include Styles -->
     @include('home.styles')
