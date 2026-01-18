@@ -96,8 +96,12 @@ class ShopController extends Controller
         
         // For AJAX requests (infinite scroll), return JSON
         if ($request->ajax() || $request->wantsJson()) {
+            // Check if it's a mobile request
+            $viewType = $request->query('view_type', 'desktop');
+            $partial = $viewType === 'mobile' ? 'shop.partials.product-mobile' : 'shop.partials.product-grid';
+            
             return response()->json([
-                'html' => view('shop.partials.product-grid', ['products' => $products])->render(),
+                'html' => view($partial, ['products' => $products])->render(),
                 'hasMore' => $products->hasMorePages(),
                 'nextPage' => $products->currentPage() + 1,
             ]);

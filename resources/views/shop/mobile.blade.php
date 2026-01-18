@@ -378,6 +378,7 @@ async function loadMoreProducts() {
     try {
         const url = new URL(window.location.href);
         url.searchParams.set('page', currentPage + 1);
+        url.searchParams.set('view_type', 'mobile');
         
         const response = await fetch(url.toString(), {
             headers: {
@@ -390,10 +391,10 @@ async function loadMoreProducts() {
         if (data.html) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = data.html;
-            const newProducts = tempDiv.querySelectorAll('.grid > div');
+            const newProducts = tempDiv.children;
             const grid = document.querySelector('.grid.grid-cols-2');
             
-            newProducts.forEach(product => {
+            Array.from(newProducts).forEach(product => {
                 grid.appendChild(product);
             });
             
@@ -411,6 +412,8 @@ async function loadMoreProducts() {
         alert('Failed to load more products. Please try again.');
     } finally {
         loading = false;
+        document.getElementById('loadMoreBtn')?.classList.remove('hidden');
+        document.getElementById('loadingSpinner')?.classList.add('hidden');
     }
 }
 </script>

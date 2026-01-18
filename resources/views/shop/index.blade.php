@@ -494,7 +494,7 @@
     </div>
 
     <!-- Live Purchase Notification -->
-    <div id="liveNotification" class="fixed bottom-6 left-6 z-40 transform translate-y-32 transition-transform duration-500 ease-out" style="display: none;">
+    <div id="liveNotification" class="fixed bottom-6 left-6 z-40 transition-all duration-500 ease-out" style="display: none;">
         <div class="bg-gray-900 border border-violet-500/30 rounded-xl shadow-2xl shadow-violet-500/20 p-4 flex items-center gap-4 max-w-sm backdrop-blur-sm">
             <div class="flex-shrink-0">
                 <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -799,7 +799,8 @@
                         // Show notification
                         notification.style.display = 'block';
                         setTimeout(() => {
-                            notification.style.transform = 'translateY(0)';
+                            notification.classList.add('show');
+                            notification.style.transform = '';
                         }, 100);
                         
                         notificationShown = true;
@@ -815,7 +816,7 @@
         
         function closeLiveNotification() {
             const notification = document.getElementById('liveNotification');
-            notification.style.transform = 'translateY(32rem)';
+            notification.classList.remove('show');
             setTimeout(() => {
                 notification.style.display = 'none';
                 notificationShown = false;
@@ -906,6 +907,95 @@
         
         .animate-ping {
             animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        
+        /* Desktop notification positioning */
+        #liveNotification {
+            transform: translateY(150%);
+        }
+        
+        #liveNotification.show {
+            transform: translateY(0);
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            /* Make Quick View Modal smaller on mobile */
+            #quickViewModal > div {
+                max-w-full;
+                margin: 1rem;
+                max-height: 85vh;
+            }
+            
+            #quickViewModal .grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            #quickViewModal h1 {
+                font-size: 1.25rem;
+                line-height: 1.75rem;
+            }
+            
+            #quickViewModal p {
+                font-size: 0.875rem;
+            }
+            
+            #quickViewModal button {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+            
+            #quickViewModal .absolute.top-4.right-4 {
+                top: 0.5rem;
+                right: 0.5rem;
+            }
+            
+            #quickViewModal img {
+                height: 200px;
+            }
+            
+            /* Move live notification to top and make smaller on mobile */
+            #liveNotification {
+                bottom: auto !important;
+                top: 1rem !important;
+                left: 50% !important;
+                transform: translateX(-50%) translateY(-200%) !important;
+                width: calc(100% - 2rem);
+                max-width: 320px;
+            }
+            
+            #liveNotification.show {
+                transform: translateX(-50%) translateY(0) !important;
+            }
+            
+            #liveNotification .bg-gray-900 {
+                padding: 0.75rem;
+            }
+            
+            #liveNotification .flex-shrink-0 > div {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+            
+            #liveNotification .flex-shrink-0 svg {
+                width: 1.25rem;
+                height: 1.25rem;
+            }
+            
+            #liveNotification .text-sm {
+                font-size: 0.75rem;
+            }
+            
+            #liveNotification .text-xs {
+                font-size: 0.625rem;
+            }
+            
+            #liveNotification button svg {
+                width: 1rem;
+                height: 1rem;
+            }
         }
     </style>
     
