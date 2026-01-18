@@ -737,7 +737,7 @@
             fetch('{{ route("stock-notification.store") }}', {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': formData.get('_token'),
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },

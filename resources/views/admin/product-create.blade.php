@@ -75,16 +75,6 @@
                         </div>
 
                         <!-- Rating & Reviews -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="rating" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rating (0-5)</label>
-                                <input type="number" name="rating" id="rating" value="{{ old('rating', 0) }}" min="0" max="5" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <div>
-                                <label for="reviews" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reviews Count</label>
-                                <input type="number" name="reviews" id="reviews" value="{{ old('reviews', 0) }}" min="0" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                        </div>
 
                         <!-- Active Status -->
                         <div>
