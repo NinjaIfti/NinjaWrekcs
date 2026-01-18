@@ -41,6 +41,3 @@ class ConfirmablePasswordController extends Controller
             : redirect()->route('profile.index');
     }
 }
-
-    }
-}
