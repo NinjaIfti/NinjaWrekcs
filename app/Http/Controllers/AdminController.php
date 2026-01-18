@@ -420,6 +420,22 @@ class AdminController extends Controller
                 'notes' => $validated['notes'],
             ]);
 
+            // Send email notification if status changed and order has email
+            if ($oldStatus !== $validated['status'] && $order->email) {
+                // Reload order with items relationship for email
+                $order->refresh();
+                $order->load('items');
+                
+                $emailResult = \App\Services\EmailService::sendWithFallback(
+                    new \App\Mail\OrderStatusUpdated($order, $oldStatus),
+                    $order->email,
+                    'order status update'
+                );
+
+                // Send in-app notification (only if user exists)
+                \App\Services\NotificationService::orderStatusUpdated($order, $oldStatus);
+            }
+
             // Log all changes
             foreach ($changes as $change) {
                 \App\Models\OrderChange::create([
@@ -999,6 +1015,24 @@ class AdminController extends Controller
         // Average Order Value (excluding delivery)
         $averageOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
+        // Max Order Value (for progress bar calculation)
+        $maxOrderValue = Order::notDeleted()
+            ->where('status', '!=', 'pending')
+            ->where('status', '!=', 'cancelled')
+            ->selectRaw('MAX(subtotal - discount) as max_order')
+            ->first()
+            ->max_order ?? 1;
+
+        // Monthly Order Goal (based on highest monthly orders or total orders)
+        $monthlyOrderGoal = Order::notDeleted()
+            ->where('status', '!=', 'pending')
+            ->where('status', '!=', 'cancelled')
+            ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as order_count')
+            ->groupBy('year', 'month')
+            ->orderBy('order_count', 'DESC')
+            ->first()
+            ->order_count ?? $totalOrders;
+
         // Recent Transactions (last 20 orders)
         $recentTransactions = Order::notDeleted()
             ->where('status', '!=', 'pending')
@@ -1018,27 +1052,6 @@ class AdminController extends Controller
                 ];
             });
 
-        // Revenue by month for chart (last 6 months)
-        $revenueByMonth = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month = now()->subMonths($i);
-            $monthOrders = Order::notDeleted()
-                ->where('status', '!=', 'pending')
-                ->where('status', '!=', 'cancelled')
-                ->whereMonth('created_at', $month->month)
-                ->whereYear('created_at', $month->year)
-                ->get();
-            
-            $revenue = $monthOrders->sum(function($order) {
-                return $order->subtotal - $order->discount;
-            });
-            
-            $revenueByMonth[] = [
-                'month' => $month->format('M Y'),
-                'revenue' => $revenue,
-            ];
-        }
-
         return view('admin.financial', [
             'totalRevenue' => $totalRevenue,
             'thisMonthRevenue' => $thisMonthRevenue,
@@ -1050,8 +1063,9 @@ class AdminController extends Controller
             'thisMonthProfit' => $thisMonthProfit,
             'totalOrders' => $totalOrders,
             'averageOrder' => $averageOrder,
+            'maxOrderValue' => $maxOrderValue,
+            'monthlyOrderGoal' => $monthlyOrderGoal,
             'recentTransactions' => $recentTransactions,
-            'revenueByMonth' => $revenueByMonth,
         ]);
     }
 
