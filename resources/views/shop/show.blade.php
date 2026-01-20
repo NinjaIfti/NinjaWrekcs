@@ -25,7 +25,7 @@
     @include('home.components.navigation')
     
     <!-- Product Detail Section -->
-    <section class="pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-16 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Back Button -->
             <a href="{{ route('shop.index') }}" class="inline-flex items-center text-violet-400 hover:text-violet-300 mb-8 transition-colors">

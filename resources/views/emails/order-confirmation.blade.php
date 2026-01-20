@@ -9,6 +9,7 @@ We're excited to fulfill your Valorant collectibles order. Your order has been r
 
 **Order Number:** #{{ $order->id }}  
 **Order Date:** {{ $order->created_at->format('F d, Y h:i A') }}  
+**Order Type:** @if($order->is_preorder_booking) 📦 **Pre-Order Booking** @else Regular Order @endif  
 **Payment Method:** {{ ucfirst($order->payment_method) }}  
 **Status:** <span style="color: #8b5cf6; font-weight: bold;">{{ ucfirst($order->status) }}</span>
 
@@ -56,10 +57,36 @@ Subtotal: ৳{{ number_format($item->subtotal, 2) }}
     <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #16a34a;">-৳{{ number_format($order->discount, 2) }}</td>
 </tr>
 @endif
+@if($order->delivery_charge && $order->delivery_charge > 0)
+<tr>
+    <td style="padding: 8px 0; color: #6b7280;">Delivery Charge:</td>
+    <td style="padding: 8px 0; text-align: right; font-weight: 600;">+৳{{ number_format($order->delivery_charge, 2) }}</td>
+</tr>
+@endif
+@if($order->is_preorder_booking && $order->booking_amount && $order->booking_amount > 0)
+<tr style="border-top: 1px solid #9333ea;">
+    <td style="padding: 8px 0; color: #9333ea; font-weight: 600;">Total:</td>
+    <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #9333ea;">৳{{ number_format($order->subtotal + $order->delivery_charge - ($order->discount ?? 0), 2) }}</td>
+</tr>
+<tr>
+    <td style="padding: 8px 0; color: #9333ea;">Booking Fee Paid:</td>
+    <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #9333ea;">-৳{{ number_format($order->booking_amount, 2) }}</td>
+</tr>
+<tr style="border-top: 2px solid #9333ea;">
+    <td style="padding: 12px 0; font-size: 18px; font-weight: bold; color: #9333ea;">Amount Paid Now:</td>
+    <td style="padding: 12px 0; text-align: right; font-size: 18px; font-weight: bold; color: #9333ea;">৳{{ number_format($order->total, 2) }}</td>
+</tr>
+<tr>
+    <td colspan="2" style="padding: 8px 0; font-size: 12px; color: #9333ea; font-style: italic;">
+        ⚠️ Remaining DUE will be collected on Cash On Delivery
+    </td>
+</tr>
+@else
 <tr style="border-top: 2px solid #8b5cf6;">
     <td style="padding: 12px 0; font-size: 18px; font-weight: bold; color: #8b5cf6;">Total:</td>
     <td style="padding: 12px 0; text-align: right; font-size: 18px; font-weight: bold; color: #8b5cf6;">৳{{ number_format($order->total, 2) }}</td>
 </tr>
+@endif
 </table>
 
 @if($order->payment_method === 'bkash')
@@ -76,7 +103,23 @@ We will verify your payment and process your order shortly.
 
 ## Cash on Delivery
 
+@if($order->is_preorder_booking)
+**Pre-Order Booking:** You've paid the booking fee of **৳{{ number_format($order->booking_amount ?? 0, 2) }}**.  
+The remaining amount of **৳{{ number_format($order->booking_amount ?? 0, 2) }}** will be collected on delivery.
+@else
 You will pay **৳{{ number_format($order->total, 2) }}** when your order is delivered.
+@endif
+@endif
+
+@if($order->is_preorder_booking)
+---
+
+## Pre-Order Booking Information
+
+**Booking Fee Paid:** ৳{{ number_format($order->booking_amount ?? 0, 2) }}  
+**Status:** ✅ Booking confirmed
+
+**Important:** This is a pre-order booking. The remaining amount will be collected when your order is delivered. You will be notified when your items are ready to ship.
 @endif
 
 @if($order->notes)

@@ -10,7 +10,7 @@
 <body class="antialiased bg-black text-white">
     @include('home.components.navigation')
     
-    <section class="pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-16 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 class="text-4xl md:text-5xl font-bold mb-8">
                 <span class="glitch-text" data-text="My Profile">My Profile</span>
@@ -72,12 +72,22 @@
                                     <div class="p-4 bg-black/30 rounded-lg border border-violet-500/20">
                                         <div class="flex justify-between items-start mb-4">
                                             <div>
-                                                <p class="text-lg font-bold text-white">Order #{{ $order->id }}</p>
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <p class="text-lg font-bold text-white">Order #{{ $order->id }}</p>
+                                                    @if($order->is_preorder_booking)
+                                                        <span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full text-xs font-semibold border border-purple-500/30">
+                                                            📦 Pre-Order
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <p class="text-sm text-gray-400">{{ $order->created_at->format('M d, Y h:i A') }}</p>
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-xl font-bold text-violet-400">৳{{ number_format($order->total, 2) }}</p>
-                                                <span class="px-3 py-1 bg-violet-500/20 text-violet-300 rounded-full text-xs">
+                                                @if($order->is_preorder_booking)
+                                                    <p class="text-xs text-purple-400 mt-1">Booking Fee Paid</p>
+                                                @endif
+                                                <span class="px-3 py-1 bg-violet-500/20 text-violet-300 rounded-full text-xs mt-2 inline-block">
                                                     {{ ucfirst($order->status) }}
                                                 </span>
                                             </div>
@@ -100,6 +110,15 @@
                                                 <div class="flex justify-between text-sm">
                                                     <span class="text-gray-400">Discount:</span>
                                                     <span class="text-green-400">-৳{{ number_format($order->discount, 2) }}</span>
+                                                </div>
+                                            @endif
+                                            @if($order->is_preorder_booking && $order->booking_amount && $order->booking_amount > 0)
+                                                <div class="flex justify-between text-sm border-t border-purple-500/20 pt-2">
+                                                    <span class="text-purple-300">Booking Fee Paid:</span>
+                                                    <span class="text-purple-400 font-semibold">৳{{ number_format($order->booking_amount, 2) }}</span>
+                                                </div>
+                                                <div class="text-xs text-purple-400 italic mt-1">
+                                                    Remaining amount will be collected later
                                                 </div>
                                             @endif
                                         </div>
@@ -131,13 +150,27 @@
                                     <div class="p-4 bg-black/30 rounded-lg border border-violet-500/20">
                                         <div class="flex justify-between items-center">
                                             <div>
-                                                <p class="font-semibold text-white">Order #{{ $order->id }}</p>
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <p class="font-semibold text-white">Order #{{ $order->id }}</p>
+                                                    @if($order->is_preorder_booking)
+                                                        <span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full text-xs font-semibold border border-purple-500/30">
+                                                            Pre-Order
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <p class="text-sm text-gray-400">{{ $order->created_at->format('M d, Y') }}</p>
                                                 <p class="text-sm text-gray-400">Transaction: {{ $order->transaction_number }}</p>
+                                                @if($order->is_preorder_booking && $order->booking_amount && $order->booking_amount > 0)
+                                                    <p class="text-xs text-purple-400 mt-1">Booking Fee Paid: ৳{{ number_format($order->booking_amount, 2) }}</p>
+                                                @endif
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-lg font-bold text-violet-400">৳{{ number_format($order->total, 2) }}</p>
-                                                <p class="text-xs text-gray-400">{{ strtoupper($order->payment_method) }}</p>
+                                                @if($order->is_preorder_booking)
+                                                    <p class="text-xs text-purple-400">Booking Payment</p>
+                                                @else
+                                                    <p class="text-xs text-gray-400">{{ strtoupper($order->payment_method) }}</p>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

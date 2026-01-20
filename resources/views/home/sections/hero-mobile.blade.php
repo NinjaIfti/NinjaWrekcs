@@ -1,5 +1,5 @@
 <!-- Mobile Hero Section -->
-<section class="relative pt-12 pb-10 min-h-[70vh] flex items-start overflow-hidden bg-gradient-to-b from-black via-violet-950 to-purple-950 lg:hidden">
+<section class="relative pt-16 pb-10 min-h-[70vh] flex items-start overflow-hidden bg-gradient-to-b from-black via-violet-950 to-purple-950 lg:hidden">
     <div class="absolute inset-0 overflow-hidden">
         <div class="absolute top-1/4 left-1/4 w-72 h-72 bg-violet-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div class="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>

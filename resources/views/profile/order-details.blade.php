@@ -10,7 +10,7 @@
 <body class="antialiased bg-black text-white">
     @include('home.components.navigation')
     
-    <section class="pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-16 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Back Button -->
             <a href="{{ route('profile.index') }}" class="inline-flex items-center text-violet-400 hover:text-violet-300 mb-6 transition">
@@ -20,9 +20,24 @@
                 Back to Profile
             </a>
 
-            <h1 class="text-4xl md:text-5xl font-bold mb-8">
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <h1 class="text-4xl md:text-5xl font-bold">
                 <span class="glitch-text" data-text="Order #{{ $order->id }}">Order #{{ $order->id }}</span>
             </h1>
+                    @if($order->is_preorder_booking)
+                        <span class="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-semibold border border-purple-500/30">
+                            📦 Pre-Order Booking
+                        </span>
+                    @endif
+                </div>
+                @if($order->is_preorder_booking)
+                    <div class="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                        <p class="text-purple-300 font-semibold mb-1">Pre-Order Booking</p>
+                        <p class="text-sm text-purple-400">This is a pre-order booking. You've paid the booking fee. The remaining amount will be collected later.</p>
+                    </div>
+                @endif
+            </div>
 
             <!-- Order Status Card -->
             <div class="bg-black/50 backdrop-blur-xl rounded-2xl border border-violet-500/30 p-6 mb-6">
@@ -101,8 +116,17 @@
                                 <span>-৳{{ number_format($order->discount, 2) }}</span>
                             </div>
                         @endif
+                        @if($order->is_preorder_booking && $order->booking_amount && $order->booking_amount > 0)
+                            <div class="flex justify-between text-purple-300 pt-2 border-t border-purple-500/20">
+                                <span>Booking Fee Paid</span>
+                                <span class="font-semibold">৳{{ number_format($order->booking_amount, 2) }}</span>
+                            </div>
+                            <div class="text-xs text-purple-400 italic mt-1 mb-2">
+                                Remaining DUE will be collected on Cash On Delivery
+                            </div>
+                        @endif
                         <div class="flex justify-between text-xl font-bold text-white pt-3 border-t border-violet-500/20">
-                            <span>Total</span>
+                            <span>@if($order->is_preorder_booking) Amount Paid @else Total @endif</span>
                             <span>৳{{ number_format($order->total, 2) }}</span>
                         </div>
                     </div>
@@ -187,7 +211,15 @@
                     @elseif($order->status === 'cancelled')
                         <p>This order has been cancelled. If you have any questions, please contact support.</p>
                     @endif
-                    <p class="mt-4 text-xs text-gray-400">Note: Orders typically take 10-15 days to arrive.</p>
+                    @if($order->is_preorder_booking)
+                        <div class="mt-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                            <p class="text-sm text-purple-300 font-semibold mb-1">Pre-Order Status:</p>
+                            <p class="text-xs text-purple-400">Booking Fee: ৳{{ number_format($order->booking_amount ?? 0, 2) }} (Paid)</p>
+                            <p class="text-xs text-purple-400 mt-1">Remaining amount will be collected on delivery.</p>
+                        </div>
+                    @else
+                        <p class="mt-4 text-xs text-gray-400">Note: Orders typically take 10-15 days to arrive.</p>
+                    @endif
                 </div>
             </div>
         </div>

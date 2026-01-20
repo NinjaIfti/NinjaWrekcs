@@ -19,7 +19,7 @@
     @include('home.components.navigation')
     
     <!-- Deals Page -->
-    <section class="pt-24 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-20 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Page Header -->
             <div class="text-center mb-12">

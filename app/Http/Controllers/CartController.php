@@ -14,7 +14,24 @@ class CartController extends Controller
         $cartTotal = \Cart::getTotal();
         $cartSubTotal = \Cart::getSubTotal();
         
-        return view('cart.index', compact('cartItems', 'cartTotal', 'cartSubTotal'));
+        // Check if cart contains bookable items
+        $hasBookableItems = false;
+        foreach ($cartItems as $item) {
+            $isBookable = false;
+            if (isset($item->attributes->is_bookable)) {
+                $isBookable = (bool) $item->attributes->is_bookable;
+            } else {
+                $product = Product::find($item->id);
+                $isBookable = $product && (bool) $product->is_bookable;
+            }
+            
+            if ($isBookable) {
+                $hasBookableItems = true;
+                break;
+            }
+        }
+        
+        return view('cart.index', compact('cartItems', 'cartTotal', 'cartSubTotal', 'hasBookableItems'));
     }
 
     public function add(Request $request, Product $product)
@@ -39,15 +56,59 @@ class CartController extends Controller
             return redirect()->back()->with('error', 'Cannot add more items. Only ' . $product->quantity . ' available in stock.');
         }
 
+        // Check if mixing bookable and non-bookable items
+        $cartItems = \Cart::getContent();
+        $isProductBookable = (bool) $product->is_bookable;
+        
+        if ($cartItems->count() > 0) {
+            // Check the bookable status of existing cart items
+            $hasBookableItems = false;
+            $hasRegularItems = false;
+            
+            foreach ($cartItems as $item) {
+                $isBookable = false;
+                if (isset($item->attributes->is_bookable)) {
+                    $isBookable = (bool) $item->attributes->is_bookable;
+                } else {
+                    // Fallback to database check
+                    $existingProduct = Product::find($item->id);
+                    $isBookable = $existingProduct && (bool) $existingProduct->is_bookable;
+                }
+                
+                if ($isBookable) {
+                    $hasBookableItems = true;
+                } else {
+                    $hasRegularItems = true;
+                }
+            }
+            
+            // Check if trying to mix
+            if ($isProductBookable && $hasRegularItems) {
+                return redirect()->back()->with('error', 'Cannot add a pre-order item to cart with in-stock items. Please clear your cart or complete your current order first.');
+            }
+            
+            if (!$isProductBookable && $hasBookableItems) {
+                return redirect()->back()->with('error', 'Cannot add an in-stock item to cart with pre-order items. Please clear your cart or complete your current order first.');
+            }
+        }
+
+        // Calculate price: if bookable, customer pays (price - 200) + delivery
+        $itemPrice = $product->display_price ?? 0;
+        if ($product->is_bookable && $itemPrice > 200) {
+            $itemPrice = $itemPrice - 200; // Deduct booking amount
+        }
+
         \Cart::add([
             'id' => $product->id,
             'name' => $product->name,
-            'price' => $product->display_price ?? 0,
+            'price' => $itemPrice,
             'quantity' => $quantity,
             'attributes' => [
                 'image' => $product->image,
                 'category' => $product->category_name,
                 'slug' => $product->id,
+                'is_bookable' => (bool) $product->is_bookable, // Explicitly convert to boolean
+                'original_price' => $product->display_price ?? 0,
             ]
         ]);
 

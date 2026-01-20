@@ -36,6 +36,7 @@ class Product extends Model
         'is_preorder',
         'is_upcoming',
         'price_tba',
+        'is_bookable',
     ];
 
     protected $casts = [
@@ -47,6 +48,7 @@ class Product extends Model
         'is_preorder' => 'boolean',
         'is_upcoming' => 'boolean',
         'price_tba' => 'boolean',
+        'is_bookable' => 'boolean',
         'cost_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'offer_price' => 'decimal:2',

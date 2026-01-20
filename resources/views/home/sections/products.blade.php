@@ -19,7 +19,7 @@
         @if($products->count() > 0)
             @if($products->count() > 4)
                 <!-- Slideshow for more than 4 products -->
-                <div class="relative featured-products-slideshow">
+                <div class="relative featured-products-slideshow overflow-hidden">
                     <div class="overflow-hidden relative">
                         <div class="featured-products-track flex transition-transform duration-500 ease-in-out">
                             @foreach($products->chunk(4) as $chunkIndex => $productChunk)
@@ -102,12 +102,12 @@
                     </div>
                     
                     <!-- Navigation Arrows (Desktop Only) -->
-                    <button class="hidden md:flex featured-products-prev absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-black/70 backdrop-blur-sm text-violet-400 w-12 h-12 rounded-full items-center justify-center hover:bg-violet-600 hover:text-white transition-all border border-violet-500/30 z-10">
+                    <button class="hidden md:flex featured-products-prev absolute left-4 top-1/2 -translate-y-1/2 bg-black/70 backdrop-blur-sm text-violet-400 w-12 h-12 rounded-full items-center justify-center hover:bg-violet-600 hover:text-white transition-all border border-violet-500/30 z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </button>
-                    <button class="hidden md:flex featured-products-next absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-black/70 backdrop-blur-sm text-violet-400 w-12 h-12 rounded-full items-center justify-center hover:bg-violet-600 hover:text-white transition-all border border-violet-500/30 z-10">
+                    <button class="hidden md:flex featured-products-next absolute right-4 top-1/2 -translate-y-1/2 bg-black/70 backdrop-blur-sm text-violet-400 w-12 h-12 rounded-full items-center justify-center hover:bg-violet-600 hover:text-white transition-all border border-violet-500/30 z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
@@ -204,13 +204,13 @@
                 
                 <!-- Mobile Navigation Buttons for simple grid -->
                 @if($products->count() > 1)
-                    <div class="md:hidden relative mt-8">
-                        <button class="featured-simple-prev absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-black/70 backdrop-blur-sm text-violet-400 w-10 h-10 rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-all border border-violet-500/30 z-10">
+                    <div class="md:hidden relative mt-8 px-4">
+                        <button class="featured-simple-prev absolute left-4 top-1/2 -translate-y-1/2 bg-black/70 backdrop-blur-sm text-violet-400 w-10 h-10 rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-all border border-violet-500/30 z-10">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                             </svg>
                         </button>
-                        <button class="featured-simple-next absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-black/70 backdrop-blur-sm text-violet-400 w-10 h-10 rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-all border border-violet-500/30 z-10">
+                        <button class="featured-simple-next absolute right-4 top-1/2 -translate-y-1/2 bg-black/70 backdrop-blur-sm text-violet-400 w-10 h-10 rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-all border border-violet-500/30 z-10">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>

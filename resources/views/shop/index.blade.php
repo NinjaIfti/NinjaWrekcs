@@ -30,7 +30,7 @@
     @include('home.components.navigation')
     
     <!-- Shop Section -->
-    <section class="pt-24 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black" x-data="{ 
+    <section class="pt-20 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black" x-data="{ 
         viewMode: localStorage.getItem('shopViewMode') || 'grid-3',
         filtersCollapsed: false 
     }">
@@ -83,8 +83,9 @@
                                 $categoryImage = 'up.jpeg';
                             }
                         @endphp
-                        <a href="{{ route('shop.index', ['category_id' => $parentCategory->id]) }}" 
-                           class="group relative overflow-hidden rounded-3xl shadow-2xl hover:shadow-violet-500/50 transition-all duration-500 border-2 border-violet-500/30 hover:border-violet-500 hover:scale-105 transform {{ $parentCategory->slug === 'pre-order-upcoming' ? 'md:col-span-3' : '' }}">
+                        <a href="{{ route('shop.index', ['category_id' => $parentCategory->id]) }}#products-section" 
+                           class="group relative overflow-hidden rounded-3xl shadow-2xl hover:shadow-violet-500/50 transition-all duration-500 border-2 border-violet-500/30 hover:border-violet-500 hover:scale-105 transform {{ $parentCategory->slug === 'pre-order-upcoming' ? 'md:col-span-3' : '' }}"
+                           onclick="handleCategoryClick(event, {{ $parentCategory->id }})">
                             <div class="relative h-80 bg-cover bg-center bg-no-repeat" 
                                  style="background-image: url('{{ asset('img/' . $categoryImage) }}');">
                                 <!-- Animated Background Overlay -->
@@ -119,7 +120,7 @@
                 </div>
             @else
                 <!-- Show Selected Category Products -->
-            <div class="mb-8">
+            <div id="products-section" class="mb-8">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">
                         <span class="glitch-text" data-text="{{ $selectedCategory ? $selectedCategory->name : 'Shop' }}">
                             {{ $selectedCategory ? $selectedCategory->name : 'Shop' }}
@@ -1114,6 +1115,76 @@
             updateCountdowns();
             setInterval(updateCountdowns, 1000);
         }
+        
+        // Auto-scroll to products section on mobile when category is selected
+        function scrollToProductsOnMobile() {
+            // Check if we're on mobile and have a category selected
+            const urlParams = new URLSearchParams(window.location.search);
+            const categoryId = urlParams.get('category_id');
+            const hash = window.location.hash;
+            
+            // Check if we should scroll (category selected or hash present)
+            const shouldScroll = (categoryId || hash === '#products-section') && window.innerWidth < 768;
+            
+            if (!shouldScroll) return;
+            
+            // Try to find products section with multiple attempts
+            function attemptScroll(attempt = 0) {
+                const productsSection = document.getElementById('products-section');
+                
+                if (productsSection) {
+                    // Element found, scroll to it
+                    const topOffset = 80; // Offset for mobile logo bar
+                    const elementPosition = productsSection.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+                    
+                    window.scrollTo({
+                        top: Math.max(0, offsetPosition),
+                        behavior: 'smooth'
+                    });
+                } else if (attempt < 10) {
+                    // Element not found yet, try again after a short delay
+                    setTimeout(() => attemptScroll(attempt + 1), 100);
+                }
+            }
+            
+            // Start attempting to scroll after a small initial delay
+            setTimeout(() => attemptScroll(0), 200);
+        }
+        
+        // Handle category card click
+        function handleCategoryClick(event, categoryId) {
+            // On mobile, prevent default and handle navigation manually with scroll
+            if (window.innerWidth < 768) {
+                event.preventDefault();
+                const url = new URL(window.location.href);
+                url.searchParams.set('category_id', categoryId);
+                // Remove hash, we'll scroll with JS
+                url.hash = '';
+                window.location.href = url.toString();
+            }
+            // On desktop, let the default link behavior work
+        }
+        
+        // Run on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                scrollToProductsOnMobile();
+            });
+        } else {
+            // DOM already loaded, run immediately
+            scrollToProductsOnMobile();
+        }
+        
+        // Also run when page is fully loaded (all images, etc.)
+        window.addEventListener('load', function() {
+            scrollToProductsOnMobile();
+        });
+        
+        // Run multiple times with delays to catch dynamic content
+        setTimeout(scrollToProductsOnMobile, 300);
+        setTimeout(scrollToProductsOnMobile, 600);
+        setTimeout(scrollToProductsOnMobile, 1000);
     </script>
     
     <!-- Include Styles -->

@@ -29,11 +29,37 @@ class CheckoutController extends Controller
         $cartTotal = \Cart::getTotal();
         $cartSubTotal = \Cart::getSubTotal();
         
+        // Check if cart has any bookable products
+        // Use cart item attributes first, then fallback to database check
+        $hasBookableItems = false;
+        $totalBookingAmount = 0;
+        foreach ($cartItems as $item) {
+            // Check cart item attributes first (more reliable)
+            $isBookable = false;
+            if (isset($item->attributes->is_bookable)) {
+                // Convert to boolean (handles string "1"/"0" or boolean true/false)
+                $isBookable = (bool) $item->attributes->is_bookable;
+            }
+            
+            // If not in attributes or not bookable, check database
+            if (!$isBookable) {
+                $product = Product::find($item->id);
+                $isBookable = $product && (bool) $product->is_bookable;
+            }
+            
+            // Only mark as bookable if explicitly true
+            if ($isBookable === true) {
+                $hasBookableItems = true;
+                // Each bookable item has 200 booking fee
+                $totalBookingAmount += 200 * $item->quantity;
+            }
+        }
+        
         // No automatic discounts - only coupon discounts apply
         $totalDiscount = 0;
         $finalTotal = $cartSubTotal;
 
-        return view('checkout.index', compact('cartItems', 'cartTotal', 'cartSubTotal', 'totalDiscount', 'finalTotal'));
+        return view('checkout.index', compact('cartItems', 'cartTotal', 'cartSubTotal', 'totalDiscount', 'finalTotal', 'hasBookableItems', 'totalBookingAmount'));
     }
 
     public function validateCoupon(Request $request)
@@ -100,6 +126,31 @@ class CheckoutController extends Controller
             'coupon_code' => 'nullable|string|exists:coupons,code',
         ];
 
+        // Check if cart has bookable items - if so, COD is not allowed
+        // Use cart item attributes first, then fallback to database check
+        $hasBookableItems = false;
+        $totalBookingAmount = 0;
+        foreach ($cartItems as $item) {
+            // Check cart item attributes first (more reliable)
+            $isBookable = false;
+            if (isset($item->attributes->is_bookable)) {
+                // Convert to boolean (handles string "1"/"0" or boolean true/false)
+                $isBookable = (bool) $item->attributes->is_bookable;
+            }
+            
+            // If not in attributes or not bookable, check database
+            if (!$isBookable) {
+                $product = Product::find($item->id);
+                $isBookable = $product && (bool) $product->is_bookable;
+            }
+            
+            // Only mark as bookable if explicitly true
+            if ($isBookable === true) {
+                $hasBookableItems = true;
+                $totalBookingAmount += 200 * $item->quantity;
+            }
+        }
+
         // Add email and password fields for non-logged-in users (required)
         if (!$isLoggedIn) {
             $rules['email'] = 'required|email|max:255';
@@ -107,6 +158,11 @@ class CheckoutController extends Controller
         }
 
         $validated = $request->validate($rules);
+
+        // If bookable items exist, COD is not allowed
+        if ($hasBookableItems && $validated['payment_method'] === 'cod') {
+            return redirect()->back()->with('error', 'Cash on Delivery is not available for pre-order bookings. Please use Mobile Banking (bKash/Nagad).')->withInput();
+        }
 
         DB::beginTransaction();
         try {
@@ -180,6 +236,31 @@ class CheckoutController extends Controller
             $cartSubTotal = \Cart::getSubTotal();
             $totalDiscount = 0;
             
+            // Check for bookable items and calculate booking amount
+            // Use cart item attributes first, then fallback to database check
+            $hasBookableItems = false;
+            $totalBookingAmount = 0;
+            foreach ($cartItems as $item) {
+                // Check cart item attributes first (more reliable)
+                $isBookable = false;
+                if (isset($item->attributes->is_bookable)) {
+                    // Convert to boolean (handles string "1"/"0" or boolean true/false)
+                    $isBookable = (bool) $item->attributes->is_bookable;
+                }
+                
+                // If not in attributes or not bookable, check database
+                if (!$isBookable) {
+                    $product = Product::find($item->id);
+                    $isBookable = $product && (bool) $product->is_bookable;
+                }
+                
+                // Only mark as bookable if explicitly true
+                if ($isBookable === true) {
+                    $hasBookableItems = true;
+                    $totalBookingAmount += 200 * $item->quantity;
+                }
+            }
+            
             // Calculate delivery charge
             $deliveryCharge = $validated['delivery_location'] === 'inside_dhaka' ? 80 : 120;
             
@@ -218,6 +299,8 @@ class CheckoutController extends Controller
                 'save_info' => $request->has('save_info'),
                 'terms_accepted' => true,
                 'notes' => $request->input('notes'),
+                'is_preorder_booking' => $hasBookableItems,
+                'booking_amount' => $hasBookableItems ? $totalBookingAmount : null,
             ]);
             
             // Increment coupon usage

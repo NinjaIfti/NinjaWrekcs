@@ -243,10 +243,32 @@
         scroll-behavior: smooth;
     }
     
-    /* Hide scrollbar by default, show only when needed */
-    html, body {
+    /* Hide horizontal scrollbar and prevent horizontal overflow */
+    html {
         overflow-x: hidden;
         scrollbar-gutter: stable;
+    }
+    
+    body {
+        overflow-x: hidden;
+        max-width: 100vw;
+        position: relative;
+    }
+    
+    @media (max-width: 768px) {
+        body {
+            overflow-x: hidden;
+            width: 100%;
+        }
+        
+        * {
+            max-width: 100%;
+        }
+        
+        section, div {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
     }
     
     /* Custom Scrollbar */
@@ -521,17 +543,7 @@
     @media (max-width: 768px) {
         .featured-products-prev,
         .featured-products-next {
-            width: 36px;
-            height: 36px;
-            transform: translateY(-50%);
-        }
-        
-        .featured-products-prev {
-            left: -12px;
-        }
-        
-        .featured-products-next {
-            right: -12px;
+            display: none;
         }
     }
 </style>

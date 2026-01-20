@@ -152,6 +152,14 @@
                                         <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Price to be announced (show "Price will be announced later")</span>
                                     </label>
                                 </div>
+
+                                <!-- Bookable Checkbox -->
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="is_bookable" value="1" {{ old('is_bookable', $product->is_bookable) ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-purple-600 shadow-sm focus:ring-purple-500">
+                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Allow booking for this product (customer pays ৳200 booking fee)</span>
+                                    </label>
+                                </div>
                             </div>
                             
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">

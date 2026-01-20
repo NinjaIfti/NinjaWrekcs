@@ -23,6 +23,7 @@ Your order status has been updated to **{{ ucfirst($order->status) }}**.
 
 **Order Number:** #{{ $order->id }}  
 **Order Date:** {{ $order->created_at->format('F d, Y h:i A') }}  
+**Order Type:** @if($order->is_preorder_booking) 📦 **Pre-Order Booking** @else Regular Order @endif  
 **Current Status:** <span style="color: @if($order->status === 'delivered') #16a34a @elseif($order->status === 'cancelled') #dc2626 @else #8b5cf6 @endif; font-weight: bold;">{{ ucfirst($order->status) }}</span>  
 @if($oldStatus)
 **Previous Status:** {{ ucfirst($oldStatus) }}
@@ -61,10 +62,36 @@ Your order status has been updated to **{{ ucfirst($order->status) }}**.
     <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #16a34a;">-৳{{ number_format($order->discount, 2) }}</td>
 </tr>
 @endif
+@if($order->delivery_charge && $order->delivery_charge > 0)
+<tr>
+    <td style="padding: 6px 0; color: #6b7280;">Delivery Charge:</td>
+    <td style="padding: 6px 0; text-align: right; font-weight: 600;">+৳{{ number_format($order->delivery_charge, 2) }}</td>
+</tr>
+@endif
+@if($order->is_preorder_booking && $order->booking_amount && $order->booking_amount > 0)
+<tr style="border-top: 1px solid #9333ea;">
+    <td style="padding: 6px 0; color: #9333ea; font-weight: 600;">Total:</td>
+    <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #9333ea;">৳{{ number_format($order->subtotal + $order->delivery_charge - ($order->discount ?? 0), 2) }}</td>
+</tr>
+<tr>
+    <td style="padding: 6px 0; color: #9333ea;">Booking Fee Paid:</td>
+    <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #9333ea;">-৳{{ number_format($order->booking_amount, 2) }}</td>
+</tr>
+<tr style="border-top: 2px solid #9333ea;">
+    <td style="padding: 10px 0; font-size: 16px; font-weight: bold; color: #9333ea;">Amount Paid:</td>
+    <td style="padding: 10px 0; text-align: right; font-size: 16px; font-weight: bold; color: #9333ea;">৳{{ number_format($order->total, 2) }}</td>
+</tr>
+<tr>
+    <td colspan="2" style="padding: 6px 0; font-size: 11px; color: #9333ea; font-style: italic;">
+        ⚠️ Remaining DUE will be collected on Cash On Delivery
+    </td>
+</tr>
+@else
 <tr style="border-top: 2px solid #8b5cf6;">
     <td style="padding: 10px 0; font-size: 16px; font-weight: bold;">Total:</td>
     <td style="padding: 10px 0; text-align: right; font-size: 16px; font-weight: bold; color: #8b5cf6;">৳{{ number_format($order->total, 2) }}</td>
 </tr>
+@endif
 </table>
 
 ---
@@ -99,6 +126,10 @@ We're carefully preparing your Valorant collectibles for shipment. Quality check
 🚚 **What's Next?**
 
 Your order is on its way! Our delivery partner will contact you shortly to arrange the delivery.
+
+@if($order->is_preorder_booking)
+**Pre-Order Reminder:** Please prepare the remaining amount of **৳{{ number_format($order->booking_amount ?? 0, 2) }}** for Cash on Delivery payment.
+@endif
 
 @if($order->tracking_link)
 **Track Your Order:**  
@@ -172,6 +203,18 @@ If you have any questions about your order, we're here to help!
 
 Our support team typically responds within 24 hours.
 </x-mail::panel>
+
+@if($order->is_preorder_booking)
+---
+
+## Pre-Order Booking Information
+
+**Booking Fee Paid:** ✅ ৳{{ number_format($order->booking_amount ?? 0, 2) }}  
+**Remaining Amount:** ৳{{ number_format($order->booking_amount ?? 0, 2) }} (Due on delivery)  
+**Payment Status:** Booking confirmed - Remaining payment required on delivery
+
+⚠️ **Important:** This is a pre-order booking. The remaining amount will be collected when your order is delivered. Please prepare the cash payment.
+@endif
 
 Thank you for choosing NinjaWrecks for your Valorant collectibles!
 

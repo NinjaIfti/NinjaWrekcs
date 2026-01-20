@@ -24,7 +24,7 @@
 <body class="antialiased bg-black text-white">
     @include('home.components.navigation')
     
-    <section class="pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
+    <section class="pt-16 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 class="text-4xl md:text-5xl font-bold mb-8">
                 <span class="glitch-text" data-text="Checkout">Checkout</span>
@@ -199,20 +199,44 @@
                                     </label>
 
                                     <!-- Cash on Delivery Option -->
-                                    <label class="flex items-start space-x-3 p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg cursor-pointer hover:border-violet-500/60 transition payment-method-option">
-                                        <input type="radio" name="payment_method" value="cod" onchange="togglePaymentFields()" class="mt-1 text-violet-600 focus:ring-violet-500">
+                                    <label class="flex items-start space-x-3 p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg transition payment-method-option {{ $hasBookableItems ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-violet-500/60' }}">
+                                        <input type="radio" name="payment_method" value="cod" onchange="togglePaymentFields()" class="mt-1 text-violet-600 focus:ring-violet-500" {{ $hasBookableItems ? 'disabled' : '' }}>
                                         <div class="flex-1">
                                             <span class="text-white font-semibold">Cash on Delivery</span>
-                                            <p class="text-gray-400 text-sm mt-1">Pay when you receive your order</p>
+                                            <p class="text-gray-400 text-sm mt-1">
+                                                @if($hasBookableItems)
+                                                    Not available for pre-order bookings
+                                                @else
+                                                    Pay when you receive your order
+                                                @endif
+                                            </p>
                                         </div>
                                     </label>
                                 </div>
                             </div>
 
+                            @if($hasBookableItems)
+                            <!-- Pre-order Booking Information -->
+                            <div class="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                                <div class="flex items-start space-x-3">
+                                    <svg class="w-6 h-6 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-purple-300 font-semibold mb-1">Pre-order Booking</p>
+                                        <p class="text-gray-300 text-sm">
+                                            You are booking pre-order products. You will pay ৳{{ number_format($totalBookingAmount, 2) }} as booking fee now.
+                                            The remaining amount (Product price - ৳{{ number_format($totalBookingAmount, 2) }}) will be collected later when the product is ready.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
+
                             <!-- Mobile Banking Payment Details (Hidden when COD selected) -->
                             <div id="mobile-banking-details" class="space-y-4">
                                 <div class="p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
-                                    <p class="text-violet-300 font-semibold mb-2">Send payment to:</p>
+                                    <p class="text-violet-300 font-semibold mb-2">Send Moeny:</p>
                                     <p class="text-2xl font-bold text-white">01533133309</p>
                                     <p class="text-sm text-gray-400 mt-1">bKash / Nagad</p>
                                 </div>
@@ -235,9 +259,7 @@
                                     @enderror
                                 </div>
 
-                                <div class="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                                    <p class="text-yellow-300 text-sm">⚠️ We are working to get an automatic bKash payment system soon. For now, please send payment manually and enter the details above.</p>
-                                </div>
+                               
                             </div>
 
                             <!-- COD Information (Shown when COD selected) -->
@@ -267,6 +289,7 @@
                             </label>
                             @endauth
 
+                            @if(!$hasBookableItems)
                             <label class="flex items-start space-x-3 cursor-pointer">
                                 <input type="checkbox" name="terms_accepted" value="1" required class="mt-1 rounded border-violet-500/50 bg-black/50 text-violet-600">
                                 <span class="text-gray-300">I accept that the order will take <span class="text-violet-400 font-semibold">1-2 days</span> to arrive *</span>
@@ -274,6 +297,10 @@
                             @error('terms_accepted')
                                 <p class="text-sm text-red-400">{{ $message }}</p>
                             @enderror
+                            @else
+                            <!-- Hidden input to always accept terms for pre-orders -->
+                            <input type="hidden" name="terms_accepted" value="1">
+                            @endif
 
                             <!-- Notes -->
                             <div>
@@ -338,12 +365,35 @@
                                     <span>Coupon Discount</span>
                                     <span id="coupon_discount_display">-৳0.00</span>
                                 </div>
+                                <div class="border-t border-violet-500/20 pt-2 pb-2">
+                                    <div class="flex justify-between text-lg font-semibold">
+                                        <span>Total</span>
+                                        <span class="text-violet-400" id="total_before_booking">৳{{ number_format($finalTotal + 80, 2) }}</span>
+                                    </div>
+                                </div>
+                                @if($hasBookableItems)
+                                <div class="border-t border-purple-500/20 pt-2 space-y-2">
+                                    <div class="flex justify-between text-purple-300">
+                                        <span>Booking Fee</span>
+                                        <span class="font-semibold">৳{{ number_format($totalBookingAmount, 2) }}</span>
+                                    </div>
+                                    <div class="border-t border-purple-500/20 pt-2">
+                                        <div class="flex justify-between text-xl font-bold text-purple-300">
+                                            <span>DUE</span>
+                                            <span id="total_display">৳{{ number_format(($finalTotal + 80) - $totalBookingAmount, 2) }}</span>
+                                        </div>
+                                        <p class="text-xs text-purple-400 mt-1 italic">
+                                            Remaining DUE will collected on Cash On Delivery
+                                    </div>
+                                </div>
+                                @else
                                 <div class="border-t border-violet-500/20 pt-2">
                                     <div class="flex justify-between text-xl font-bold">
                                         <span>Total</span>
                                         <span class="text-violet-400" id="total_display">৳{{ number_format($finalTotal + 80, 2) }}</span>
                                     </div>
                                 </div>
+                                @endif
                             </div>
                         </div>
 
@@ -394,13 +444,48 @@
 
         // Update total calculation
         function updateTotal() {
-            const total = baseSubtotal + deliveryCharge - currentDiscount;
-            document.getElementById('total_display').textContent = '৳' + total.toFixed(2);
+            const bookingAmount = {{ $hasBookableItems ? $totalBookingAmount : 0 }};
+            const totalBeforeBooking = baseSubtotal + deliveryCharge - currentDiscount;
+            
+            // Update total before booking
+            const totalBeforeBookingEl = document.getElementById('total_before_booking');
+            if (totalBeforeBookingEl) {
+                totalBeforeBookingEl.textContent = '৳' + totalBeforeBooking.toFixed(2);
+            }
+            
+            // Update final total/DUE
+            const totalDisplay = document.getElementById('total_display');
+            if (totalDisplay) {
+                if (bookingAmount > 0) {
+                    // For bookings: DUE = Total - Booking Fee
+                    const due = totalBeforeBooking - bookingAmount;
+                    totalDisplay.textContent = '৳' + due.toFixed(2);
+                } else {
+                    // For normal orders: Total = Subtotal + DC - Discount
+                    totalDisplay.textContent = '৳' + totalBeforeBooking.toFixed(2);
+                }
+            }
         }
 
         // Toggle payment fields based on payment method
         function togglePaymentFields() {
-            const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+            if (!paymentMethod) return;
+            
+            const hasBookableItems = {{ $hasBookableItems ? 'true' : 'false' }};
+            
+            // If bookable items, ensure COD cannot be selected
+            if (hasBookableItems && paymentMethod.value === 'cod') {
+                // Find and check mobile banking option instead
+                const mobileBankingOption = document.querySelector('input[name="payment_method"][value="bkash"]');
+                if (mobileBankingOption) {
+                    mobileBankingOption.checked = true;
+                    paymentMethod.checked = false;
+                    alert('Cash on Delivery is not available for pre-order bookings. Please use Mobile Banking.');
+                }
+                return;
+            }
+            
             const mobileBankingDetails = document.getElementById('mobile-banking-details');
             const codDetails = document.getElementById('cod-details');
             const transactionNumber = document.getElementById('transaction_number');

@@ -1,4 +1,4 @@
-<!-- Navigation (Desktop Only) -->
+<!-- Desktop Navigation (Top Navbar) -->
 <nav class="hidden md:block fixed w-full bg-black/95 backdrop-blur-xl shadow-lg z-50 border-b border-violet-500/30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-20">
@@ -21,5 +21,5 @@
     </div>
 </nav>
 
-<!-- Mobile Bottom Navigation -->
+<!-- Mobile Navigation (Top Logo + Bottom Nav) -->
 @include('home.components.navigation.mobile')

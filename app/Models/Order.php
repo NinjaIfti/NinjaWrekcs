@@ -33,6 +33,8 @@ class Order extends Model
         'save_info',
         'terms_accepted',
         'notes',
+        'is_preorder_booking',
+        'booking_amount',
         'is_deleted',
         'deleted_at',
     ];
@@ -43,8 +45,10 @@ class Order extends Model
         'coupon_discount' => 'decimal:2',
         'delivery_charge' => 'decimal:2',
         'total' => 'decimal:2',
+        'booking_amount' => 'decimal:2',
         'save_info' => 'boolean',
         'terms_accepted' => 'boolean',
+        'is_preorder_booking' => 'boolean',
         'is_deleted' => 'boolean',
         'deleted_at' => 'datetime',
     ];
