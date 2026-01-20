@@ -38,18 +38,134 @@
                     <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
-                    <span class="text-white font-semibold">{{ $categories[$selectedCategory] }}</span>
+                    @if($selectedCategory->parent)
+                        <span class="text-gray-400">{{ $selectedCategory->parent->name }}</span>
+                        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    @endif
+                    <span class="text-white font-semibold">{{ $selectedCategory->name }}</span>
                 @else
                     <span class="text-white font-semibold">Shop</span>
                 @endif
             </nav>
 
-            <!-- Page Header with Search -->
-            <div class="mb-8 hidden lg:block">
-                <h1 class="text-4xl md:text-5xl font-bold mb-4">
-                    <span class="glitch-text" data-text="Shop">Shop</span>
-                </h1>
-                <p class="text-xl text-gray-400 mb-6">Browse our Valorant collectibles</p>
+            <!-- Show Main Categories OR Subcategories based on selection -->
+            @if(!$selectedCategoryId)
+                <!-- Main Category Cards - Show when NO category selected -->
+                <div class="mb-12 hidden lg:block">
+                    <div class="text-center mb-12">
+                        <h1 class="text-5xl md:text-6xl font-bold mb-4">
+                            <span class="glitch-text-large" data-text="Shop">Shop</span>
+                        </h1>
+                        <p class="text-xl text-gray-400">Choose a category to start shopping</p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                        @foreach($categories as $parentCategory)
+                        <a href="{{ route('shop.index', ['category_id' => $parentCategory->id]) }}" 
+                           class="group relative overflow-hidden rounded-3xl shadow-2xl hover:shadow-violet-500/50 transition-all duration-500 border-2 border-violet-500/30 hover:border-violet-500 hover:scale-105 transform">
+                            <div class="relative h-80 bg-gradient-to-br {{ $parentCategory->slug === 'valorant' ? 'from-violet-900 to-purple-900' : ($parentCategory->slug === 'csgo' ? 'from-orange-900 to-red-900' : 'from-blue-900 to-purple-900') }}">
+                                <!-- Animated Background -->
+                                <div class="absolute inset-0 opacity-30">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-1000"></div>
+                                </div>
+                                
+                                <!-- Category Icon -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <svg class="w-32 h-32 text-white opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        @if($parentCategory->slug === 'valorant')
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                        @elseif($parentCategory->slug === 'csgo')
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                        @else
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        @endif
+                                    </svg>
+                                </div>
+                                
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                                <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                
+                                <div class="absolute bottom-0 left-0 right-0 p-8 z-10">
+                                    <h3 class="text-3xl font-bold text-white mb-3 group-hover:text-violet-300 transition-colors">
+                                        {{ $parentCategory->name }}
+                                    </h3>
+                                    <p class="text-gray-300 mb-4">
+                                        @if($parentCategory->hasChildren())
+                                            {{ $parentCategory->children->count() }} subcategories
+                                        @else
+                                            Browse collection
+                                        @endif
+                                    </p>
+                                    <div class="flex items-center text-violet-400 font-semibold group-hover:translate-x-2 transition-transform">
+                                        Explore
+                                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                        @endforeach
+                    </div>
+                </div>
+            @else
+                <!-- Show Selected Category with Subcategories OR Products -->
+                <div class="mb-8 hidden lg:block">
+                    <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                        <span class="glitch-text" data-text="{{ $selectedCategory ? $selectedCategory->name : 'Shop' }}">
+                            {{ $selectedCategory ? $selectedCategory->name : 'Shop' }}
+                        </span>
+                    </h1>
+                    <div class="flex items-center gap-4 mb-8">
+                        <a href="{{ route('shop.index') }}" class="text-violet-400 hover:text-violet-300 transition flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                            </svg>
+                            Back to Categories
+                        </a>
+                    </div>
+                </div>
+                    
+                @if($showSubcategories)
+                    <!-- Subcategories Grid -->
+                    <div class="hidden lg:block">
+                        <div class="grid md:grid-cols-3 gap-6 mb-12">
+                            @foreach($subcategories as $subcategory)
+                            <a href="{{ route('shop.index', ['category_id' => $subcategory->id]) }}" 
+                               class="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border-2 border-violet-500/20 hover:border-violet-500">
+                                <div class="relative h-64 bg-gradient-to-br from-violet-900/60 to-purple-900/60">
+                                    <!-- Subcategory Icon -->
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <svg class="w-24 h-24 text-white opacity-20 group-hover:opacity-30 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                        </svg>
+                                    </div>
+                                    
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                                    <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    
+                                    <div class="absolute bottom-0 left-0 right-0 p-6 z-10">
+                                        <h3 class="text-2xl font-bold text-white mb-2 group-hover:text-violet-300 transition-colors">
+                                            {{ $subcategory->name }}
+                                        </h3>
+                                        <p class="text-gray-300 text-sm mb-4">
+                                            {{ $categoryCounts[$subcategory->id] ?? 0 }} products
+                                        </p>
+                                        <div class="flex items-center text-violet-400 font-semibold group-hover:translate-x-2 transition-transform">
+                                            Browse
+                                            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
                 
                 <!-- Search and Sort Bar -->
                 <div class="flex gap-4 items-center">
@@ -218,23 +334,43 @@
                                 <div class="space-y-2">
                                     <label class="flex items-center justify-between cursor-pointer group">
                                         <div class="flex items-center">
-                                        <input type="radio" name="category" value="" {{ !$selectedCategory ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
+                                            <input type="radio" name="category_id" value="" {{ !$selectedCategoryId ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
                                             <span class="text-gray-400 group-hover:text-white transition-colors">All Products</span>
                                         </div>
                                         <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
                                             {{ array_sum($categoryCounts) }}
                                         </span>
                                     </label>
-                                    @foreach($categories as $key => $name)
-                                    <label class="flex items-center justify-between cursor-pointer group">
-                                        <div class="flex items-center">
-                                        <input type="radio" name="category" value="{{ $key }}" {{ $selectedCategory === $key ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
-                                            <span class="text-gray-400 group-hover:text-white transition-colors">{{ $name }}</span>
+                                    
+                                    @foreach($categories as $parentCategory)
+                                        <!-- Parent Category Header -->
+                                        <div class="mt-3 mb-2">
+                                            <span class="text-xs font-bold text-violet-400 uppercase tracking-wider">{{ $parentCategory->name }}</span>
                                         </div>
-                                        <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
-                                            {{ $categoryCounts[$key] ?? 0 }}
-                                        </span>
-                                    </label>
+                                        
+                                        @if($parentCategory->hasChildren())
+                                            @foreach($parentCategory->children as $childCategory)
+                                                <label class="flex items-center justify-between cursor-pointer group pl-3">
+                                                    <div class="flex items-center">
+                                                        <input type="radio" name="category_id" value="{{ $childCategory->id }}" {{ $selectedCategoryId == $childCategory->id ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
+                                                        <span class="text-gray-400 group-hover:text-white transition-colors">{{ $childCategory->name }}</span>
+                                                    </div>
+                                                    <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
+                                                        {{ $categoryCounts[$childCategory->id] ?? 0 }}
+                                                    </span>
+                                                </label>
+                                            @endforeach
+                                        @else
+                                            <label class="flex items-center justify-between cursor-pointer group pl-3">
+                                                <div class="flex items-center">
+                                                    <input type="radio" name="category_id" value="{{ $parentCategory->id }}" {{ $selectedCategoryId == $parentCategory->id ? 'checked' : '' }} class="mr-3 text-violet-600 focus:ring-violet-500" onchange="this.form.submit()">
+                                                    <span class="text-gray-400 group-hover:text-white transition-colors">All {{ $parentCategory->name }}</span>
+                                                </div>
+                                                <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
+                                                    {{ $categoryCounts[$parentCategory->id] ?? 0 }}
+                                                </span>
+                                            </label>
+                                        @endif
                                     @endforeach
                                 </div>
                             </div>
@@ -379,6 +515,8 @@
                         </div>
                     </div>
                     @endif
+                @endif
+                @endif
                 </div>
             </div>
         </div>

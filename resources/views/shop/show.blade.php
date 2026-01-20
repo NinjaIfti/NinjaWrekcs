@@ -103,7 +103,15 @@
                     <!-- Rating -->
 
                     <!-- Price -->
-                    @if($product->price)
+                    @if($product->price_tba)
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl font-bold text-yellow-400">
+                                ⏳ Price will be announced soon
+                            </div>
+                        </div>
+                    </div>
+                    @elseif($product->display_price)
                     <div class="space-y-3">
                         <div class="flex items-center gap-3">
                             @if($product->has_discount)

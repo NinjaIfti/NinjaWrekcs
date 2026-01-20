@@ -108,11 +108,17 @@
         
         <!-- Price with Discount -->
         <div class="flex items-center gap-2">
-            @if($product->has_discount)
-                <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
-                <p class="text-sm text-gray-500 line-through">৳{{ number_format($product->price, 2) }}</p>
+            @if($product->price_tba)
+                <p class="text-sm font-semibold text-yellow-400">⏳ Price will be announced soon</p>
+            @elseif($product->display_price)
+                @if($product->has_discount)
+                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
+                    <p class="text-sm text-gray-500 line-through">৳{{ number_format($product->price, 2) }}</p>
+                @else
+                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                @endif
             @else
-                <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                <p class="text-sm font-semibold text-yellow-400">⏳ Price will be announced soon</p>
             @endif
         </div>
         

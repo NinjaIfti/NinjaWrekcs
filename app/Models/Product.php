@@ -25,6 +25,7 @@ class Product extends Model
         'offer_ends_at',
         'image',
         'category',
+        'category_id',
         'rating',
         'reviews',
         'is_active',
@@ -32,6 +33,9 @@ class Product extends Model
         'is_new',
         'is_bestseller',
         'is_limited_edition',
+        'is_preorder',
+        'is_upcoming',
+        'price_tba',
     ];
 
     protected $casts = [
@@ -40,6 +44,9 @@ class Product extends Model
         'is_new' => 'boolean',
         'is_bestseller' => 'boolean',
         'is_limited_edition' => 'boolean',
+        'is_preorder' => 'boolean',
+        'is_upcoming' => 'boolean',
+        'price_tba' => 'boolean',
         'cost_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'offer_price' => 'decimal:2',
@@ -62,14 +69,32 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function getCategoryNameAttribute()
     {
-        return match($this->category) {
-            'figures' => 'Agent Figures',
-            'knives' => 'Knives & Weapons',
-            'stickers' => 'Stickers & Keychains',
-            default => 'Unknown',
-        };
+        // Try to get from new category relationship first
+        if ($this->category_id) {
+            $categoryModel = $this->category;
+            if ($categoryModel && is_object($categoryModel)) {
+                return $categoryModel->name;
+            }
+        }
+        
+        // Fallback to old string-based category
+        if ($this->attributes['category'] ?? null) {
+            return match($this->attributes['category']) {
+                'figures' => 'Agent Figures',
+                'knives' => 'Knives & Weapons',
+                'stickers' => 'Stickers & Keychains',
+                default => 'Unknown',
+            };
+        }
+        
+        return 'Uncategorized';
     }
 
     // Check if offer is currently active
@@ -86,6 +111,10 @@ class Product extends Model
     // Get the final display price (offer price if active, then sale price, otherwise regular price)
     public function getDisplayPriceAttribute()
     {
+        if ($this->price_tba) {
+            return null;
+        }
+        
         if ($this->has_active_offer) {
             return $this->offer_price;
         }

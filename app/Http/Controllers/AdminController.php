@@ -708,11 +708,11 @@ class AdminController extends Controller
 
     public function productCreate(): View
     {
-        $categories = [
-            'figures' => 'Agent Figures',
-            'knives' => 'Knives & Weapons',
-            'stickers' => 'Stickers & Keychains',
-        ];
+        $categories = \App\Models\Category::with('children')
+            ->whereNull('parent_id')
+            ->active()
+            ->orderBy('order')
+            ->get();
         
         return view('admin.product-create', compact('categories'));
     }
@@ -724,16 +724,23 @@ class AdminController extends Controller
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
             'quantity' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0',
-            'offer_price' => 'nullable|numeric|min:0|lt:price',
+            'price' => 'nullable|numeric|min:0',
+            'offer_price' => 'nullable|numeric|min:0',
             'offer_starts_at' => 'nullable|date',
             'offer_ends_at' => 'nullable|date|after:offer_starts_at',
-            'category' => 'required|in:figures,knives,stickers',
+            'category_id' => 'nullable|exists:categories,id',
+            'category' => 'nullable|in:figures,knives,stickers',
+            'is_preorder' => 'boolean',
+            'is_upcoming' => 'boolean',
+            'price_tba' => 'boolean',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
             'rating' => 'nullable|integer|min:0|max:5',
             'reviews' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
+            'is_new' => 'boolean',
+            'is_bestseller' => 'boolean',
+            'is_limited_edition' => 'boolean',
         ]);
 
         $uploadedPaths = [];
@@ -752,6 +759,12 @@ class AdminController extends Controller
 
         $validated['is_active'] = $request->has('is_active');
         $validated['is_featured'] = $request->has('is_featured');
+        $validated['is_new'] = $request->has('is_new');
+        $validated['is_bestseller'] = $request->has('is_bestseller');
+        $validated['is_limited_edition'] = $request->has('is_limited_edition');
+        $validated['is_preorder'] = $request->has('is_preorder');
+        $validated['is_upcoming'] = $request->has('is_upcoming');
+        $validated['price_tba'] = $request->has('price_tba');
         $validated['rating'] = $validated['rating'] ?? 0;
         $validated['reviews'] = $validated['reviews'] ?? 0;
 
@@ -768,11 +781,11 @@ class AdminController extends Controller
 
     public function productEdit(Product $product): View
     {
-        $categories = [
-            'figures' => 'Agent Figures',
-            'knives' => 'Knives & Weapons',
-            'stickers' => 'Stickers & Keychains',
-        ];
+        $categories = \App\Models\Category::with('children')
+            ->whereNull('parent_id')
+            ->active()
+            ->orderBy('order')
+            ->get();
         
         return view('admin.product-edit', compact('product', 'categories'));
     }
@@ -784,11 +797,15 @@ class AdminController extends Controller
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
             'quantity' => 'required|integer|min:0',
-            'price' => 'required|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
             'offer_price' => 'nullable|numeric|min:0|lt:price',
             'offer_starts_at' => 'nullable|date',
             'offer_ends_at' => 'nullable|date|after:offer_starts_at',
-            'category' => 'required|in:figures,knives,stickers',
+            'category_id' => 'nullable|exists:categories,id',
+            'category' => 'nullable|in:figures,knives,stickers',
+            'is_preorder' => 'boolean',
+            'is_upcoming' => 'boolean',
+            'price_tba' => 'boolean',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
             'delete_images' => 'nullable|array',
@@ -797,6 +814,9 @@ class AdminController extends Controller
             'reviews' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'is_new' => 'boolean',
+            'is_bestseller' => 'boolean',
+            'is_limited_edition' => 'boolean',
         ]);
 
         // Delete selected images
@@ -826,6 +846,12 @@ class AdminController extends Controller
 
         $validated['is_active'] = $request->has('is_active');
         $validated['is_featured'] = $request->has('is_featured');
+        $validated['is_new'] = $request->has('is_new');
+        $validated['is_bestseller'] = $request->has('is_bestseller');
+        $validated['is_limited_edition'] = $request->has('is_limited_edition');
+        $validated['is_preorder'] = $request->has('is_preorder');
+        $validated['is_upcoming'] = $request->has('is_upcoming');
+        $validated['price_tba'] = $request->has('price_tba');
 
         $product->update($validated);
 
@@ -855,6 +881,76 @@ class AdminController extends Controller
         $product->delete();
 
         return redirect()->route('admin.products')->with('success', 'Product deleted successfully!');
+    }
+
+    public function categories(): View
+    {
+        $categories = \App\Models\Category::with('children', 'parent')
+            ->orderBy('order')
+            ->get();
+        
+        return view('admin.categories', compact('categories'));
+    }
+
+    public function categoryCreate(): View
+    {
+        $parentCategories = \App\Models\Category::whereNull('parent_id')
+            ->orderBy('order')
+            ->get();
+        
+        return view('admin.category-create', compact('parentCategories'));
+    }
+
+    public function categoryStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:categories',
+            'parent_id' => 'nullable|exists:categories,id',
+            'order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['is_active'] = $request->has('is_active');
+        $validated['order'] = $validated['order'] ?? 0;
+
+        \App\Models\Category::create($validated);
+
+        return redirect()->route('admin.categories')->with('success', 'Category created successfully!');
+    }
+
+    public function categoryEdit(\App\Models\Category $category): View
+    {
+        $parentCategories = \App\Models\Category::whereNull('parent_id')
+            ->where('id', '!=', $category->id)
+            ->orderBy('order')
+            ->get();
+        
+        return view('admin.category-edit', compact('category', 'parentCategories'));
+    }
+
+    public function categoryUpdate(Request $request, \App\Models\Category $category): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:categories,slug,' . $category->id,
+            'parent_id' => 'nullable|exists:categories,id',
+            'order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['is_active'] = $request->has('is_active');
+
+        $category->update($validated);
+
+        return redirect()->route('admin.categories')->with('success', 'Category updated successfully!');
+    }
+
+    public function categoryDestroy(\App\Models\Category $category): RedirectResponse
+    {
+        $category->delete();
+
+        return redirect()->route('admin.categories')->with('success', 'Category deleted successfully!');
     }
 
     public function visitors(): View

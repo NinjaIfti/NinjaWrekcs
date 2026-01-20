@@ -23,7 +23,16 @@ Route::get('/', function () {
             ->get();
     }
     
-    return view('welcome', compact('products'));
+    // Get categories with products for showcase
+    $categories = \App\Models\Category::with(['children', 'products' => function($query) {
+        $query->where('is_active', true)->with('images')->latest()->take(4);
+    }])
+    ->whereNull('parent_id')
+    ->whereIn('slug', ['valorant', 'csgo', 'pre-order-upcoming'])
+    ->orderBy('order')
+    ->get();
+    
+    return view('welcome', compact('products', 'categories'));
 });
 
 Route::get('/test-email', function () {
@@ -220,6 +229,46 @@ Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product}', [ShopController::class, 'show'])->name('shop.show');
 Route::get('/shop/api/recent-purchases', [ShopController::class, 'recentPurchases'])->name('shop.recent-purchases');
 
+// Deals Page
+Route::get('/deals', function () {
+    // Get products with active offers
+    $offerProducts = \App\Models\Product::with('images', 'category')
+        ->where('is_active', true)
+        ->where(function($query) {
+            $query->whereNotNull('offer_price')
+                  ->where('offer_starts_at', '<=', now())
+                  ->where('offer_ends_at', '>=', now());
+        })
+        ->latest()
+        ->get();
+    
+    // Get products with sale prices
+    $saleProducts = \App\Models\Product::with('images', 'category')
+        ->where('is_active', true)
+        ->whereNotNull('sale_price')
+        ->whereNull('offer_price')
+        ->latest()
+        ->get();
+    
+    // Get featured deals (products marked as featured with discounts)
+    $featuredDeals = \App\Models\Product::with('images', 'category')
+        ->where('is_active', true)
+        ->where('is_featured', true)
+        ->where(function($query) {
+            $query->whereNotNull('sale_price')
+                  ->orWhere(function($q) {
+                      $q->whereNotNull('offer_price')
+                        ->where('offer_starts_at', '<=', now())
+                        ->where('offer_ends_at', '>=', now());
+                  });
+        })
+        ->latest()
+        ->take(4)
+        ->get();
+    
+    return view('deals.index', compact('offerProducts', 'saleProducts', 'featuredDeals'));
+})->name('deals.index');
+
 // Stock Notification Routes
 Route::post('/stock-notification', [StockNotificationController::class, 'store'])->name('stock-notification.store');
 
@@ -285,6 +334,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/products/{product}/edit', [\App\Http\Controllers\AdminController::class, 'productEdit'])->name('products.edit');
     Route::put('/products/{product}', [\App\Http\Controllers\AdminController::class, 'productUpdate'])->name('products.update');
     Route::delete('/products/{product}', [\App\Http\Controllers\AdminController::class, 'productDestroy'])->name('products.destroy');
+    
+    // Categories Management
+    Route::get('/categories', [\App\Http\Controllers\AdminController::class, 'categories'])->name('categories');
+    Route::get('/categories/create', [\App\Http\Controllers\AdminController::class, 'categoryCreate'])->name('categories.create');
+    Route::post('/categories', [\App\Http\Controllers\AdminController::class, 'categoryStore'])->name('categories.store');
+    Route::get('/categories/{category}/edit', [\App\Http\Controllers\AdminController::class, 'categoryEdit'])->name('categories.edit');
+    Route::put('/categories/{category}', [\App\Http\Controllers\AdminController::class, 'categoryUpdate'])->name('categories.update');
+    Route::delete('/categories/{category}', [\App\Http\Controllers\AdminController::class, 'categoryDestroy'])->name('categories.destroy');
     
     // Featured Products Management
     Route::get('/featured-products', [\App\Http\Controllers\AdminController::class, 'featuredProducts'])->name('featured-products');

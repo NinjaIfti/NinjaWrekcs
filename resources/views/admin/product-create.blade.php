@@ -29,14 +29,26 @@
 
                         <!-- Category -->
                         <div>
-                            <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category *</label>
-                            <select name="category" id="category" required class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <label for="category_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category *</label>
+                            <select name="category_id" id="category_id" required class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select Category</option>
-                                @foreach($categories as $key => $name)
-                                    <option value="{{ $key }}" {{ old('category') === $key ? 'selected' : '' }}>{{ $name }}</option>
+                                @foreach($categories as $parentCategory)
+                                    <optgroup label="{{ $parentCategory->name }}">
+                                        @if($parentCategory->hasChildren())
+                                            @foreach($parentCategory->children as $childCategory)
+                                                <option value="{{ $childCategory->id }}" {{ old('category_id') == $childCategory->id ? 'selected' : '' }}>
+                                                    {{ $childCategory->name }}
+                                                </option>
+                                            @endforeach
+                                        @else
+                                            <option value="{{ $parentCategory->id }}" {{ old('category_id') == $parentCategory->id ? 'selected' : '' }}>
+                                                {{ $parentCategory->name }}
+                                            </option>
+                                        @endif
+                                    </optgroup>
                                 @endforeach
                             </select>
-                            @error('category')
+                            @error('category_id')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
@@ -100,6 +112,46 @@
                             
                             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                 ⏰ The offer will automatically activate and expire based on these dates
+                            </p>
+                        </div>
+
+                        <!-- Pre-order/Upcoming Section -->
+                        <div class="border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-lg p-4 bg-purple-50 dark:bg-purple-900/20">
+                            <h3 class="text-sm font-semibold text-purple-700 dark:text-purple-300 mb-3 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Pre-order/Upcoming Product (Optional)
+                            </h3>
+                            
+                            <div class="space-y-3">
+                                <!-- Pre-order Checkbox -->
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="is_preorder" value="1" {{ old('is_preorder') ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-purple-600 shadow-sm focus:ring-purple-500">
+                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">This is a Pre-order (accepting orders now)</span>
+                                    </label>
+                                </div>
+
+                                <!-- Upcoming Checkbox -->
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="is_upcoming" value="1" {{ old('is_upcoming') ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-purple-600 shadow-sm focus:ring-purple-500">
+                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">This is Upcoming (not yet available)</span>
+                                    </label>
+                                </div>
+
+                                <!-- Price TBA Checkbox -->
+                                <div>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="price_tba" value="1" {{ old('price_tba') ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-purple-600 shadow-sm focus:ring-purple-500">
+                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Price to be announced (show "Price will be announced later")</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                💡 Use for products that are coming soon or available for pre-order
                             </p>
                         </div>
 

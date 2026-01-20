@@ -42,7 +42,7 @@ class CartController extends Controller
         \Cart::add([
             'id' => $product->id,
             'name' => $product->name,
-            'price' => $product->price ?? 0,
+            'price' => $product->display_price ?? 0,
             'quantity' => $quantity,
             'attributes' => [
                 'image' => $product->image,

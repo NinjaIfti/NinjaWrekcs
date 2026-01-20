@@ -13,7 +13,7 @@ class ShopController extends Controller
     public function index(Request $request)
     {
         // Get filter parameters
-        $category = $request->query('category', '');
+        $categoryId = $request->query('category_id', '');
         $search = $request->query('search', '');
         $minPrice = $request->query('min_price', '');
         $maxPrice = $request->query('max_price', '');
@@ -21,21 +21,31 @@ class ShopController extends Controller
         $inStock = $request->query('in_stock', '');
         $perPage = $request->query('per_page', 12);
         
-        // Available categories
-        $categories = [
-            'figures' => 'Agent Figures',
-            'knives' => 'Knives & Weapons',
-            'stickers' => 'Stickers & Keychains',
-        ];
+        // Get all categories from database
+        $categories = \App\Models\Category::with('children')
+            ->whereNull('parent_id')
+            ->active()
+            ->orderBy('order')
+            ->get();
         
         // Get category counts
         $categoryCounts = [];
-        foreach (array_keys($categories) as $cat) {
-            $categoryCounts[$cat] = Product::where('is_active', true)->where('category', $cat)->count();
+        foreach ($categories as $parentCategory) {
+            if ($parentCategory->hasChildren()) {
+                foreach ($parentCategory->children as $childCategory) {
+                    $categoryCounts[$childCategory->id] = Product::where('is_active', true)
+                        ->where('category_id', $childCategory->id)
+                        ->count();
+                }
+            } else {
+                $categoryCounts[$parentCategory->id] = Product::where('is_active', true)
+                    ->where('category_id', $parentCategory->id)
+                    ->count();
+            }
         }
         
         // Fetch products from database
-        $query = Product::with('images')->where('is_active', true);
+        $query = Product::with('images', 'category')->where('is_active', true);
         
         // Search filter
         if ($search) {
@@ -47,8 +57,8 @@ class ShopController extends Controller
         }
         
         // Category filter
-        if ($category && in_array($category, array_keys($categories))) {
-            $query->where('category', $category);
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
         }
         
         // Price range filter
@@ -107,8 +117,24 @@ class ShopController extends Controller
             ]);
         }
         
+        // Get selected category for breadcrumb
+        $selectedCategoryModel = null;
+        $showSubcategories = false;
+        $subcategories = collect();
+        
+        if ($categoryId) {
+            $selectedCategoryModel = \App\Models\Category::with('children')->find($categoryId);
+            
+            // If selected category is a parent with children, show subcategories instead of products
+            if ($selectedCategoryModel && $selectedCategoryModel->hasChildren()) {
+                $showSubcategories = true;
+                $subcategories = $selectedCategoryModel->children;
+            }
+        }
+        
         return view('shop.index', [
-            'selectedCategory' => $category,
+            'selectedCategoryId' => $categoryId,
+            'selectedCategory' => $selectedCategoryModel,
             'categories' => $categories,
             'categoryCounts' => $categoryCounts,
             'products' => $products,
@@ -118,6 +144,8 @@ class ShopController extends Controller
             'sort' => $sort,
             'inStock' => $inStock,
             'priceRange' => $priceRange,
+            'showSubcategories' => $showSubcategories,
+            'subcategories' => $subcategories,
         ]);
     }
 
