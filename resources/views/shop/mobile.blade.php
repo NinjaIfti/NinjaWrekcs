@@ -1,4 +1,4 @@
-<div class="space-y-6" x-data="{ filtersOpen: false }" x-cloak>
+<div class="space-y-6 md:hidden" x-data="{ filtersOpen: false }">
     <!-- Breadcrumbs Mobile -->
     <nav class="flex items-center text-xs text-gray-400 mb-4" aria-label="Breadcrumb">
         <a href="{{ url('/') }}" class="hover:text-violet-400 transition-colors">Home</a>
@@ -30,26 +30,28 @@
         </div>
     </div>
 
-    <!-- Main Category Cards -->
+    <!-- Main Category Cards (always visible on mobile) -->
     <div class="grid grid-cols-1 gap-4 mb-6">
         @foreach($categories as $parentCategory)
+        @php
+            $categoryImage = 'val.jpeg';
+            if ($parentCategory->slug === 'valorant') {
+                $categoryImage = 'val.jpeg';
+            } elseif ($parentCategory->slug === 'csgo') {
+                $categoryImage = 'csgo.jpg';
+            } elseif ($parentCategory->slug === 'toys') {
+                $categoryImage = 'toys.jpg';
+            } elseif ($parentCategory->slug === 'pre-order-upcoming') {
+                $categoryImage = 'up.jpeg';
+            }
+        @endphp
         <a href="{{ route('shop.index', ['category_id' => $parentCategory->id]) }}" 
-           class="group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border-2 {{ $selectedCategoryId == $parentCategory->id ? 'border-violet-500' : 'border-violet-500/20' }}">
-            <div class="relative h-32 bg-gradient-to-br {{ $parentCategory->slug === 'valorant' ? 'from-violet-900/80 to-purple-900/80' : ($parentCategory->slug === 'csgo' ? 'from-orange-900/80 to-red-900/80' : 'from-blue-900/80 to-purple-900/80') }}">
-                <!-- Category Icon -->
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <svg class="w-16 h-16 text-white opacity-20 group-hover:opacity-30 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        @if($parentCategory->slug === 'valorant')
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                        @elseif($parentCategory->slug === 'csgo')
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                        @else
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        @endif
-                    </svg>
-                </div>
+           class="group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 border-2 border-violet-500/20">
+            <div class="relative h-32 bg-cover bg-center bg-no-repeat" 
+                 style="background-image: url('{{ asset('img/' . $categoryImage) }}');">
                 
-                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                <!-- Dark Gradient Overlay for Text Readability -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                 
                 <div class="absolute bottom-0 left-0 right-0 p-4 z-10 flex items-end justify-between">
                     <div>
@@ -57,14 +59,19 @@
                             {{ $parentCategory->name }}
                         </h3>
                         <p class="text-gray-300 text-xs">
-                            {{ $parentCategory->products_count ?? array_sum(array_intersect_key($categoryCounts ?? [], array_flip($parentCategory->children->pluck('id')->toArray()))) }} products
+                            @php
+                                $productCount = 0;
+                                if ($parentCategory->hasChildren()) {
+                                    foreach ($parentCategory->children as $child) {
+                                        $productCount += $categoryCounts[$child->id] ?? 0;
+                                    }
+                                } else {
+                                    $productCount = $categoryCounts[$parentCategory->id] ?? 0;
+                                }
+                            @endphp
+                            {{ $productCount }} products
                         </p>
                     </div>
-                    @if($selectedCategoryId == $parentCategory->id)
-                        <span class="px-2 py-1 bg-violet-500 text-white text-xs font-bold rounded">
-                            ✓
-                        </span>
-                    @endif
                 </div>
             </div>
         </a>
@@ -73,10 +80,13 @@
 
     <!-- Search Bar -->
     <form action="{{ route('shop.index') }}" method="GET" class="relative">
+        <label for="mobile-search" class="sr-only">Search products</label>
         <input type="text" 
+               id="mobile-search"
                name="search" 
                value="{{ $search }}"
                placeholder="Search products..." 
+               autocomplete="off"
                class="w-full px-4 py-3 pl-12 bg-gray-900 border border-violet-500/30 rounded-lg text-white placeholder-gray-500 text-sm focus:border-violet-500 focus:ring-2 focus:ring-violet-500/50">
         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -199,12 +209,12 @@
                         </label>
                         
                         @foreach($categories as $parentCategory)
-                            <!-- Parent Category Header -->
-                            <div class="mt-3 mb-2">
-                                <span class="text-xs font-bold text-violet-400 uppercase tracking-wider">{{ $parentCategory->name }}</span>
-                            </div>
-                            
                             @if($parentCategory->hasChildren())
+                                <!-- Parent Category Header -->
+                                <div class="mt-3 mb-2">
+                                    <span class="text-xs font-bold text-violet-400 uppercase tracking-wider">{{ $parentCategory->name }}</span>
+                                </div>
+                                
                                 @foreach($parentCategory->children as $childCategory)
                                     <label class="flex items-center justify-between cursor-pointer group pl-3">
                                         <div class="flex items-center">
@@ -216,16 +226,6 @@
                                         </span>
                                     </label>
                                 @endforeach
-                            @else
-                                <label class="flex items-center justify-between cursor-pointer group pl-3">
-                                    <div class="flex items-center">
-                                        <input type="radio" name="category_id" value="{{ $parentCategory->id }}" {{ $selectedCategoryId == $parentCategory->id ? 'checked' : '' }} class="mr-3 text-violet-600">
-                                        <span class="text-gray-400 group-hover:text-white transition-colors">All {{ $parentCategory->name }}</span>
-                                    </div>
-                                    <span class="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs font-semibold rounded-full">
-                                        {{ $categoryCounts[$parentCategory->id] ?? 0 }}
-                                    </span>
-                                </label>
                             @endif
                         @endforeach
                     </div>

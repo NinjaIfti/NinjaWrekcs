@@ -15,6 +15,7 @@
         @php
             $activeHome = request()->is('/');
             $activeShop = request()->routeIs('shop.*');
+            $activeDeals = request()->routeIs('deals.*');
             $activeCart = request()->routeIs('cart.*');
             $activeProfile = request()->routeIs('profile.*');
             $activeLogin = request()->routeIs('login');
@@ -33,6 +34,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
             </svg>
             <span class="text-xs font-medium">Shop</span>
+        </a>
+
+        <!-- Deals -->
+        <a href="{{ route('deals.index') }}" class="flex flex-col items-center justify-center flex-1 py-2 transition-all {{ $activeDeals ? 'text-violet-300 glitch-pulse' : 'text-gray-300 hover:text-violet-400' }}">
+            <svg class="w-6 h-6 mb-1 {{ $activeDeals ? 'text-violet-300 glitch-pulse' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="text-xs font-medium">Deals</span>
         </a>
 
         <!-- Cart -->

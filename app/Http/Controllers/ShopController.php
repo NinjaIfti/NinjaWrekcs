@@ -47,6 +47,9 @@ class ShopController extends Controller
         // Fetch products from database
         $query = Product::with('images', 'category')->where('is_active', true);
         
+        // Initialize selected category model
+        $selectedCategoryModel = null;
+        
         // Search filter
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -58,7 +61,16 @@ class ShopController extends Controller
         
         // Category filter
         if ($categoryId) {
-            $query->where('category_id', $categoryId);
+            $selectedCategoryModel = \App\Models\Category::with('children')->find($categoryId);
+            
+            // If it's a parent category with children, include all child category products
+            if ($selectedCategoryModel && $selectedCategoryModel->hasChildren()) {
+                $childCategoryIds = $selectedCategoryModel->children->pluck('id')->toArray();
+                $allCategoryIds = array_merge([$categoryId], $childCategoryIds);
+                $query->whereIn('category_id', $allCategoryIds);
+            } else {
+                $query->where('category_id', $categoryId);
+            }
         }
         
         // Price range filter
@@ -117,21 +129,6 @@ class ShopController extends Controller
             ]);
         }
         
-        // Get selected category for breadcrumb
-        $selectedCategoryModel = null;
-        $showSubcategories = false;
-        $subcategories = collect();
-        
-        if ($categoryId) {
-            $selectedCategoryModel = \App\Models\Category::with('children')->find($categoryId);
-            
-            // If selected category is a parent with children, show subcategories instead of products
-            if ($selectedCategoryModel && $selectedCategoryModel->hasChildren()) {
-                $showSubcategories = true;
-                $subcategories = $selectedCategoryModel->children;
-            }
-        }
-        
         return view('shop.index', [
             'selectedCategoryId' => $categoryId,
             'selectedCategory' => $selectedCategoryModel,
@@ -144,8 +141,6 @@ class ShopController extends Controller
             'sort' => $sort,
             'inStock' => $inStock,
             'priceRange' => $priceRange,
-            'showSubcategories' => $showSubcategories,
-            'subcategories' => $subcategories,
         ]);
     }
 
