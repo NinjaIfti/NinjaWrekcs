@@ -41,6 +41,15 @@ class CartController extends Controller
             return redirect()->back()->with('error', 'This product is not available.');
         }
 
+        // Prevent adding upcoming or price-tba items to cart
+        if ($product->is_upcoming) {
+            return redirect()->back()->with('error', 'This item is upcoming and cannot be added to cart yet.');
+        }
+
+        if ($product->price_tba || $product->price == 0) {
+            return redirect()->back()->with('error', 'Price will be announced later. Please check back once pricing is available.');
+        }
+
         $quantity = $request->input('quantity', 1);
         
         // Check stock availability

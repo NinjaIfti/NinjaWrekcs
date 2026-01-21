@@ -316,6 +316,7 @@
                             'price' => $product->price,
                             'sale_price' => $product->sale_price,
                             'display_price' => $product->display_price,
+                            'price_tba' => $product->price_tba,
                             'has_discount' => $product->has_discount,
                             'discount_percentage' => $product->discount_percentage,
                             'quantity' => $product->quantity,

@@ -111,6 +111,13 @@
                             </div>
                         </div>
                     </div>
+                    @elseif($product->price_tba || $product->price == 0 || !$product->display_price)
+                        <div class="text-center py-8">
+                            <div class="text-2xl font-bold text-yellow-400 mb-2">
+                                ⏳ Price to be announced
+                            </div>
+                            <p class="text-gray-400">We're finalizing the pricing for this product. Please check back soon!</p>
+                        </div>
                     @elseif($product->display_price)
                     <div class="space-y-3">
                         <div class="flex items-center gap-3">
@@ -179,7 +186,7 @@
 
                     <!-- Action Buttons -->
                     <div class="border-t border-violet-500/20 pt-6 space-y-4">
-                        @if($product->quantity > 0)
+                        @if($product->quantity > 0 && !$product->price_tba && $product->price > 0 && $product->display_price)
                             <form action="{{ route('cart.add', $product) }}" method="POST" class="space-y-4">
                                 @csrf
                                 <div class="flex items-center space-x-4">

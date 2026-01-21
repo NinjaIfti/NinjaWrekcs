@@ -14,6 +14,7 @@ use App\Models\SpecialOffer;
 use App\Models\Review;
 use App\Models\StockNotification;
 use App\Mail\OrderStatusUpdated;
+use App\Mail\AdminOrderNotification;
 use App\Services\AnalyticsService;
 use App\Services\NotificationService;
 use App\Services\EmailService;
@@ -59,15 +60,20 @@ class AdminController extends Controller
     public function orders(Request $request): View
     {
         $status = $request->query('status', '');
-        $view = $request->query('view', 'active'); // 'active' or 'hidden'
+        $view = $request->query('view', 'active'); // 'active', 'preorder', or 'hidden'
 
         $query = Order::with(['user', 'items.product']);
 
-        // Filter by deleted status
+        // Filter by view type
         if ($view === 'hidden') {
+            // Show deleted orders (regardless of preorder status)
             $query->where('is_deleted', true);
+        } elseif ($view === 'preorder') {
+            // Show non-deleted pre-order bookings only
+            $query->notDeleted()->where('is_preorder_booking', true);
         } else {
-            $query->notDeleted(); // Only show non-deleted orders
+            // Show non-deleted, non-preorder orders (regular active orders)
+            $query->notDeleted()->where('is_preorder_booking', false);
         }
 
         if ($status && in_array($status, ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])) {
@@ -218,6 +224,17 @@ class AdminController extends Controller
                     $order->email,
                     'manual order confirmation'
                 );
+            }
+
+            // Send admin notification email for manual orders
+            try {
+                $order->load('items');
+                Mail::to('ifti3061@gmail.com')->send(new AdminOrderNotification($order));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send admin order notification email for manual order', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             return redirect()->route('admin.orders')->with('success', 'Manual order created successfully! Order #' . $order->id);

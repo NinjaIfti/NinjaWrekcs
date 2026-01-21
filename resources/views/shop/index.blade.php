@@ -32,7 +32,7 @@
     <!-- Shop Section -->
     <section class="pt-20 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black" x-data="{ 
         viewMode: localStorage.getItem('shopViewMode') || 'grid-3',
-        filtersCollapsed: false 
+        filtersCollapsed: true 
     }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Breadcrumbs -->
@@ -243,7 +243,22 @@
 
                 <!-- Filters Sidebar - Show for all categories -->
                 <aside class="lg:w-80 flex-shrink-0">
-                    <div class="bg-black/40 backdrop-blur-xl rounded-2xl border border-violet-500/20 shadow-xl shadow-violet-500/10 p-6 sticky top-28">
+                    <!-- Mobile Filter Toggle Button -->
+                    <div class="lg:hidden mb-4">
+                        <button @click="filtersCollapsed = !filtersCollapsed" 
+                                class="w-full flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-xl rounded-xl border border-violet-500/20 text-white hover:bg-violet-500/10 transition">
+                            <span class="font-semibold">{{ $isValorantCategory ? 'Valorant Filters' : 'Filters' }}</span>
+                            <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-180': !filtersCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Filter Content -->
+                    <div class="bg-black/40 backdrop-blur-xl rounded-2xl border border-violet-500/20 shadow-xl shadow-violet-500/10 p-6 sticky top-28 lg:block"
+                         :class="{ 'hidden': filtersCollapsed }"
+                         x-show="!filtersCollapsed || window.innerWidth >= 1024"
+                         x-transition>
                         <div class="flex items-center justify-between mb-6">
                             <h2 class="text-xl font-bold text-white">{{ $isValorantCategory ? 'Valorant Filters' : 'Filters' }}</h2>
                             @if($search || $selectedCategoryId || $minPrice || $maxPrice || $inStock)
@@ -353,8 +368,8 @@
                             Showing <span class="text-white font-semibold">{{ $products->count() }}</span> of <span class="text-white font-semibold">{{ $products->total() }}</span> {{ $products->total() === 1 ? 'product' : 'products' }}
                         </p>
                         
-                        <!-- View Toggle -->
-                        <div class="flex items-center gap-2 bg-black/50 border border-violet-500/30 rounded-lg p-1">
+                        <!-- View Toggle - Hidden on mobile -->
+                        <div class="hidden md:flex items-center gap-2 bg-black/50 border border-violet-500/30 rounded-lg p-1">
                             <button @click="viewMode = 'grid-2'; localStorage.setItem('shopViewMode', 'grid-2')" 
                                     :class="viewMode === 'grid-2' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
                                     class="p-2 rounded transition-colors"
@@ -661,14 +676,22 @@
             // Set price
             const priceContainer = document.getElementById('qv-price-container');
             let priceHTML = '';
-            if (product.has_discount) {
+            const price = parseFloat(product.price) || 0;
+            const displayPrice = product.display_price ? parseFloat(product.display_price) : null;
+            
+            if (product.price_tba || price === 0 || !displayPrice) {
                 priceHTML = `
-                    <p class="text-3xl font-bold text-violet-400">৳${parseFloat(product.display_price).toFixed(2)}</p>
-                    <p class="text-lg text-gray-500 line-through">৳${parseFloat(product.price).toFixed(2)}</p>
+                    <p class="text-2xl font-bold text-yellow-400 mb-2">⏳ Price to be announced</p>
+                    <p class="text-sm text-gray-400">We're finalizing the pricing for this product. Please check back soon!</p>
+                `;
+            } else if (product.has_discount) {
+                priceHTML = `
+                    <p class="text-3xl font-bold text-violet-400">৳${displayPrice.toFixed(2)}</p>
+                    <p class="text-lg text-gray-500 line-through">৳${price.toFixed(2)}</p>
                     <span class="px-2 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded">Save ${product.discount_percentage}%</span>
                 `;
             } else {
-                priceHTML = `<p class="text-3xl font-bold text-violet-400">৳${parseFloat(product.price).toFixed(2)}</p>`;
+                priceHTML = `<p class="text-3xl font-bold text-violet-400">৳${price.toFixed(2)}</p>`;
             }
             
             // Add offer countdown if active
@@ -713,7 +736,9 @@
             const addButton = document.getElementById('qv-add-to-cart-btn');
             form.action = product.add_to_cart_url;
             
-            if (product.quantity > 0) {
+            const canAddToCart = product.quantity > 0 && !product.price_tba && price > 0 && displayPrice;
+            
+            if (canAddToCart) {
                 addButton.disabled = false;
                 addButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 addButton.innerHTML = `
@@ -725,7 +750,13 @@
             } else {
                 addButton.disabled = true;
                 addButton.classList.add('opacity-50', 'cursor-not-allowed');
-                addButton.innerHTML = 'Out of Stock';
+                if (product.quantity <= 0) {
+                    addButton.innerHTML = 'Out of Stock';
+                } else if (product.price_tba || price === 0 || !displayPrice) {
+                    addButton.innerHTML = 'Price to be announced';
+                } else {
+                    addButton.innerHTML = 'Unavailable';
+                }
             }
             
             // Set view details link

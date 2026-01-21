@@ -44,6 +44,7 @@
                             'price' => $product->price,
                             'sale_price' => $product->sale_price,
                             'display_price' => $product->display_price,
+                            'price_tba' => $product->price_tba,
                             'has_discount' => $product->has_discount,
                             'has_active_offer' => $product->has_active_offer,
                             'offer_ends_at' => $product->has_active_offer ? $product->offer_ends_at->timestamp : null,
@@ -66,7 +67,7 @@
             </div>
             
             <!-- Add to Cart Button (Shows on Hover) -->
-            @if($product->quantity > 0)
+            @if($product->quantity > 0 && !$product->price_tba && $product->price > 0 && $product->display_price)
             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
                 <form action="{{ route('cart.add', $product) }}" method="POST" class="w-full px-4" onclick="event.stopPropagation();">
                     @csrf
@@ -108,8 +109,8 @@
         
         <!-- Price with Discount -->
         <div class="flex items-center gap-2">
-            @if($product->price_tba)
-                <p class="text-sm font-semibold text-yellow-400">⏳ Price will be announced soon</p>
+            @if($product->price_tba || $product->price == 0 || !$product->display_price)
+                <p class="text-sm font-semibold text-yellow-400">⏳ Price to be announced</p>
             @elseif($product->display_price)
                 @if($product->has_discount)
                     <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
@@ -118,7 +119,7 @@
                     <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
                 @endif
             @else
-                <p class="text-sm font-semibold text-yellow-400">⏳ Price will be announced soon</p>
+                <p class="text-sm font-semibold text-yellow-400">⏳ Price to be announced</p>
             @endif
         </div>
         

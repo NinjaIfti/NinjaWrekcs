@@ -1,11 +1,11 @@
 @foreach($products as $product)
-<div class="bg-gray-900 border border-violet-500/20 rounded-xl overflow-hidden">
+<div class="bg-gradient-to-br from-gray-900 to-gray-800 border border-violet-500/30 rounded-xl overflow-hidden shadow-lg hover:shadow-violet-500/20 transition-all duration-300 hover:scale-[1.02]">
     <a href="{{ route('shop.show', $product) }}" class="block">
-        <div class="relative">
+        <div class="relative overflow-hidden">
             @php
                 $cover = $product->images->first()?->path ?? $product->image;
             @endphp
-            <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-40 object-cover">
+            <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-110">
             
             <!-- Product Badges -->
             <div class="absolute top-2 left-2 flex flex-col gap-1">
@@ -39,6 +39,7 @@
                 'price' => $product->price,
                 'sale_price' => $product->sale_price,
                 'display_price' => $product->display_price,
+                'price_tba' => $product->price_tba,
                 'has_discount' => $product->has_discount,
                 'has_active_offer' => $product->has_active_offer,
                 'offer_ends_at' => $product->has_active_offer ? $product->offer_ends_at->timestamp : null,
@@ -65,18 +66,25 @@
             @endif
         </div>
     </a>
-    <div class="p-3 space-y-2">
+    <div class="p-4 space-y-3">
         <a href="{{ route('shop.show', $product) }}">
-            <h3 class="text-sm font-semibold text-white line-clamp-2">{{ $product->name }}</h3>
+            <h3 class="text-base font-semibold text-white line-clamp-2 hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
         </a>
         
         <!-- Price with Discount -->
-        <div class="flex items-center gap-1 flex-wrap">
-            @if($product->has_discount)
-                <p class="text-base font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
-                <p class="text-xs text-gray-500 line-through">৳{{ number_format($product->price, 2) }}</p>
+        <div class="flex items-center gap-2 flex-wrap">
+            @if($product->price_tba || $product->price == 0 || !$product->display_price)
+                <p class="text-sm font-semibold text-yellow-400">⏳ Price to be announced</p>
+            @elseif($product->has_discount)
+                <div class="flex items-center gap-2">
+                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
+                    <p class="text-xs text-gray-500 line-through">৳{{ number_format($product->price, 2) }}</p>
+                    <span class="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-bold rounded-full">
+                        -{{ $product->discount_percentage }}%
+                    </span>
+                </div>
             @else
-                <p class="text-base font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
             @endif
         </div>
         
@@ -97,10 +105,10 @@
         @endif
         
         <!-- Stock Status with Urgency -->
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between pt-2 border-t border-violet-500/20">
             @if($product->quantity > 0)
                 @if($product->is_low_stock)
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-2">
                         <span class="relative flex h-2 w-2">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
@@ -108,17 +116,17 @@
                         <span class="text-xs font-semibold text-orange-400">{{ $product->quantity }} left</span>
                     </div>
                 @else
-                    <span class="text-xs text-green-400">✓ In Stock</span>
+                    <span class="text-xs text-green-400 font-semibold">✓ In Stock</span>
                 @endif
             @else
-                <span class="text-xs text-red-300">✗ Out of stock</span>
+                <span class="text-xs text-red-300 font-semibold">✗ Out of stock</span>
             @endif
             
-            @if($product->quantity > 0)
+            @if($product->quantity > 0 && !$product->price_tba && $product->price > 0 && $product->display_price)
                 <form action="{{ route('cart.add', $product) }}" method="POST" onclick="event.stopPropagation();">
                     @csrf
-                    <button type="submit" class="px-3 py-2 text-xs font-semibold bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg hover:scale-105 transition">
-                        Add
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all">
+                        Add to Cart
                     </button>
                 </form>
             @endif

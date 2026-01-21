@@ -7,8 +7,10 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Coupon;
 use App\Mail\OrderConfirmation;
+use App\Mail\AdminOrderNotification;
 use App\Services\EmailService;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -347,6 +349,16 @@ class CheckoutController extends Controller
             // Add email status to session if failed
             if (!$emailResult['success']) {
                 session()->flash('email_warning', 'Order placed successfully, but confirmation email could not be sent. Please check your email or contact support.');
+            }
+
+            // Send admin notification email
+            try {
+                Mail::to('ifti3061@gmail.com')->send(new AdminOrderNotification($order));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send admin order notification email', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             // Send notification

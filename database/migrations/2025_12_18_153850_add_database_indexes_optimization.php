@@ -102,9 +102,26 @@ return new class extends Migration
      */
     private function hasIndex(string $table, string $index): bool
     {
+        if (!Schema::hasTable($table)) {
+            return false;
+        }
+
+        $driver = DB::connection()->getDriverName();
+
+        // SQLite doesn't support "SHOW INDEX" (MySQL syntax)
+        if ($driver === 'sqlite') {
+            $indexes = DB::select("PRAGMA index_list('{$table}')");
+            foreach ($indexes as $idx) {
+                if (($idx->name ?? null) === $index) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         $indexes = DB::select("SHOW INDEX FROM {$table}");
         foreach ($indexes as $idx) {
-            if ($idx->Key_name === $index) {
+            if (($idx->Key_name ?? null) === $index) {
                 return true;
             }
         }
@@ -116,51 +133,56 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Products
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropIndex(['is_active']);
-            $table->dropIndex(['category']);
-            $table->dropIndex(['is_featured']);
-            $table->dropIndex(['is_active', 'category']);
-            $table->dropIndex(['is_active', 'created_at']);
-            $table->dropIndex(['price']);
-            $table->dropIndex(['quantity']);
-        });
+        // Drop only the indexes added in up() (by name)
 
-        // Orders
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropIndex(['status']);
-            $table->dropIndex(['created_at']);
-            $table->dropIndex(['user_id', 'status']);
-            $table->dropIndex(['status', 'created_at']);
-            $table->dropIndex(['payment_method']);
-            $table->dropIndex(['created_at', 'status']);
-        });
+        if (Schema::hasTable('products')) {
+            Schema::table('products', function (Blueprint $table) {
+                $table->dropIndex('products_category_index');
+                $table->dropIndex('products_is_active_category_index');
+                $table->dropIndex('products_is_active_created_at_index');
+                $table->dropIndex('products_price_index');
+                $table->dropIndex('products_quantity_index');
+            });
+        }
 
-        // Order items
-        Schema::table('order_items', function (Blueprint $table) {
-            $table->dropIndex(['product_id']);
-            $table->dropIndex(['order_id', 'product_id']);
-        });
+        if (Schema::hasTable('orders')) {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->dropIndex('orders_status_index');
+                $table->dropIndex('orders_created_at_index');
+                $table->dropIndex('orders_user_id_status_index');
+                $table->dropIndex('orders_status_created_at_index');
+                $table->dropIndex('orders_payment_method_index');
+                $table->dropIndex('orders_created_at_status_index');
+            });
+        }
 
-        // Users
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropIndex(['created_at']);
-            $table->dropIndex(['email_verified_at']);
-        });
+        if (Schema::hasTable('order_items')) {
+            Schema::table('order_items', function (Blueprint $table) {
+                $table->dropIndex('order_items_product_id_index');
+                $table->dropIndex('order_items_order_id_product_id_index');
+            });
+        }
 
-        // Coupons
-        Schema::table('coupons', function (Blueprint $table) {
-            $table->dropIndex(['is_active']);
-            $table->dropIndex(['valid_from', 'valid_until']);
-            $table->dropIndex(['used_count']);
-        });
+        if (Schema::hasTable('users')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropIndex('users_created_at_index');
+                $table->dropIndex('users_email_verified_at_index');
+            });
+        }
 
-        // Visitors
-        Schema::table('visitors', function (Blueprint $table) {
-            $table->dropIndex(['created_at']);
-            $table->dropIndex(['ip_address']);
-            $table->dropIndex(['created_at', 'ip_address']);
-        });
+        if (Schema::hasTable('coupons')) {
+            Schema::table('coupons', function (Blueprint $table) {
+                $table->dropIndex('coupons_is_active_index');
+                $table->dropIndex('coupons_valid_from_valid_until_index');
+                $table->dropIndex('coupons_used_count_index');
+            });
+        }
+
+        if (Schema::hasTable('visitors')) {
+            Schema::table('visitors', function (Blueprint $table) {
+                $table->dropIndex('visitors_created_at_index');
+                $table->dropIndex('visitors_created_at_ip_address_index');
+            });
+        }
     }
 };

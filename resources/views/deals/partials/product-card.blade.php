@@ -50,9 +50,9 @@
             {{ $product->name }}
         </h4>
         
-        @if($product->price_tba)
+        @if($product->price_tba || $product->price == 0 || !$product->display_price)
             <div class="py-2">
-                <p class="text-yellow-400 text-sm font-semibold">⏳ Price will be announced soon</p>
+                <p class="text-yellow-400 text-sm font-semibold">⏳ Price to be announced</p>
             </div>
         @elseif($product->display_price)
             <!-- Price Display -->
@@ -73,7 +73,7 @@
             @endif
         @else
             <div class="py-2">
-                <p class="text-yellow-400 text-sm font-semibold">⏳ Price will be announced soon</p>
+                <p class="text-yellow-400 text-sm font-semibold">⏳ Price to be announced</p>
             </div>
         @endif
         

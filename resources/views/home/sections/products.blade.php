@@ -193,7 +193,11 @@
                                         <span class="text-sm text-gray-400">({{ $product->reviews }})</span>
                                     </div>
                                     <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
-                                    @if($product->price)
+                                    @if($product->price_tba || $product->price == 0 || !$product->display_price)
+                                        <p class="text-sm font-semibold text-yellow-400">⏳ Price to be announced</p>
+                                    @elseif($product->display_price)
+                                        <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
+                                    @elseif($product->price)
                                         <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
                                     @endif
                                 </div>

@@ -113,7 +113,7 @@ class Product extends Model
     // Get the final display price (offer price if active, then sale price, otherwise regular price)
     public function getDisplayPriceAttribute()
     {
-        if ($this->price_tba) {
+        if ($this->price_tba || $this->price == 0) {
             return null;
         }
         

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\Visitor;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class TrackVisitor
 {
@@ -17,6 +18,11 @@ class TrackVisitor
     {
         // Skip tracking for admin routes and API routes
         if ($request->is('admin/*') || $request->is('api/*')) {
+            return $next($request);
+        }
+
+        // Skip tracking if visitors table doesn't exist (e.g., during tests)
+        if (!Schema::hasTable('visitors')) {
             return $next($request);
         }
 

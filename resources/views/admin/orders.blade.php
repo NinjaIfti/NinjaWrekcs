@@ -8,6 +8,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
                         </svg>
                         {{ __('Hidden Orders') }}
+                    @elseif($currentView === 'preorder')
+                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                        {{ __('Pre-Order Bookings') }}
                     @else
                         {{ __('User Orders') }}
                     @endif
@@ -15,6 +20,8 @@
                 <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     @if($currentView === 'hidden')
                         Hidden Orders: <span class="font-bold text-gray-900 dark:text-white">{{ $orders->count() }}</span>
+                    @elseif($currentView === 'preorder')
+                        Pre-Order Bookings: <span class="font-bold text-purple-600 dark:text-purple-400">{{ $orders->count() }}</span>
                     @else
                         Total Orders: <span class="font-bold text-gray-900 dark:text-white">{{ $orders->count() }}</span>
                     @endif
@@ -58,6 +65,16 @@
                         <p class="text-yellow-700 dark:text-yellow-300 text-sm mt-1">These orders are hidden from the active list but customers can still see them in their order history. You can restore them anytime.</p>
                     </div>
                 </div>
+            @elseif($currentView === 'preorder')
+                <div class="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg flex items-start gap-3">
+                    <svg class="w-5 h-5 text-purple-600 dark:text-purple-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <div>
+                        <p class="text-purple-800 dark:text-purple-200 font-medium">Viewing Pre-Order Bookings</p>
+                        <p class="text-purple-700 dark:text-purple-300 text-sm mt-1">These are pre-order bookings. Customers have paid the booking fee and the remaining amount will be collected on delivery.</p>
+                    </div>
+                </div>
             @endif
 
             <!-- View Toggle -->
@@ -71,6 +88,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                             Active Orders
+                        </span>
+                    </a>
+                    <a href="{{ route('admin.orders', ['view' => 'preorder', 'status' => $selectedStatus]) }}" 
+                       class="px-4 py-2 rounded-md text-sm font-medium transition {{ $currentView === 'preorder' ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                            Pre-Order
                         </span>
                     </a>
                     <a href="{{ route('admin.orders', ['view' => 'hidden', 'status' => $selectedStatus]) }}" 
@@ -125,12 +151,18 @@
                     <p class="text-gray-500 dark:text-gray-400 text-lg">
                         @if($currentView === 'hidden')
                             No hidden orders found.
+                        @elseif($currentView === 'preorder')
+                            No pre-order bookings found.
                         @else
                             No orders found.
                         @endif
                     </p>
                     @if($currentView === 'hidden')
                         <a href="{{ route('admin.orders', ['view' => 'active']) }}" class="mt-4 inline-block text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                            View Active Orders →
+                        </a>
+                    @elseif($currentView === 'preorder')
+                        <a href="{{ route('admin.orders', ['view' => 'active']) }}" class="mt-4 inline-block text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300">
                             View Active Orders →
                         </a>
                     @endif
@@ -152,7 +184,12 @@
                                                     Hidden
                                                 </span>
                                             @endif
-                                            @if($order->is_preorder_booking)
+                                            @if($order->is_preorder_booking && $currentView !== 'preorder')
+                                                <span class="px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 rounded-full border border-purple-300 dark:border-purple-700">
+                                                    📦 Pre-order Booking
+                                                </span>
+                                            @endif
+                                            @if($currentView === 'preorder')
                                                 <span class="px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 rounded-full border border-purple-300 dark:border-purple-700">
                                                     📦 Pre-order Booking
                                                 </span>

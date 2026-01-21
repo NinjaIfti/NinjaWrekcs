@@ -11,8 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Some environments (like sqlite test runs) can run this migration before the products table exists.
+        if (!Schema::hasTable('products')) {
+            return;
+        }
+
         Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_featured')->default(false)->after('is_active');
+            if (!Schema::hasColumn('products', 'is_featured')) {
+                $table->boolean('is_featured')->default(false)->after('is_active');
+            }
         });
     }
 
@@ -21,8 +28,14 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('products')) {
+            return;
+        }
+
         Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('is_featured');
+            if (Schema::hasColumn('products', 'is_featured')) {
+                $table->dropColumn('is_featured');
+            }
         });
     }
 };
