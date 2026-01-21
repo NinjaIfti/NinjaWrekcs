@@ -9,70 +9,92 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        // Valorant parent category
-        $valorant = Category::create([
-            'name' => 'Valorant',
-            'slug' => 'valorant',
-            'order' => 1,
-            'is_active' => true,
-        ]);
+        // Valorant parent category - update or create to ensure it exists and is active
+        $valorant = Category::updateOrCreate(
+            ['slug' => 'valorant'],
+            [
+                'name' => 'Valorant',
+                'parent_id' => null,
+                'order' => 1,
+                'is_active' => true,
+            ]
+        );
 
         // Valorant subcategories
-        Category::create([
-            'name' => 'Weapons',
-            'slug' => 'valorant-weapons',
-            'parent_id' => $valorant->id,
-            'order' => 1,
-            'is_active' => true,
-        ]);
+        Category::updateOrCreate(
+            ['slug' => 'valorant-weapons'],
+            [
+                'name' => 'Weapons',
+                'parent_id' => $valorant->id,
+                'order' => 1,
+                'is_active' => true,
+            ]
+        );
 
-        Category::create([
-            'name' => 'Melee',
-            'slug' => 'valorant-melee',
-            'parent_id' => $valorant->id,
-            'order' => 2,
-            'is_active' => true,
-        ]);
+        Category::updateOrCreate(
+            ['slug' => 'valorant-melee'],
+            [
+                'name' => 'Melee',
+                'parent_id' => $valorant->id,
+                'order' => 2,
+                'is_active' => true,
+            ]
+        );
 
-        Category::create([
-            'name' => 'Bundles',
-            'slug' => 'valorant-bundles',
-            'parent_id' => $valorant->id,
-            'order' => 3,
-            'is_active' => true,
-        ]);
+        Category::updateOrCreate(
+            ['slug' => 'valorant-bundles'],
+            [
+                'name' => 'Bundles',
+                'parent_id' => $valorant->id,
+                'order' => 3,
+                'is_active' => true,
+            ]
+        );
 
         // CSGO parent category
-        $csgo = Category::create([
-            'name' => 'CS:GO',
-            'slug' => 'csgo',
-            'order' => 2,
-            'is_active' => true,
-        ]);
+        $csgo = Category::updateOrCreate(
+            ['slug' => 'csgo'],
+            [
+                'name' => 'CS:GO',
+                'parent_id' => null,
+                'order' => 2,
+                'is_active' => true,
+            ]
+        );
 
         // CSGO subcategories
-        Category::create([
-            'name' => 'Knife',
-            'slug' => 'csgo-knife',
-            'parent_id' => $csgo->id,
-            'order' => 1,
-            'is_active' => true,
-        ]);
+        Category::updateOrCreate(
+            ['slug' => 'csgo-knife'],
+            [
+                'name' => 'Knife',
+                'parent_id' => $csgo->id,
+                'order' => 1,
+                'is_active' => true,
+            ]
+        );
 
         // Toys parent category (no subcategories)
-        Category::create([
-            'name' => 'Toys',
-            'slug' => 'toys',
-            'order' => 3,
-            'is_active' => true,
-        ]);
+        Category::updateOrCreate(
+            ['slug' => 'toys'],
+            [
+                'name' => 'Toys',
+                'parent_id' => null,
+                'order' => 3,
+                'is_active' => true,
+            ]
+        );
 
         // Pre-order/Upcoming parent category (no subcategories)
-        Category::create([
-            'name' => 'Pre-order/Upcoming',
-            'slug' => 'pre-order-upcoming',
-            'order' => 4,
-            'is_active' => true,
-        ]);
+        Category::updateOrCreate(
+            ['slug' => 'pre-order-upcoming'],
+            [
+                'name' => 'Pre-order/Upcoming',
+                'parent_id' => null,
+                'order' => 4,
+                'is_active' => true,
+            ]
+        );
+
+        $this->command->info('Categories seeded successfully! All main categories are now active.');
     }
 }

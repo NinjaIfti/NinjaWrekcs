@@ -27,6 +27,11 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        // Seed categories - ensures all main categories exist and are active
+        $this->call([
+            CategorySeeder::class,
+        ]);
+
         // User::factory(10)->create();
 
         // User::factory()->create([
