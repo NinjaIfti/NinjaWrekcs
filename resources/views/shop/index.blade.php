@@ -24,6 +24,9 @@
     @include('components.analytics')
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="antialiased bg-black text-white">
     <!-- Include Navigation -->
@@ -31,7 +34,6 @@
     
     <!-- Shop Section -->
     <section class="pt-20 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black" x-data="{ 
-        viewMode: localStorage.getItem('shopViewMode') || 'grid-3',
         filtersCollapsed: true 
     }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -153,7 +155,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                             </svg>
                             @if($search)
-                                <a href="{{ route('shop.index') }}" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                                <a href="{{ route('shop.index', $selectedCategoryId ? ['category_id' => $selectedCategoryId] : []) }}" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                     </svg>
@@ -169,39 +171,58 @@
                     </form>
                     
                     <!-- Sort Dropdown -->
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white hover:border-violet-500 transition flex items-center gap-2">
+                    <div class="relative z-50" x-data="{ open: false }">
+                        <button @click.stop="open = !open" 
+                                type="button"
+                                class="px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white hover:border-violet-500 transition flex items-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
                             </svg>
                             <span>Sort</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
                         
                         <div x-show="open" 
+                             x-cloak
                              @click.away="open = false"
-                             x-transition
-                             class="absolute right-0 mt-2 w-56 bg-gray-900 border border-violet-500/30 rounded-lg shadow-xl z-50"
-                             style="display: none;">
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 transform scale-95"
+                             x-transition:enter-end="opacity-100 transform scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 transform scale-100"
+                             x-transition:leave-end="opacity-0 transform scale-95"
+                             class="absolute right-0 mt-2 w-56 bg-gray-900 border border-violet-500/30 rounded-lg shadow-xl z-[100]">
                             <div class="py-2">
-                                <a href="{{ route('shop.index', array_merge(request()->except('sort'), [])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'newest' ? 'text-violet-400' : 'text-gray-300' }}">
+                                <a href="{{ route('shop.index', array_merge(request()->except('sort'), [])) }}" 
+                                   @click="open = false"
+                                   class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'newest' ? 'text-violet-400' : 'text-gray-300' }}">
                                     Newest First
                                 </a>
-                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'price_asc'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'price_asc' ? 'text-violet-400' : 'text-gray-300' }}">
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'price_asc'])) }}" 
+                                   @click="open = false"
+                                   class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'price_asc' ? 'text-violet-400' : 'text-gray-300' }}">
                                     Price: Low to High
                                 </a>
-                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'price_desc'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'price_desc' ? 'text-violet-400' : 'text-gray-300' }}">
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'price_desc'])) }}" 
+                                   @click="open = false"
+                                   class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'price_desc' ? 'text-violet-400' : 'text-gray-300' }}">
                                     Price: High to Low
                                 </a>
-                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'name_asc' ? 'text-violet-400' : 'text-gray-300' }}">
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}" 
+                                   @click="open = false"
+                                   class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'name_asc' ? 'text-violet-400' : 'text-gray-300' }}">
                                     Name: A to Z
                                 </a>
-                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'name_desc' ? 'text-violet-400' : 'text-gray-300' }}">
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}" 
+                                   @click="open = false"
+                                   class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'name_desc' ? 'text-violet-400' : 'text-gray-300' }}">
                                     Name: Z to A
                                 </a>
-                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'popular'])) }}" class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'popular' ? 'text-violet-400' : 'text-gray-300' }}">
+                                <a href="{{ route('shop.index', array_merge(request()->all(), ['sort' => 'popular'])) }}" 
+                                   @click="open = false"
+                                   class="block px-4 py-2 hover:bg-violet-500/20 transition {{ $sort === 'popular' ? 'text-violet-400' : 'text-gray-300' }}">
                                     Most Popular
                                 </a>
                             </div>
@@ -261,8 +282,19 @@
                          x-transition>
                         <div class="flex items-center justify-between mb-6">
                             <h2 class="text-xl font-bold text-white">{{ $isValorantCategory ? 'Valorant Filters' : 'Filters' }}</h2>
-                            @if($search || $selectedCategoryId || $minPrice || $maxPrice || $inStock)
-                                <a href="{{ route('shop.index') }}" class="text-sm text-red-400 hover:text-red-300 transition">
+                            @if($search || ($selectedCategoryId && !$isValorantCategory) || ($isValorantCategory && $selectedCategoryId) || $minPrice || $maxPrice || $inStock)
+                                @php
+                                    // Preserve category when clearing filters
+                                    $clearParams = [];
+                                    if ($isValorantCategory && $valorantParentId) {
+                                        // For Valorant, preserve parent category
+                                        $clearParams['category_id'] = $valorantParentId;
+                                    } elseif ($selectedCategoryId && !$isValorantCategory) {
+                                        // For non-Valorant, preserve current category
+                                        $clearParams['category_id'] = $selectedCategoryId;
+                                    }
+                                @endphp
+                                <a href="{{ route('shop.index', $clearParams) }}" class="text-sm text-red-400 hover:text-red-300 transition">
                                     Clear
                                 </a>
                             @endif
@@ -361,58 +393,16 @@
                 </aside>
 
                 <!-- Products Grid -->
-                <div class="flex-1">
-                    <!-- Results Count & View Toggle -->
-                    <div class="mb-6 flex items-center justify-between">
+                <div class="flex-1 lg:px-0">
+                    <!-- Results Count -->
+                    <div class="mb-6 px-4 sm:px-0">
                         <p class="text-gray-400">
                             Showing <span class="text-white font-semibold">{{ $products->count() }}</span> of <span class="text-white font-semibold">{{ $products->total() }}</span> {{ $products->total() === 1 ? 'product' : 'products' }}
                         </p>
-                        
-                        <!-- View Toggle - Hidden on mobile -->
-                        <div class="hidden md:flex items-center gap-2 bg-black/50 border border-violet-500/30 rounded-lg p-1">
-                            <button @click="viewMode = 'grid-2'; localStorage.setItem('shopViewMode', 'grid-2')" 
-                                    :class="viewMode === 'grid-2' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
-                                    class="p-2 rounded transition-colors"
-                                    title="2 Columns">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4z"/>
-                                </svg>
-                            </button>
-                            <button @click="viewMode = 'grid-3'; localStorage.setItem('shopViewMode', 'grid-3')" 
-                                    :class="viewMode === 'grid-3' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
-                                    class="p-2 rounded transition-colors"
-                                    title="3 Columns">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM11 5a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-1a1 1 0 01-1-1V5zM11 15a1 1 0 011-1h1a1 1 0 011 1v4a1 1 0 01-1 1h-1a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/>
-                                                </svg>
-                                            </button>
-                            <button @click="viewMode = 'grid-4'; localStorage.setItem('shopViewMode', 'grid-4')" 
-                                    :class="viewMode === 'grid-4' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
-                                    class="p-2 rounded transition-colors"
-                                    title="4 Columns">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM10 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM16 5a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V5zM4 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM10 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2zM16 11a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"/>
-                                                        </svg>
-                                                </button>
-                            <button @click="viewMode = 'list'; localStorage.setItem('shopViewMode', 'list')" 
-                                    :class="viewMode === 'list' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:text-white'"
-                                    class="p-2 rounded transition-colors"
-                                    title="List View">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                                </svg>
-                                                </button>
-                                            </div>
-                                        </div>
+                    </div>
 
                     <div id="products-container" 
-                         class="grid gap-8 transition-all duration-300"
-                         :class="{
-                             'sm:grid-cols-2': viewMode === 'grid-2',
-                             'sm:grid-cols-2 lg:grid-cols-3': viewMode === 'grid-3',
-                             'sm:grid-cols-2 lg:grid-cols-4': viewMode === 'grid-4',
-                             'grid-cols-1': viewMode === 'list'
-                         }">
+                         class="grid grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-3 lg:gap-6 px-2 sm:px-0">
                         @if($products->count() > 0)
                             @include('shop.partials.product-grid', ['products' => $products])
                         @else

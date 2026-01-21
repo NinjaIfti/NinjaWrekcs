@@ -155,7 +155,7 @@
                 </svg>
             </a>
         @endif
-        <a href="{{ route('shop.index') }}" class="px-2 py-1 text-xs text-red-400">Clear All</a>
+        <a href="{{ route('shop.index', $selectedCategoryId ? ['category_id' => $selectedCategoryId] : []) }}" class="px-2 py-1 text-xs text-red-400">Clear All</a>
     </div>
     @endif
 
