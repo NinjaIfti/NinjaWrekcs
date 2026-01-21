@@ -44,16 +44,23 @@ class ShopController extends Controller
         // Get category counts
         $categoryCounts = [];
         foreach ($categories as $parentCategory) {
+            // Count products directly in parent category
+            $parentCount = Product::where('is_active', true)
+                ->where('category_id', $parentCategory->id)
+                ->count();
+            
             if ($parentCategory->hasChildren()) {
+                // Count products in each child category
                 foreach ($parentCategory->children as $childCategory) {
                     $categoryCounts[$childCategory->id] = Product::where('is_active', true)
                         ->where('category_id', $childCategory->id)
                         ->count();
                 }
+                // Also store parent count (in case products are assigned to parent)
+                $categoryCounts[$parentCategory->id] = $parentCount;
             } else {
-                $categoryCounts[$parentCategory->id] = Product::where('is_active', true)
-                    ->where('category_id', $parentCategory->id)
-                    ->count();
+                // No children, just count parent category products
+                $categoryCounts[$parentCategory->id] = $parentCount;
             }
         }
         
@@ -74,15 +81,25 @@ class ShopController extends Controller
         
         // Category filter
         if ($categoryId) {
-            $selectedCategoryModel = \App\Models\Category::with('children')->find($categoryId);
+            $selectedCategoryModel = \App\Models\Category::with(['children' => function($query) {
+                $query->where('is_active', true);
+            }])->find($categoryId);
             
-            // If it's a parent category with children, include all child category products
-            if ($selectedCategoryModel && $selectedCategoryModel->hasChildren()) {
-                $childCategoryIds = $selectedCategoryModel->children->pluck('id')->toArray();
-                $allCategoryIds = array_merge([$categoryId], $childCategoryIds);
-                $query->whereIn('category_id', $allCategoryIds);
+            if ($selectedCategoryModel) {
+                // Always include the selected category ID
+                $categoryIds = [$categoryId];
+                
+                // If it's a parent category with active children, include child category products too
+                if ($selectedCategoryModel->hasChildren()) {
+                    $childCategoryIds = $selectedCategoryModel->children->pluck('id')->toArray();
+                    $categoryIds = array_merge($categoryIds, $childCategoryIds);
+                }
+                
+                // Query products from parent category AND any child categories
+                $query->whereIn('category_id', $categoryIds);
             } else {
-                $query->where('category_id', $categoryId);
+                // Category not found, show no products
+                $query->where('category_id', -1);
             }
         }
         
