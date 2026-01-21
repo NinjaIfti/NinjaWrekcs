@@ -33,10 +33,10 @@
     @include('home.components.navigation')
     
     <!-- Shop Section -->
-    <section class="pt-20 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black" x-data="{ 
+    <section class="pt-20 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black overflow-visible" x-data="{ 
         filtersCollapsed: true 
     }">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
             <!-- Breadcrumbs -->
             <nav class="mb-6 hidden lg:flex items-center text-sm text-gray-400" aria-label="Breadcrumb">
                 <a href="{{ url('/') }}" class="hover:text-violet-400 transition-colors">Home</a>
@@ -122,7 +122,7 @@
                 </div>
             @else
                 <!-- Show Selected Category Products -->
-            <div id="products-section" class="mb-8">
+            <div id="products-section" class="mb-8 overflow-visible">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">
                         <span class="glitch-text" data-text="{{ $selectedCategory ? $selectedCategory->name : 'Shop' }}">
                             {{ $selectedCategory ? $selectedCategory->name : 'Shop' }}
@@ -139,7 +139,7 @@
                 </div>
                 
                 <!-- Search and Sort Bar -->
-                <div class="flex gap-4 items-center">
+                <div class="flex gap-4 items-center overflow-visible">
                     <!-- Search Box -->
                     <form action="{{ route('shop.index') }}" method="GET" class="flex-1 max-w-xl">
                         <div class="relative">
@@ -171,10 +171,10 @@
                     </form>
                     
                     <!-- Sort Dropdown -->
-                    <div class="relative z-50" x-data="{ open: false }">
+                    <div class="relative" x-data="{ open: false }" style="z-index: 50;">
                         <button @click.stop="open = !open" 
                                 type="button"
-                                class="px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white hover:border-violet-500 transition flex items-center gap-2">
+                                class="px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white hover:border-violet-500 transition flex items-center gap-2 whitespace-nowrap">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
                             </svg>
@@ -193,7 +193,8 @@
                              x-transition:leave="transition ease-in duration-150"
                              x-transition:leave-start="opacity-100 transform scale-100"
                              x-transition:leave-end="opacity-0 transform scale-95"
-                             class="absolute right-0 mt-2 w-56 bg-gray-900 border border-violet-500/30 rounded-lg shadow-xl z-[100]">
+                             class="absolute right-0 top-full mt-2 w-48 sm:w-56 bg-gray-900 border border-violet-500/30 rounded-lg shadow-xl"
+                             style="z-index: 9999;">
                             <div class="py-2">
                                 <a href="{{ route('shop.index', array_merge(request()->except('sort'), [])) }}" 
                                    @click="open = false"
@@ -1090,6 +1091,20 @@
             #liveNotification button svg {
                 width: 1rem;
                 height: 1rem;
+            }
+            
+            /* Fix sort dropdown on mobile - ensure containers allow overflow */
+            .flex.gap-4.items-center,
+            .flex.gap-4.items-center > *,
+            #products-section,
+            #products-section > * {
+                overflow: visible !important;
+            }
+            
+            /* Ensure sort dropdown displays correctly */
+            [x-data] .absolute.top-full {
+                position: absolute !important;
+                z-index: 9999 !important;
             }
         }
     </style>

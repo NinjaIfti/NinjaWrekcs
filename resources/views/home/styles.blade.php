@@ -265,9 +265,22 @@
             max-width: 100%;
         }
         
-        section, div {
+        section {
             max-width: 100%;
             overflow-x: hidden;
+        }
+        
+        /* Don't apply overflow-x: hidden to divs that contain dropdowns or need overflow */
+        div:not([x-data]):not(.overflow-visible):not([style*="overflow"]) {
+            max-width: 100%;
+        }
+        
+        /* Ensure dropdown containers and their parents allow overflow */
+        div[x-data*="open"],
+        div[x-data*="open"] ~ *,
+        .relative[x-data],
+        .flex.items-center {
+            overflow: visible !important;
         }
     }
     
