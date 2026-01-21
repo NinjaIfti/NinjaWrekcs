@@ -14,6 +14,8 @@ class ShopController extends Controller
     {
         // Get filter parameters
         $categoryId = $request->query('category_id', '');
+        // Convert to integer if not empty, otherwise set to null
+        $categoryId = !empty($categoryId) ? (int)$categoryId : null;
         $search = $request->query('search', '');
         $minPrice = $request->query('min_price', '');
         $maxPrice = $request->query('max_price', '');
@@ -22,6 +24,7 @@ class ShopController extends Controller
         $perPage = $request->query('per_page', 12);
         
         // Get all categories from database
+        // Get the 4 main top-level categories: Valorant, CS:GO, Toys, Pre-order/Upcoming
         try {
             $categories = \App\Models\Category::with(['children' => function($query) {
                     $query->where('is_active', true)->orderBy('order');
@@ -65,7 +68,13 @@ class ShopController extends Controller
         }
         
         // Fetch products from database
+        // Exclude products with null category_id when filtering by category
         $query = Product::with('images', 'category')->where('is_active', true);
+        
+        // If filtering by category, exclude products with null category_id
+        if ($categoryId) {
+            $query->whereNotNull('category_id');
+        }
         
         // Initialize selected category model
         $selectedCategoryModel = null;
@@ -90,7 +99,7 @@ class ShopController extends Controller
                 $categoryIds = [$categoryId];
                 
                 // If it's a parent category with active children, include child category products too
-                if ($selectedCategoryModel->hasChildren()) {
+                if ($selectedCategoryModel->hasChildren() && $selectedCategoryModel->children->count() > 0) {
                     $childCategoryIds = $selectedCategoryModel->children->pluck('id')->toArray();
                     $categoryIds = array_merge($categoryIds, $childCategoryIds);
                 }

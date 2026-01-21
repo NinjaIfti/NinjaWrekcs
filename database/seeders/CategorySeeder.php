@@ -9,7 +9,7 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        // Valorant parent category - update or create to ensure it exists and is active
+        // Valorant Category (top-level, has subcategories)
         $valorant = Category::updateOrCreate(
             ['slug' => 'valorant'],
             [
@@ -20,11 +20,11 @@ class CategorySeeder extends Seeder
             ]
         );
 
-        // Valorant subcategories
+        // Valorant Subcategories
         Category::updateOrCreate(
-            ['slug' => 'valorant-weapons'],
+            ['slug' => 'valorant-knives-melees'],
             [
-                'name' => 'Weapons',
+                'name' => 'Knives/Melees',
                 'parent_id' => $valorant->id,
                 'order' => 1,
                 'is_active' => true,
@@ -32,9 +32,9 @@ class CategorySeeder extends Seeder
         );
 
         Category::updateOrCreate(
-            ['slug' => 'valorant-melee'],
+            ['slug' => 'valorant-agent-figures'],
             [
-                'name' => 'Melee',
+                'name' => 'Agent Figures',
                 'parent_id' => $valorant->id,
                 'order' => 2,
                 'is_active' => true,
@@ -42,17 +42,17 @@ class CategorySeeder extends Seeder
         );
 
         Category::updateOrCreate(
-            ['slug' => 'valorant-bundles'],
+            ['slug' => 'valorant-keychains-stickers'],
             [
-                'name' => 'Bundles',
+                'name' => 'Keychains & Stickers',
                 'parent_id' => $valorant->id,
                 'order' => 3,
                 'is_active' => true,
             ]
         );
 
-        // CSGO parent category
-        $csgo = Category::updateOrCreate(
+        // CS:GO Category (top-level, no subcategories)
+        Category::updateOrCreate(
             ['slug' => 'csgo'],
             [
                 'name' => 'CS:GO',
@@ -62,18 +62,7 @@ class CategorySeeder extends Seeder
             ]
         );
 
-        // CSGO subcategories
-        Category::updateOrCreate(
-            ['slug' => 'csgo-knife'],
-            [
-                'name' => 'Knife',
-                'parent_id' => $csgo->id,
-                'order' => 1,
-                'is_active' => true,
-            ]
-        );
-
-        // Toys parent category (no subcategories)
+        // Toys Category (top-level, no subcategories)
         Category::updateOrCreate(
             ['slug' => 'toys'],
             [
@@ -84,7 +73,7 @@ class CategorySeeder extends Seeder
             ]
         );
 
-        // Pre-order/Upcoming parent category (no subcategories)
+        // Pre-order/Upcoming Category (top-level, no subcategories)
         Category::updateOrCreate(
             ['slug' => 'pre-order-upcoming'],
             [
@@ -95,6 +84,23 @@ class CategorySeeder extends Seeder
             ]
         );
 
-        $this->command->info('Categories seeded successfully! All main categories are now active.');
+        // Remove Shop category if it exists
+        Category::where('slug', 'shop')->delete();
+        
+        // Remove any old categories that don't match the new structure
+        $validSlugs = [
+            'valorant', 'valorant-knives-melees', 'valorant-agent-figures', 
+            'valorant-keychains-stickers', 'csgo', 'toys', 'pre-order-upcoming'
+        ];
+        
+        Category::whereNotIn('slug', $validSlugs)->delete();
+
+        $this->command->info('Categories seeded successfully!');
+        $this->command->info('Structure:');
+        $this->command->info('  Top-level categories (4):');
+        $this->command->info('    - Valorant (with 3 subcategories: Knives/Melees, Agent Figures, Keychains & Stickers)');
+        $this->command->info('    - CS:GO (no subcategories)');
+        $this->command->info('    - Toys (no subcategories)');
+        $this->command->info('    - Pre-order/Upcoming (no subcategories)');
     }
 }
