@@ -72,7 +72,7 @@
                     </div>
                     
                     <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        @foreach($categories as $parentCategory)
+                        @forelse($categories as $parentCategory)
                         @php
                             $categoryImage = 'val.jpeg';
                             if ($parentCategory->slug === 'valorant') {
@@ -117,7 +117,12 @@
                                 </div>
                             </div>
                         </a>
-                        @endforeach
+                        @empty
+                        <div class="col-span-full text-center py-12">
+                            <p class="text-gray-400 text-lg mb-4">No categories available at the moment.</p>
+                            <p class="text-gray-500 text-sm">Please check that categories are marked as active in the database.</p>
+                        </div>
+                        @endforelse
                     </div>
                 </div>
             @else

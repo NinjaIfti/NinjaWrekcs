@@ -22,11 +22,24 @@ class ShopController extends Controller
         $perPage = $request->query('per_page', 12);
         
         // Get all categories from database
-        $categories = \App\Models\Category::with('children')
-            ->whereNull('parent_id')
-            ->active()
-            ->orderBy('order')
-            ->get();
+        try {
+            $categories = \App\Models\Category::with(['children' => function($query) {
+                    $query->where('is_active', true)->orderBy('order');
+                }])
+                ->whereNull('parent_id')
+                ->where('is_active', true)
+                ->orderByRaw('COALESCE(`order`, 999) ASC')
+                ->get();
+        } catch (\Exception $e) {
+            // Fallback if order column doesn't exist or other issues
+            $categories = \App\Models\Category::with(['children' => function($query) {
+                    $query->where('is_active', true);
+                }])
+                ->whereNull('parent_id')
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->get();
+        }
         
         // Get category counts
         $categoryCounts = [];
