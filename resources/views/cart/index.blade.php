@@ -105,21 +105,27 @@
 
                                             <!-- Price -->
                                             @php
-                                                $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
+                                                // Check if item is bookable from attributes or database
+                                                $isBookable = false;
+                                                if (isset($item->attributes->is_bookable)) {
+                                                    $isBookable = (bool) $item->attributes->is_bookable;
+                                                }
                                                 
-                                                // For pre-order items, ALWAYS show original price (never the reduced price)
+                                                // If not set in attributes, check database
+                                                if (!$isBookable) {
+                                                    $productCheck = \App\Models\Product::find($item->id);
+                                                    $isBookable = $productCheck && (bool) $productCheck->is_bookable;
+                                                }
+                                                
+                                                // For pre-order items, ALWAYS fetch original price from database
                                                 if ($isBookable) {
-                                                    // First try: get original_price from cart attributes
-                                                    if (isset($item->attributes->original_price) && $item->attributes->original_price > 0) {
-                                                        $displayPrice = (float) $item->attributes->original_price;
+                                                    $product = \App\Models\Product::find($item->id);
+                                                    if ($product) {
+                                                        // Always use the product's display_price or price (original, not reduced)
+                                                        $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
                                                     } else {
-                                                        // Fallback: fetch fresh from database to ensure we have the correct price
-                                                        $product = \App\Models\Product::find($item->id);
-                                                        if ($product) {
-                                                            $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
-                                                        } else {
-                                                            $displayPrice = (float) $item->price;
-                                                        }
+                                                        // Fallback: use original_price from attributes if product not found
+                                                        $displayPrice = (float) ($item->attributes->original_price ?? $item->price);
                                                     }
                                                 } else {
                                                     // Regular items: use cart price as-is
