@@ -164,7 +164,7 @@
                                 <div class="border-t border-violet-500/20 pt-3 md:pt-4">
                                     <div class="flex justify-between text-lg md:text-xl font-bold">
                                         <span>Total</span>
-                                        <span class="text-violet-400">৳{{ number_format($cartTotal, 2) }}</span>
+                                        <span class="text-violet-400">৳{{ number_format($cartSubTotal, 2) }}</span>
                                     </div>
                                 </div>
                             </div>
