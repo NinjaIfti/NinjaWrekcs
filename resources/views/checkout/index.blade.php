@@ -243,8 +243,8 @@
 
                                 <!-- Transaction Number -->
                                 <div>
-                                    <label for="transaction_number" class="block text-sm font-medium text-gray-300 mb-2">Transaction Number *</label>
-                                    <input type="text" name="transaction_number" id="transaction_number" value="{{ old('transaction_number') }}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Enter your transaction ID">
+                                    <label for="transaction_number" class="block text-sm font-medium text-gray-300 mb-2">Transaction Number <span class="text-red-400">*</span></label>
+                                    <input type="text" name="transaction_number" id="transaction_number" value="{{ old('transaction_number') }}" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Enter your transaction ID">
                                     @error('transaction_number')
                                         <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                                     @enderror
@@ -252,8 +252,8 @@
 
                                 <!-- Sending Number -->
                                 <div>
-                                    <label for="sending_number" class="block text-sm font-medium text-gray-300 mb-2">Sending Number *</label>
-                                    <input type="text" name="sending_number" id="sending_number" value="{{ old('sending_number') }}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Enter the number you sent from">
+                                    <label for="sending_number" class="block text-sm font-medium text-gray-300 mb-2">Sending Number <span class="text-red-400">*</span></label>
+                                    <input type="text" name="sending_number" id="sending_number" value="{{ old('sending_number') }}" required style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" class="w-full px-4 py-3 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50" placeholder="Enter the number you sent from">
                                     @error('sending_number')
                                         <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                                     @enderror
@@ -491,16 +491,22 @@
             const transactionNumber = document.getElementById('transaction_number');
             const sendingNumber = document.getElementById('sending_number');
 
-            if (paymentMethod === 'cod') {
+            if (paymentMethod.value === 'cod') {
+                // Hide mobile banking fields
                 mobileBankingDetails.classList.add('hidden');
+                // Show COD details
                 codDetails.classList.remove('hidden');
+                // Remove required attribute and clear values
                 transactionNumber.removeAttribute('required');
                 sendingNumber.removeAttribute('required');
                 transactionNumber.value = '';
                 sendingNumber.value = '';
             } else {
+                // Show mobile banking fields
                 mobileBankingDetails.classList.remove('hidden');
+                // Hide COD details
                 codDetails.classList.add('hidden');
+                // Add required attribute
                 transactionNumber.setAttribute('required', 'required');
                 sendingNumber.setAttribute('required', 'required');
             }

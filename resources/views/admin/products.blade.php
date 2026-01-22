@@ -18,17 +18,48 @@
 
     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
         <div class="p-6">
-            <!-- Category Filters -->
-            <div class="mb-6 flex flex-wrap gap-2">
-                <a href="{{ route('admin.products') }}" class="px-4 py-2 rounded-lg transition {{ !$selectedCategory ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600' }}">
-                    All Products
-                </a>
-                @foreach($categories as $key => $name)
-                    <a href="{{ route('admin.products', ['category' => $key]) }}" class="px-4 py-2 rounded-lg transition {{ $selectedCategory === $key ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600' }}">
-                        {{ $name }}
+            <!-- Category Tabs -->
+            <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <a href="{{ route('admin.products') }}" 
+                       class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition {{ !$selectedCategoryId ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
+                        All Products
+                        <span class="ml-2 text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                            {{ $totalProductCount }} products
+                        </span>
                     </a>
-                @endforeach
+                    @foreach($mainCategories as $category)
+                        <a href="{{ route('admin.products', ['category_id' => $category->id]) }}" 
+                           class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition {{ $selectedCategoryId == $category->id ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
+                            {{ $category->name }}
+                            <span class="ml-2 text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                                {{ $category->product_count ?? 0 }} products
+                            </span>
+                        </a>
+                    @endforeach
+                </nav>
             </div>
+            
+            @if($selectedCategoryId)
+                @php
+                    $selectedCategory = $mainCategories->firstWhere('id', $selectedCategoryId);
+                @endphp
+                @if($selectedCategory && $selectedCategory->hasChildren())
+                    <!-- Valorant Subcategory Filters -->
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <a href="{{ route('admin.products', ['category_id' => $selectedCategory->id]) }}" 
+                           class="px-3 py-1.5 text-sm rounded-lg transition {{ !$selectedSubcategoryId ? 'bg-violet-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600' }}">
+                            All {{ $selectedCategory->name }}
+                        </a>
+                        @foreach($selectedCategory->children as $subcategory)
+                            <a href="{{ route('admin.products', ['category_id' => $selectedCategory->id, 'subcategory_id' => $subcategory->id]) }}" 
+                               class="px-3 py-1.5 text-sm rounded-lg transition {{ $selectedSubcategoryId == $subcategory->id ? 'bg-violet-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600' }}">
+                                {{ $subcategory->name }}
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+            @endif
 
             <!-- Products Table -->
             <div class="overflow-x-auto">

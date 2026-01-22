@@ -78,16 +78,17 @@ class Product extends Model
 
     public function getCategoryNameAttribute()
     {
-        // Try to get from new category relationship first
+        // Always try to get from new category relationship first
         if ($this->category_id) {
-            $categoryModel = $this->category;
+            // Use the relationship method directly to avoid conflict with 'category' attribute
+            $categoryModel = $this->category()->first();
             if ($categoryModel && is_object($categoryModel)) {
                 return $categoryModel->name;
             }
         }
         
-        // Fallback to old string-based category
-        if ($this->attributes['category'] ?? null) {
+        // Fallback to old string-based category (for backward compatibility)
+        if (isset($this->attributes['category']) && $this->attributes['category']) {
             return match($this->attributes['category']) {
                 'figures' => 'Agent Figures',
                 'knives' => 'Knives & Weapons',

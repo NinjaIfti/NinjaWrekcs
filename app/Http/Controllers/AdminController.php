@@ -700,26 +700,61 @@ class AdminController extends Controller
 
     public function products(Request $request): View
     {
-        $category = $request->query('category', '');
+        $categoryId = $request->query('category_id', '');
         
-        $query = Product::query();
+        $query = Product::with('category', 'images');
         
-        if ($category && in_array($category, ['figures', 'knives', 'stickers'])) {
-            $query->where('category', $category);
+        // Get the 4 main categories for tabs with product counts
+        $mainCategories = \App\Models\Category::whereNull('parent_id')
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->with('children')
+            ->get()
+            ->map(function($category) {
+                // Count products in this category and its subcategories
+                if ($category->hasChildren()) {
+                    $categoryIds = [$category->id];
+                    $categoryIds = array_merge($categoryIds, $category->children->pluck('id')->toArray());
+                    $category->product_count = Product::whereIn('category_id', $categoryIds)->count();
+                } else {
+                    $category->product_count = Product::where('category_id', $category->id)->count();
+                }
+                return $category;
+            });
+        
+        // Filter by category if selected
+        $subcategoryId = $request->query('subcategory_id', '');
+        
+        if ($categoryId) {
+            $selectedCategory = \App\Models\Category::with('children')->find($categoryId);
+            
+            if ($selectedCategory) {
+                // If subcategory is selected (for Valorant), filter by subcategory only
+                if ($subcategoryId) {
+                    $query->where('category_id', $subcategoryId);
+                } elseif ($selectedCategory->hasChildren()) {
+                    // If it's Valorant (has subcategories), include products from parent and all subcategories
+                    $categoryIds = [$selectedCategory->id];
+                    $categoryIds = array_merge($categoryIds, $selectedCategory->children->pluck('id')->toArray());
+                    $query->whereIn('category_id', $categoryIds);
+                } else {
+                    // For other categories (CS:GO, Toys, Pre-order), just filter by category_id
+                    $query->where('category_id', $categoryId);
+                }
+            }
         }
         
         $products = $query->latest()->get();
         
-        $categories = [
-            'figures' => 'Agent Figures',
-            'knives' => 'Knives & Weapons',
-            'stickers' => 'Stickers & Keychains',
-        ];
+        // Get total product count for "All Products" tab
+        $totalProductCount = Product::count();
         
         return view('admin.products', [
             'products' => $products,
-            'selectedCategory' => $category,
-            'categories' => $categories,
+            'selectedCategoryId' => $categoryId,
+            'selectedSubcategoryId' => $subcategoryId,
+            'mainCategories' => $mainCategories,
+            'totalProductCount' => $totalProductCount,
         ]);
     }
 
