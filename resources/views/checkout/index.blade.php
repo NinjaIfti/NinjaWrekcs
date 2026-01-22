@@ -226,7 +226,7 @@
                                         <p class="text-purple-300 font-semibold mb-1">Pre-order Booking</p>
                                         <p class="text-gray-300 text-sm">
                                             You are booking pre-order products. You will pay ৳{{ number_format($totalBookingAmount, 2) }} as booking fee now.
-                                            The remaining amount (Product price - ৳{{ number_format($totalBookingAmount, 2) }}) will be collected later when the product is ready.
+                                            The remaining DUE amount will be collected via Cash on Delivery when the product is ready.
                                         </p>
                                     </div>
                                 </div>
@@ -276,6 +276,23 @@
                                     </div>
                                 </div>
                             </div>
+
+                            @if($hasBookableItems)
+                            <!-- DUE Amount Information for Pre-orders -->
+                            <div class="mt-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                                <div class="flex items-start space-x-3">
+                                    <svg class="w-6 h-6 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-purple-300 font-semibold mb-1">DUE Amount</p>
+                                        <p class="text-gray-300 text-sm">
+                                            The remaining DUE amount of <span class="text-purple-400 font-bold" id="due-amount-display">৳{{ number_format(($cartSubTotal + 80) - $totalBookingAmount, 2) }}</span> will be collected via Cash on Delivery when the product is ready.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
                         </div>
                     </div>
 
@@ -464,6 +481,13 @@
             if (totalDisplay) {
                 const due = total - bookingAmount;
                 totalDisplay.textContent = '৳' + due.toFixed(2);
+            }
+            
+            // Update DUE amount display in payment info box
+            const dueAmountDisplay = document.getElementById('due-amount-display');
+            if (dueAmountDisplay) {
+                const due = total - bookingAmount;
+                dueAmountDisplay.textContent = '৳' + due.toFixed(2);
             }
             @else
             // For regular items: Total = Subtotal + DC - Discount

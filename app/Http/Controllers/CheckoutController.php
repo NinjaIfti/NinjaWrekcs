@@ -48,8 +48,17 @@ class CheckoutController extends Controller
             }
             
             // Use original price for pre-order items, regular price for others
-            if ($isBookable && isset($item->attributes->original_price)) {
-                $cartSubTotal += $item->attributes->original_price * $item->quantity;
+            if ($isBookable) {
+                // Always fetch original price from database for pre-order items
+                $product = Product::find($item->id);
+                if ($product) {
+                    $originalPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                    $cartSubTotal += $originalPrice * $item->quantity;
+                } else {
+                    // Fallback: use original_price from attributes if product not found
+                    $originalPrice = (float) ($item->attributes->original_price ?? $item->price);
+                    $cartSubTotal += $originalPrice * $item->quantity;
+                }
                 $hasBookableItems = true;
                 // Each bookable item has 200 booking fee
                 $totalBookingAmount += 200 * $item->quantity;

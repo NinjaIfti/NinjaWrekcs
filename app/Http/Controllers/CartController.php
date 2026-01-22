@@ -14,28 +14,10 @@ class CartController extends Controller
         
         // Recalculate subtotal using original prices for pre-order items
         $cartSubTotal = 0;
-        foreach ($cartItems as $item) {
-            $isBookable = false;
-            if (isset($item->attributes->is_bookable)) {
-                $isBookable = (bool) $item->attributes->is_bookable;
-            } else {
-                $product = Product::find($item->id);
-                $isBookable = $product && (bool) $product->is_bookable;
-            }
-            
-            // Use original price for pre-order items, regular price for others
-            if ($isBookable && isset($item->attributes->original_price)) {
-                $cartSubTotal += $item->attributes->original_price * $item->quantity;
-            } else {
-                $cartSubTotal += $item->price * $item->quantity;
-            }
-        }
-        
-        $cartTotal = \Cart::getTotal();
-        
-        // Check if cart contains bookable items
         $hasBookableItems = false;
+        
         foreach ($cartItems as $item) {
+            // Check if item is bookable
             $isBookable = false;
             if (isset($item->attributes->is_bookable)) {
                 $isBookable = (bool) $item->attributes->is_bookable;
@@ -46,9 +28,24 @@ class CartController extends Controller
             
             if ($isBookable) {
                 $hasBookableItems = true;
-                break;
+                // For pre-order items, ALWAYS fetch original price from database
+                $product = Product::find($item->id);
+                if ($product) {
+                    // Use the product's display_price or price (original, not reduced)
+                    $originalPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                    $cartSubTotal += $originalPrice * $item->quantity;
+                } else {
+                    // Fallback: use original_price from attributes if product not found
+                    $originalPrice = (float) ($item->attributes->original_price ?? $item->price);
+                    $cartSubTotal += $originalPrice * $item->quantity;
+                }
+            } else {
+                // Regular items: use cart price as-is
+                $cartSubTotal += $item->price * $item->quantity;
             }
         }
+        
+        $cartTotal = \Cart::getTotal();
         
         return view('cart.index', compact('cartItems', 'cartTotal', 'cartSubTotal', 'hasBookableItems'));
     }

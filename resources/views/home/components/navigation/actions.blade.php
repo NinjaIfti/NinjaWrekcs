@@ -31,6 +31,34 @@
                 <!-- Cart Items (Max 3) -->
                 <div class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
                     @foreach(\Cart::getContent()->take(3) as $item)
+                        @php
+                            // Check if item is bookable from attributes or database
+                            $isBookable = false;
+                            if (isset($item->attributes->is_bookable)) {
+                                $isBookable = (bool) $item->attributes->is_bookable;
+                            }
+                            
+                            // If not set in attributes, check database
+                            if (!$isBookable) {
+                                $productCheck = \App\Models\Product::find($item->id);
+                                $isBookable = $productCheck && (bool) $productCheck->is_bookable;
+                            }
+                            
+                            // For pre-order items, ALWAYS fetch original price from database
+                            if ($isBookable) {
+                                $product = \App\Models\Product::find($item->id);
+                                if ($product) {
+                                    // Always use the product's display_price or price (original, not reduced)
+                                    $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                                } else {
+                                    // Fallback: use original_price from attributes if product not found
+                                    $displayPrice = (float) ($item->attributes->original_price ?? $item->price);
+                                }
+                            } else {
+                                // Regular items: use cart price as-is
+                                $displayPrice = (float) $item->price;
+                            }
+                        @endphp
                         <a href="{{ route('cart.index') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-violet-500/10 transition-colors group/item">
                             <div class="flex-shrink-0">
                                 <img src="{{ $item->attributes->image ? asset('storage/' . $item->attributes->image) : '/img/placeholder.jpg' }}" 
@@ -40,7 +68,7 @@
                             <div class="flex-1 min-w-0">
                                 <h4 class="text-sm font-semibold text-white group-hover/item:text-violet-400 transition-colors truncate">{{ $item->name }}</h4>
                                 <p class="text-xs text-gray-400">Qty: {{ $item->quantity }}</p>
-                                <p class="text-sm font-bold text-violet-400">৳{{ number_format($item->price * $item->quantity, 2) }}</p>
+                                <p class="text-sm font-bold text-violet-400">৳{{ number_format($displayPrice * $item->quantity, 2) }}</p>
                             </div>
                         </a>
                     @endforeach
@@ -48,9 +76,35 @@
                 
                 <!-- View Full Cart Button -->
                 <div class="mt-4 pt-4 border-t border-violet-500/20">
+                    @php
+                        // Calculate total using original prices for pre-order items
+                        $cartTotalForDisplay = 0;
+                        foreach (\Cart::getContent() as $cartItem) {
+                            $isBookableItem = false;
+                            if (isset($cartItem->attributes->is_bookable)) {
+                                $isBookableItem = (bool) $cartItem->attributes->is_bookable;
+                            } else {
+                                $productCheck = \App\Models\Product::find($cartItem->id);
+                                $isBookableItem = $productCheck && (bool) $productCheck->is_bookable;
+                            }
+                            
+                            if ($isBookableItem) {
+                                $product = \App\Models\Product::find($cartItem->id);
+                                if ($product) {
+                                    $originalPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                                    $cartTotalForDisplay += $originalPrice * $cartItem->quantity;
+                                } else {
+                                    $originalPrice = (float) ($cartItem->attributes->original_price ?? $cartItem->price);
+                                    $cartTotalForDisplay += $originalPrice * $cartItem->quantity;
+                                }
+                            } else {
+                                $cartTotalForDisplay += $cartItem->price * $cartItem->quantity;
+                            }
+                        }
+                    @endphp
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-gray-300 font-semibold">Total:</span>
-                        <span class="text-xl font-bold text-violet-400">৳{{ number_format(\Cart::getTotal(), 2) }}</span>
+                        <span class="text-xl font-bold text-violet-400">৳{{ number_format($cartTotalForDisplay, 2) }}</span>
                     </div>
                     <a href="{{ route('cart.index') }}" class="block w-full px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition-all text-center">
                         View Full Cart
