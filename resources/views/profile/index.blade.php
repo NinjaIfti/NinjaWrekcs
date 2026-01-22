@@ -109,9 +109,29 @@
                                         
                                         <div class="space-y-2 mb-4">
                                             @foreach($order->items as $item)
+                                                @php
+                                                    // For pre-order items, always fetch original price from product
+                                                    $displaySubtotal = $item->subtotal;
+                                                    
+                                                    if ($order->is_preorder_booking && $item->product) {
+                                                        // Check if product is bookable
+                                                        $isBookable = (bool) $item->product->is_bookable;
+                                                        
+                                                        if ($isBookable) {
+                                                            // Use original price from product (not the stored reduced price)
+                                                            $originalPrice = (float) ($item->product->price ?? 0);
+                                                            if ($originalPrice == 0) {
+                                                                $originalPrice = (float) ($item->product->display_price ?? 0);
+                                                            }
+                                                            if ($originalPrice > 0) {
+                                                                $displaySubtotal = $originalPrice * $item->quantity;
+                                                            }
+                                                        }
+                                                    }
+                                                @endphp
                                                 <div class="flex justify-between text-sm">
                                                     <span class="text-gray-300">{{ $item->product_name }} x{{ $item->quantity }}</span>
-                                                    <span class="text-violet-400">৳{{ number_format($item->subtotal, 2) }}</span>
+                                                    <span class="text-violet-400">৳{{ number_format($displaySubtotal, 2) }}</span>
                                                 </div>
                                             @endforeach
                                             @if($order->delivery_charge && $order->delivery_charge > 0)

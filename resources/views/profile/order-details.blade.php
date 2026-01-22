@@ -72,6 +72,28 @@
                     <h3 class="text-lg font-semibold mb-4">Items Ordered</h3>
                     <div class="space-y-4">
                         @foreach($order->items as $item)
+                            @php
+                                // For pre-order items, always fetch original price from product
+                                $displayPrice = $item->price;
+                                $displaySubtotal = $item->subtotal;
+                                
+                                if ($order->is_preorder_booking && $item->product) {
+                                    // Check if product is bookable
+                                    $isBookable = (bool) $item->product->is_bookable;
+                                    
+                                    if ($isBookable) {
+                                        // Use original price from product (not the stored reduced price)
+                                        $originalPrice = (float) ($item->product->price ?? 0);
+                                        if ($originalPrice == 0) {
+                                            $originalPrice = (float) ($item->product->display_price ?? 0);
+                                        }
+                                        if ($originalPrice > 0) {
+                                            $displayPrice = $originalPrice;
+                                            $displaySubtotal = $originalPrice * $item->quantity;
+                                        }
+                                    }
+                                }
+                            @endphp
                             <div class="flex items-center gap-4 p-4 bg-black/30 rounded-lg border border-violet-500/20">
                                 @if($item->product && $item->product->image)
                                     <img src="{{ asset('storage/' . $item->product->image) }}" 
@@ -87,10 +109,10 @@
                                 <div class="flex-1">
                                     <h4 class="font-semibold text-white mb-1">{{ $item->product_name }}</h4>
                                     <p class="text-sm text-gray-400">Quantity: {{ $item->quantity }}</p>
-                                    <p class="text-sm text-gray-400">Price: ৳{{ number_format($item->price, 2) }}</p>
+                                    <p class="text-sm text-gray-400">Price: ৳{{ number_format($displayPrice, 2) }}</p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($item->subtotal, 2) }}</p>
+                                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($displaySubtotal, 2) }}</p>
                                 </div>
                             </div>
                         @endforeach

@@ -292,6 +292,28 @@
                                             </thead>
                                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                                 @foreach($order->items as $item)
+                                                    @php
+                                                        // For pre-order items, always fetch original price from product
+                                                        $displayPrice = $item->price;
+                                                        $displaySubtotal = $item->subtotal;
+                                                        
+                                                        if ($order->is_preorder_booking && $item->product) {
+                                                            // Check if product is bookable
+                                                            $isBookable = (bool) $item->product->is_bookable;
+                                                            
+                                                            if ($isBookable) {
+                                                                // Use original price from product (not the stored reduced price)
+                                                                $originalPrice = (float) ($item->product->price ?? 0);
+                                                                if ($originalPrice == 0) {
+                                                                    $originalPrice = (float) ($item->product->display_price ?? 0);
+                                                                }
+                                                                if ($originalPrice > 0) {
+                                                                    $displayPrice = $originalPrice;
+                                                                    $displaySubtotal = $originalPrice * $item->quantity;
+                                                                }
+                                                            }
+                                                        }
+                                                    @endphp
                                                     <tr>
                                                         <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
                                                             {{ $item->product_name }}
@@ -299,9 +321,9 @@
                                                                 <span class="text-gray-500 dark:text-gray-400">(ID: {{ $item->product_id }})</span>
                                                             @endif
                                                         </td>
-                                                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">৳{{ number_format($item->price, 2) }}</td>
+                                                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">৳{{ number_format($displayPrice, 2) }}</td>
                                                         <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $item->quantity }}</td>
-                                                        <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">৳{{ number_format($item->subtotal, 2) }}</td>
+                                                        <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">৳{{ number_format($displaySubtotal, 2) }}</td>
                                                     </tr>
                                                 @endforeach
                                             </tbody>
