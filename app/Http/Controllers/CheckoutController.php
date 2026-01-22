@@ -269,8 +269,20 @@ class CheckoutController extends Controller
                 }
                 
                 // Use original price for pre-order items, regular price for others
-                if ($isBookable && isset($item->attributes->original_price)) {
-                    $cartSubTotal += $item->attributes->original_price * $item->quantity;
+                if ($isBookable) {
+                    // Always fetch original price from database for pre-order items
+                    $product = Product::find($item->id);
+                    if ($product) {
+                        $originalPrice = (float) ($product->price ?? 0);
+                        if ($originalPrice == 0) {
+                            $originalPrice = (float) ($product->display_price ?? 0);
+                        }
+                        $cartSubTotal += $originalPrice * $item->quantity;
+                    } else {
+                        // Fallback: use original_price from attributes if product not found
+                        $originalPrice = (float) ($item->attributes->original_price ?? $item->price);
+                        $cartSubTotal += $originalPrice * $item->quantity;
+                    }
                     $hasBookableItems = true;
                     // Each bookable item has 200 booking fee
                     $totalBookingAmount += 200 * $item->quantity;
@@ -339,13 +351,28 @@ class CheckoutController extends Controller
                     throw new \Exception("Insufficient stock for {$product->name}. Only {$product->quantity} available, but {$item->quantity} requested.");
                 }
                 
+                // Determine if this item is bookable
+                $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
+                
+                // For pre-order items, use original price from database, not the reduced cart price
+                if ($isBookable) {
+                    // Use the product's price directly (original, not reduced)
+                    $itemPrice = (float) ($product->price ?? 0);
+                    if ($itemPrice == 0) {
+                        $itemPrice = (float) ($product->display_price ?? 0);
+                    }
+                } else {
+                    // Regular items: use cart price as-is
+                    $itemPrice = (float) $item->price;
+                }
+                
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item->id,
                     'product_name' => $item->name,
-                    'price' => $item->price,
+                    'price' => $itemPrice,
                     'quantity' => $item->quantity,
-                    'subtotal' => $item->price * $item->quantity,
+                    'subtotal' => $itemPrice * $item->quantity,
                 ]);
 
                 // Update product quantity

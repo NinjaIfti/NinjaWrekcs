@@ -83,15 +83,29 @@
                                                 <p class="text-sm text-gray-400">{{ $order->created_at->format('M d, Y h:i A') }}</p>
                                             </div>
                                             <div class="text-right">
-                                                <p class="text-xl font-bold text-violet-400">৳{{ number_format($order->total, 2) }}</p>
                                                 @if($order->is_preorder_booking)
-                                                    <p class="text-xs text-purple-400 mt-1">Booking Fee Paid</p>
+                                                    @php
+                                                        $totalBeforeBooking = $order->subtotal + $order->delivery_charge - $order->discount;
+                                                        $dueAmount = $totalBeforeBooking - ($order->booking_amount ?? 0);
+                                                    @endphp
+                                                    <p class="text-lg font-bold text-purple-400">৳{{ number_format($order->total, 2) }}</p>
+                                                    <p class="text-xs text-purple-300 mt-1">Paid (Booking Fee)</p>
+                                                    <p class="text-sm font-semibold text-purple-400 mt-1">DUE: ৳{{ number_format($dueAmount, 2) }}</p>
+                                                @else
+                                                    <p class="text-xl font-bold text-violet-400">৳{{ number_format($order->total, 2) }}</p>
                                                 @endif
                                                 <span class="px-3 py-1 bg-violet-500/20 text-violet-300 rounded-full text-xs mt-2 inline-block">
                                                     {{ ucfirst($order->status) }}
                                                 </span>
                                             </div>
                                         </div>
+                                        
+                                        @if($order->is_preorder_booking)
+                                            <div class="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                                                <p class="text-purple-300 font-semibold text-sm mb-1">📦 Pre-Order Booking</p>
+                                                <p class="text-xs text-purple-400">This order will take 2-3 weeks to deliver. You've paid the booking fee. The remaining DUE amount will be collected via Cash on Delivery.</p>
+                                            </div>
+                                        @endif
                                         
                                         <div class="space-y-2 mb-4">
                                             @foreach($order->items as $item)
@@ -112,23 +126,43 @@
                                                     <span class="text-green-400">-৳{{ number_format($order->discount, 2) }}</span>
                                                 </div>
                                             @endif
-                                            @if($order->is_preorder_booking && $order->booking_amount && $order->booking_amount > 0)
+                                            @if($order->is_preorder_booking)
+                                                @php
+                                                    $totalBeforeBooking = $order->subtotal + $order->delivery_charge - $order->discount;
+                                                    $dueAmount = $totalBeforeBooking - ($order->booking_amount ?? 0);
+                                                @endphp
                                                 <div class="flex justify-between text-sm border-t border-purple-500/20 pt-2">
-                                                    <span class="text-purple-300">Booking Fee Paid:</span>
-                                                    <span class="text-purple-400 font-semibold">৳{{ number_format($order->booking_amount, 2) }}</span>
+                                                    <span class="text-purple-300 font-semibold">Total:</span>
+                                                    <span class="text-purple-400 font-semibold">৳{{ number_format($totalBeforeBooking, 2) }}</span>
+                                                </div>
+                                                @if($order->booking_amount && $order->booking_amount > 0)
+                                                    <div class="flex justify-between text-sm">
+                                                        <span class="text-purple-300">Booking Fee Paid:</span>
+                                                        <span class="text-purple-400 font-semibold">-৳{{ number_format($order->booking_amount, 2) }}</span>
+                                                    </div>
+                                                @endif
+                                                <div class="flex justify-between text-sm border-t border-purple-500/20 pt-2">
+                                                    <span class="text-purple-300 font-bold">DUE Amount:</span>
+                                                    <span class="text-purple-400 font-bold">৳{{ number_format($dueAmount, 2) }}</span>
                                                 </div>
                                                 <div class="text-xs text-purple-400 italic mt-1">
-                                                    Remaining amount will be collected later
+                                                    DUE amount will be collected via Cash on Delivery
                                                 </div>
                                             @endif
                                         </div>
 
-                                        <div class="pt-4 border-t border-violet-500/20 flex justify-between items-center">
-                                            <div>
+                                        <div class="pt-4 border-t border-violet-500/20">
+                                            <div class="mb-3 space-y-1">
                                                 <p class="text-sm text-gray-400"><strong>Delivery:</strong> {{ $order->address }}</p>
                                                 <p class="text-sm text-gray-400"><strong>Phone:</strong> {{ $order->phone }}</p>
+                                                @if($order->transaction_number)
+                                                    <p class="text-sm text-gray-400"><strong>Transaction #:</strong> {{ $order->transaction_number }}</p>
+                                                @endif
+                                                @if($order->sending_number)
+                                                    <p class="text-sm text-gray-400"><strong>Sending #:</strong> {{ $order->sending_number }}</p>
+                                                @endif
                                             </div>
-                                            <a href="{{ route('profile.orders.show', $order) }}" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-semibold transition">
+                                            <a href="{{ route('profile.orders.show', $order) }}" class="block w-full text-center px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-semibold transition">
                                                 View Details
                                             </a>
                                         </div>
@@ -159,16 +193,29 @@
                                                     @endif
                                                 </div>
                                                 <p class="text-sm text-gray-400">{{ $order->created_at->format('M d, Y') }}</p>
-                                                <p class="text-sm text-gray-400">Transaction: {{ $order->transaction_number }}</p>
-                                                @if($order->is_preorder_booking && $order->booking_amount && $order->booking_amount > 0)
-                                                    <p class="text-xs text-purple-400 mt-1">Booking Fee Paid: ৳{{ number_format($order->booking_amount, 2) }}</p>
+                                                @if($order->transaction_number)
+                                                    <p class="text-sm text-gray-400">Transaction: {{ $order->transaction_number }}</p>
+                                                @endif
+                                                @if($order->sending_number)
+                                                    <p class="text-sm text-gray-400">Sending: {{ $order->sending_number }}</p>
+                                                @endif
+                                                @if($order->is_preorder_booking)
+                                                    @php
+                                                        $totalBeforeBooking = $order->subtotal + $order->delivery_charge - $order->discount;
+                                                        $dueAmount = $totalBeforeBooking - ($order->booking_amount ?? 0);
+                                                    @endphp
+                                                    @if($order->booking_amount && $order->booking_amount > 0)
+                                                        <p class="text-xs text-purple-400 mt-1">Booking Fee Paid: ৳{{ number_format($order->booking_amount, 2) }}</p>
+                                                    @endif
+                                                    <p class="text-xs text-purple-400 mt-1">DUE: ৳{{ number_format($dueAmount, 2) }}</p>
                                                 @endif
                                             </div>
                                             <div class="text-right">
-                                                <p class="text-lg font-bold text-violet-400">৳{{ number_format($order->total, 2) }}</p>
                                                 @if($order->is_preorder_booking)
+                                                    <p class="text-lg font-bold text-purple-400">৳{{ number_format($order->total, 2) }}</p>
                                                     <p class="text-xs text-purple-400">Booking Payment</p>
                                                 @else
+                                                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($order->total, 2) }}</p>
                                                     <p class="text-xs text-gray-400">{{ strtoupper($order->payment_method) }}</p>
                                                 @endif
                                             </div>

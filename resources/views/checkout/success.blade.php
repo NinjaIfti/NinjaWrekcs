@@ -57,17 +57,85 @@
                     </div>
                 @endif
 
-                <div class="space-y-4 mb-8 text-left">
-                    <div class="p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
-                        <p class="text-sm text-gray-400 mb-1">Total Amount</p>
-                        <p class="text-3xl font-bold text-violet-400">৳{{ number_format($order->total, 2) }}</p>
+                @if($order->is_preorder_booking)
+                    <div class="mb-6 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg text-left">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-6 h-6 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                            <div>
+                                <p class="text-purple-300 font-semibold mb-1">📦 Pre-Order Booking</p>
+                                <p class="text-sm text-purple-400">This order will take <strong>2-3 weeks</strong> to deliver. You've paid the booking fee. The remaining DUE amount will be collected via Cash on Delivery when the product is ready.</p>
+                            </div>
+                        </div>
                     </div>
+                @endif
 
-                    <div class="p-4 bg-black/30 rounded-lg">
+                <div class="space-y-4 mb-8 text-left">
+                    @if($order->is_preorder_booking)
+                        @php
+                            $totalBeforeBooking = $order->subtotal + $order->delivery_charge - $order->discount;
+                            $dueAmount = $totalBeforeBooking - ($order->booking_amount ?? 0);
+                        @endphp
+                        <div class="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg space-y-2">
+                            <p class="text-sm text-gray-400 mb-2">Payment Summary</p>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Subtotal:</span>
+                                <span class="text-white">৳{{ number_format($order->subtotal, 2) }}</span>
+                            </div>
+                            @if($order->delivery_charge > 0)
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-300">Delivery Charge:</span>
+                                    <span class="text-white">+৳{{ number_format($order->delivery_charge, 2) }}</span>
+                                </div>
+                            @endif
+                            @if($order->discount > 0)
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-300">Discount:</span>
+                                    <span class="text-green-400">-৳{{ number_format($order->discount, 2) }}</span>
+                                </div>
+                            @endif
+                            <div class="flex justify-between text-sm border-t border-purple-500/20 pt-2">
+                                <span class="text-purple-300 font-semibold">Total:</span>
+                                <span class="text-purple-400 font-semibold">৳{{ number_format($totalBeforeBooking, 2) }}</span>
+                            </div>
+                            @if($order->booking_amount > 0)
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-purple-300">Booking Fee Paid:</span>
+                                    <span class="text-purple-400 font-semibold">-৳{{ number_format($order->booking_amount, 2) }}</span>
+                                </div>
+                            @endif
+                            <div class="flex justify-between text-lg font-bold border-t border-purple-500/20 pt-2">
+                                <span class="text-purple-300">DUE Amount:</span>
+                                <span class="text-purple-400">৳{{ number_format($dueAmount, 2) }}</span>
+                            </div>
+                            <div class="text-xs text-purple-400 italic mt-2">
+                                DUE amount will be collected via Cash on Delivery
+                            </div>
+                            <div class="flex justify-between text-sm border-t border-purple-500/20 pt-2 mt-2">
+                                <span class="text-gray-300">Amount Paid (Booking Fee):</span>
+                                <span class="text-2xl font-bold text-purple-400">৳{{ number_format($order->total, 2) }}</span>
+                            </div>
+                        </div>
+                    @else
+                        <div class="p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-1">Total Amount</p>
+                            <p class="text-3xl font-bold text-violet-400">৳{{ number_format($order->total, 2) }}</p>
+                        </div>
+                    @endif
+
+                    <div class="p-4 bg-black/30 rounded-lg space-y-2">
                         <p class="text-sm text-gray-400 mb-2">Order Details</p>
                         <p class="text-white"><strong>Name:</strong> {{ $order->name }}</p>
                         <p class="text-white"><strong>Phone:</strong> {{ $order->phone }}</p>
                         <p class="text-white"><strong>Address:</strong> {{ $order->address }}</p>
+                        @if($order->transaction_number)
+                            <p class="text-white"><strong>Transaction #:</strong> {{ $order->transaction_number }}</p>
+                        @endif
+                        @if($order->sending_number)
+                            <p class="text-white"><strong>Sending #:</strong> {{ $order->sending_number }}</p>
+                        @endif
+                        <p class="text-white"><strong>Payment Method:</strong> <span class="text-violet-400 uppercase">{{ $order->payment_method }}</span></p>
                         <p class="text-white"><strong>Status:</strong> <span class="text-violet-400">{{ ucfirst($order->status) }}</span></p>
                     </div>
                 </div>

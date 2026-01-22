@@ -245,20 +245,34 @@
                                         <h4 class="font-semibold text-gray-900 dark:text-white mb-3">Payment Information</h4>
                                         <div class="space-y-2 text-sm">
                                             <p><span class="font-medium text-gray-700 dark:text-gray-300">Payment Method:</span> <span class="text-gray-900 dark:text-white uppercase">{{ $order->payment_method }}</span></p>
-                                            <p><span class="font-medium text-gray-700 dark:text-gray-300">Transaction Number:</span> <span class="text-gray-900 dark:text-white">{{ $order->transaction_number }}</span></p>
-                                            <p><span class="font-medium text-gray-700 dark:text-gray-300">Sending Number:</span> <span class="text-gray-900 dark:text-white">{{ $order->sending_number }}</span></p>
-                                            <p><span class="font-medium text-gray-700 dark:text-gray-300">Subtotal:</span> <span class="text-gray-900 dark:text-white">৳{{ number_format($order->subtotal, 2) }}</span></p>
-                                            @if($order->is_preorder_booking && $order->booking_amount > 0)
-                                                <p><span class="font-medium text-gray-700 dark:text-gray-300">Booking Fee:</span> <span class="text-purple-600 dark:text-purple-400">+৳{{ number_format($order->booking_amount, 2) }}</span></p>
+                                            @if($order->transaction_number)
+                                                <p><span class="font-medium text-gray-700 dark:text-gray-300">Transaction Number:</span> <span class="text-gray-900 dark:text-white">{{ $order->transaction_number }}</span></p>
                                             @endif
-                                            @if($order->delivery_charge > 0)
-                                                <p><span class="font-medium text-gray-700 dark:text-gray-300">Delivery Charge:</span> <span class="text-blue-600 dark:text-blue-400">+৳{{ number_format($order->delivery_charge, 2) }}</span> <span class="text-xs text-gray-500">({{ ucfirst(str_replace('_', ' ', $order->delivery_location ?? 'N/A')) }})</span></p>
+                                            @if($order->sending_number)
+                                                <p><span class="font-medium text-gray-700 dark:text-gray-300">Sending Number:</span> <span class="text-gray-900 dark:text-white">{{ $order->sending_number }}</span></p>
                                             @endif
-                                            <p><span class="font-medium text-gray-700 dark:text-gray-300">Discount:</span> <span class="text-green-600 dark:text-green-400">-৳{{ number_format($order->discount, 2) }}</span></p>
-                                            <p><span class="font-medium text-gray-700 dark:text-gray-300">Total:</span> <span class="text-lg font-bold text-gray-900 dark:text-white">৳{{ number_format($order->total, 2) }}</span></p>
-                                            @if($order->is_preorder_booking)
-                                                <p class="text-xs text-purple-600 dark:text-purple-400 mt-1 italic">⚠️ This is a pre-order booking. Customer paid booking fee. Remaining amount will be collected later.</p>
-                                            @endif
+                                            <div class="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+                                                <p><span class="font-medium text-gray-700 dark:text-gray-300">Subtotal:</span> <span class="text-gray-900 dark:text-white">৳{{ number_format($order->subtotal, 2) }}</span></p>
+                                                @if($order->delivery_charge > 0)
+                                                    <p><span class="font-medium text-gray-700 dark:text-gray-300">Delivery Charge:</span> <span class="text-blue-600 dark:text-blue-400">+৳{{ number_format($order->delivery_charge, 2) }}</span> <span class="text-xs text-gray-500">({{ ucfirst(str_replace('_', ' ', $order->delivery_location ?? 'N/A')) }})</span></p>
+                                                @endif
+                                                @if($order->discount > 0)
+                                                    <p><span class="font-medium text-gray-700 dark:text-gray-300">Discount:</span> <span class="text-green-600 dark:text-green-400">-৳{{ number_format($order->discount, 2) }}</span></p>
+                                                @endif
+                                                @if($order->is_preorder_booking)
+                                                    @php
+                                                        $totalBeforeBooking = $order->subtotal + $order->delivery_charge - $order->discount;
+                                                    @endphp
+                                                    <p class="mt-1"><span class="font-medium text-gray-700 dark:text-gray-300">Total:</span> <span class="text-lg font-bold text-violet-600 dark:text-violet-400">৳{{ number_format($totalBeforeBooking, 2) }}</span></p>
+                                                    @if($order->booking_amount > 0)
+                                                        <p><span class="font-medium text-purple-700 dark:text-purple-300">Booking Fee:</span> <span class="text-purple-600 dark:text-purple-400 font-semibold">-৳{{ number_format($order->booking_amount, 2) }}</span></p>
+                                                    @endif
+                                                    <p class="mt-1"><span class="font-medium text-purple-700 dark:text-purple-300">DUE Amount:</span> <span class="text-lg font-bold text-purple-600 dark:text-purple-400">৳{{ number_format($totalBeforeBooking - ($order->booking_amount ?? 0), 2) }}</span></p>
+                                                    <p class="text-xs text-purple-600 dark:text-purple-400 mt-1 italic">⚠️ This is a pre-order booking. Customer paid booking fee. Remaining DUE amount will be collected via Cash on Delivery.</p>
+                                                @else
+                                                    <p class="mt-1"><span class="font-medium text-gray-700 dark:text-gray-300">Total:</span> <span class="text-lg font-bold text-gray-900 dark:text-white">৳{{ number_format($order->total, 2) }}</span></p>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
