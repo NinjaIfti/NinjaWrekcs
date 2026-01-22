@@ -148,6 +148,10 @@ Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
 
+Route::get('/agent-code', function () {
+    return view('agent-code');
+})->name('agent-code');
+
 // Sitemap
 Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 
