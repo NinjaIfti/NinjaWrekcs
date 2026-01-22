@@ -338,9 +338,24 @@
                             <div class="space-y-3 max-h-64 overflow-y-auto">
                                 @foreach($cartItems as $item)
                                     @php
+                                        // Check if item is bookable from attributes first
                                         $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
-                                        $originalPrice = $item->attributes->original_price ?? $item->price;
-                                        $displayPrice = $isBookable ? $originalPrice : $item->price;
+                                        
+                                        // For pre-order items, ALWAYS fetch original price from database
+                                        if ($isBookable) {
+                                            // Always fetch from database to get the original price
+                                            $product = \App\Models\Product::find($item->id);
+                                            if ($product) {
+                                                // Always use the product's display_price or price (original, not reduced)
+                                                $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                                            } else {
+                                                // Fallback: use original_price from attributes if product not found
+                                                $displayPrice = (float) ($item->attributes->original_price ?? $item->price);
+                                            }
+                                        } else {
+                                            // Regular items: use cart price as-is
+                                            $displayPrice = (float) $item->price;
+                                        }
                                     @endphp
                                     <div class="flex items-center gap-3">
                                         <img src="{{ $item->attributes->image ? asset('storage/' . $item->attributes->image) : '/img/placeholder.jpg' }}" 
