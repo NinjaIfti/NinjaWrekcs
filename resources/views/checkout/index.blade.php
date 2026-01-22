@@ -320,6 +320,11 @@
                             <!-- Cart Items -->
                             <div class="space-y-3 max-h-64 overflow-y-auto">
                                 @foreach($cartItems as $item)
+                                    @php
+                                        $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
+                                        $originalPrice = $item->attributes->original_price ?? $item->price;
+                                        $displayPrice = $isBookable ? $originalPrice : $item->price;
+                                    @endphp
                                     <div class="flex items-center gap-3">
                                         <img src="{{ $item->attributes->image ? asset('storage/' . $item->attributes->image) : '/img/placeholder.jpg' }}" 
                                              alt="{{ $item->name }}" 
@@ -327,7 +332,7 @@
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-semibold text-white truncate">{{ $item->name }}</p>
                                             <p class="text-xs text-gray-400">Qty: {{ $item->quantity }}</p>
-                                            <p class="text-sm font-bold text-violet-400">৳{{ number_format($item->price * $item->quantity, 2) }}</p>
+                                            <p class="text-sm font-bold text-violet-400">৳{{ number_format($displayPrice * $item->quantity, 2) }}</p>
                                         </div>
                                     </div>
                                 @endforeach
