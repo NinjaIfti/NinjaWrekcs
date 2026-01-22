@@ -106,9 +106,25 @@
                                             <!-- Price -->
                                             @php
                                                 $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
-                                                $displayPrice = $isBookable && isset($item->attributes->original_price) 
-                                                    ? $item->attributes->original_price 
-                                                    : $item->price;
+                                                
+                                                // For pre-order items, ALWAYS show original price (never the reduced price)
+                                                if ($isBookable) {
+                                                    // First try: get original_price from cart attributes
+                                                    if (isset($item->attributes->original_price) && $item->attributes->original_price > 0) {
+                                                        $displayPrice = (float) $item->attributes->original_price;
+                                                    } else {
+                                                        // Fallback: fetch fresh from database to ensure we have the correct price
+                                                        $product = \App\Models\Product::find($item->id);
+                                                        if ($product) {
+                                                            $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                                                        } else {
+                                                            $displayPrice = (float) $item->price;
+                                                        }
+                                                    }
+                                                } else {
+                                                    // Regular items: use cart price as-is
+                                                    $displayPrice = (float) $item->price;
+                                                }
                                             @endphp
                                             <div class="text-left md:text-right">
                                                 <p class="text-xl md:text-2xl font-bold text-violet-400">
