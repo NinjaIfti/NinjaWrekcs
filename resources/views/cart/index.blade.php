@@ -104,12 +104,18 @@
                                             </div>
 
                                             <!-- Price -->
+                                            @php
+                                                $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
+                                                $displayPrice = $isBookable && isset($item->attributes->original_price) 
+                                                    ? $item->attributes->original_price 
+                                                    : $item->price;
+                                            @endphp
                                             <div class="text-left md:text-right">
                                                 <p class="text-xl md:text-2xl font-bold text-violet-400">
-                                                    ৳{{ number_format($item->price * $item->quantity, 2) }}
+                                                    ৳{{ number_format($displayPrice * $item->quantity, 2) }}
                                                 </p>
                                                 <p class="text-xs md:text-sm text-gray-400">
-                                                    ৳{{ number_format($item->price, 2) }} each
+                                                    ৳{{ number_format($displayPrice, 2) }} each
                                                 </p>
                                             </div>
                                         </div>

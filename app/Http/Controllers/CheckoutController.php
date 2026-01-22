@@ -28,11 +28,8 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
-        $cartTotal = \Cart::getTotal();
-        $cartSubTotal = \Cart::getSubTotal();
-        
-        // Recalculate subtotal using original prices for pre-order items
-        $recalculatedSubTotal = 0;
+        // Calculate subtotal using original prices for all items
+        $cartSubTotal = 0;
         $hasBookableItems = false;
         $totalBookingAmount = 0;
         
@@ -52,17 +49,16 @@ class CheckoutController extends Controller
             
             // Use original price for pre-order items, regular price for others
             if ($isBookable && isset($item->attributes->original_price)) {
-                $recalculatedSubTotal += $item->attributes->original_price * $item->quantity;
+                $cartSubTotal += $item->attributes->original_price * $item->quantity;
                 $hasBookableItems = true;
                 // Each bookable item has 200 booking fee
                 $totalBookingAmount += 200 * $item->quantity;
             } else {
-                $recalculatedSubTotal += $item->price * $item->quantity;
+                $cartSubTotal += $item->price * $item->quantity;
             }
         }
         
-        // Use recalculated subtotal if we have pre-order items, otherwise use cart subtotal
-        $cartSubTotal = $recalculatedSubTotal > 0 ? $recalculatedSubTotal : $cartSubTotal;
+        $cartTotal = \Cart::getTotal();
         
         // No automatic discounts - only coupon discounts apply
         $totalDiscount = 0;
@@ -241,8 +237,8 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Recalculate subtotal using original prices for pre-order items
-            $recalculatedSubTotal = 0;
+            // Calculate subtotal using original prices for all items
+            $cartSubTotal = 0;
             $totalDiscount = 0;
             
             // Check for bookable items and calculate booking amount
@@ -265,17 +261,14 @@ class CheckoutController extends Controller
                 
                 // Use original price for pre-order items, regular price for others
                 if ($isBookable && isset($item->attributes->original_price)) {
-                    $recalculatedSubTotal += $item->attributes->original_price * $item->quantity;
+                    $cartSubTotal += $item->attributes->original_price * $item->quantity;
                     $hasBookableItems = true;
                     // Each bookable item has 200 booking fee
                     $totalBookingAmount += 200 * $item->quantity;
                 } else {
-                    $recalculatedSubTotal += $item->price * $item->quantity;
+                    $cartSubTotal += $item->price * $item->quantity;
                 }
             }
-            
-            // Use recalculated subtotal if we have pre-order items, otherwise use cart subtotal
-            $cartSubTotal = $recalculatedSubTotal > 0 ? $recalculatedSubTotal : \Cart::getSubTotal();
             
             // Calculate delivery charge
             $deliveryCharge = $validated['delivery_location'] === 'inside_dhaka' ? 80 : 120;

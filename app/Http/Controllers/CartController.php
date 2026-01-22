@@ -11,8 +11,27 @@ class CartController extends Controller
     public function index()
     {
         $cartItems = \Cart::getContent();
+        
+        // Recalculate subtotal using original prices for pre-order items
+        $cartSubTotal = 0;
+        foreach ($cartItems as $item) {
+            $isBookable = false;
+            if (isset($item->attributes->is_bookable)) {
+                $isBookable = (bool) $item->attributes->is_bookable;
+            } else {
+                $product = Product::find($item->id);
+                $isBookable = $product && (bool) $product->is_bookable;
+            }
+            
+            // Use original price for pre-order items, regular price for others
+            if ($isBookable && isset($item->attributes->original_price)) {
+                $cartSubTotal += $item->attributes->original_price * $item->quantity;
+            } else {
+                $cartSubTotal += $item->price * $item->quantity;
+            }
+        }
+        
         $cartTotal = \Cart::getTotal();
-        $cartSubTotal = \Cart::getSubTotal();
         
         // Check if cart contains bookable items
         $hasBookableItems = false;
@@ -46,7 +65,9 @@ class CartController extends Controller
             return redirect()->back()->with('error', 'This item is upcoming and cannot be added to cart yet.');
         }
 
-        if ($product->price_tba || $product->price == 0) {
+        // Check if price is 0 or TBA - prevent adding to cart
+        $displayPrice = $product->display_price ?? 0;
+        if ($product->price_tba || $product->price == 0 || $displayPrice == 0 || !$displayPrice) {
             return redirect()->back()->with('error', 'Price will be announced later. Please check back once pricing is available.');
         }
 

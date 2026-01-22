@@ -211,7 +211,13 @@
                             </form>
                         @else
                             <button disabled class="w-full px-8 py-4 bg-gray-600 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
-                                Out of Stock
+                                @if($product->price_tba || $product->price == 0 || !$product->display_price)
+                                    Price to be announced
+                                @elseif($product->quantity <= 0)
+                                    Out of Stock
+                                @else
+                                    Not Available
+                                @endif
                             </button>
                         @endif
                         

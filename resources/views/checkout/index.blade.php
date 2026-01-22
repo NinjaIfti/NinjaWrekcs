@@ -370,13 +370,13 @@
                                     <span>Coupon Discount</span>
                                     <span id="coupon_discount_display">-৳0.00</span>
                                 </div>
+                                @if($hasBookableItems)
                                 <div class="border-t border-violet-500/20 pt-2 pb-2">
                                     <div class="flex justify-between text-lg font-semibold">
                                         <span>Total</span>
-                                        <span class="text-violet-400" id="total_before_booking">৳{{ number_format($finalTotal + 80, 2) }}</span>
+                                        <span class="text-violet-400" id="total_before_booking">৳{{ number_format($cartSubTotal + 80, 2) }}</span>
                                     </div>
                                 </div>
-                                @if($hasBookableItems)
                                 <div class="border-t border-purple-500/20 pt-2 space-y-2">
                                     <div class="flex justify-between text-purple-300">
                                         <span>Booking Fee</span>
@@ -385,17 +385,18 @@
                                     <div class="border-t border-purple-500/20 pt-2">
                                         <div class="flex justify-between text-xl font-bold text-purple-300">
                                             <span>DUE</span>
-                                            <span id="total_display">৳{{ number_format(($finalTotal + 80) - $totalBookingAmount, 2) }}</span>
+                                            <span id="total_display">৳{{ number_format(($cartSubTotal + 80) - $totalBookingAmount, 2) }}</span>
                                         </div>
                                         <p class="text-xs text-purple-400 mt-1 italic">
                                             Remaining DUE will collected on Cash On Delivery
+                                        </p>
                                     </div>
                                 </div>
                                 @else
                                 <div class="border-t border-violet-500/20 pt-2">
                                     <div class="flex justify-between text-xl font-bold">
                                         <span>Total</span>
-                                        <span class="text-violet-400" id="total_display">৳{{ number_format($finalTotal + 80, 2) }}</span>
+                                        <span class="text-violet-400" id="total_display">৳{{ number_format($cartSubTotal + 80, 2) }}</span>
                                     </div>
                                 </div>
                                 @endif
@@ -425,7 +426,7 @@
 
     <script>
         let deliveryCharge = 80; // Default: Inside Dhaka
-        const baseSubtotal = {{ $cartSubTotal }};
+        const baseSubtotal = {{ $cartSubTotal }}; // This is already calculated with original prices for pre-order items
         let currentDiscount = 0;
 
         // Update delivery charge
@@ -450,26 +451,27 @@
         // Update total calculation
         function updateTotal() {
             const bookingAmount = {{ $hasBookableItems ? $totalBookingAmount : 0 }};
-            const totalBeforeBooking = baseSubtotal + deliveryCharge - currentDiscount;
+            const total = baseSubtotal + deliveryCharge - currentDiscount;
             
-            // Update total before booking
+            @if($hasBookableItems)
+            // For pre-order items: Total = Subtotal + DC, DUE = Total - Booking Fee
             const totalBeforeBookingEl = document.getElementById('total_before_booking');
             if (totalBeforeBookingEl) {
-                totalBeforeBookingEl.textContent = '৳' + totalBeforeBooking.toFixed(2);
+                totalBeforeBookingEl.textContent = '৳' + total.toFixed(2);
             }
             
-            // Update final total/DUE
             const totalDisplay = document.getElementById('total_display');
             if (totalDisplay) {
-                if (bookingAmount > 0) {
-                    // For bookings: DUE = Total - Booking Fee
-                    const due = totalBeforeBooking - bookingAmount;
-                    totalDisplay.textContent = '৳' + due.toFixed(2);
-                } else {
-                    // For normal orders: Total = Subtotal + DC - Discount
-                    totalDisplay.textContent = '৳' + totalBeforeBooking.toFixed(2);
-                }
+                const due = total - bookingAmount;
+                totalDisplay.textContent = '৳' + due.toFixed(2);
             }
+            @else
+            // For regular items: Total = Subtotal + DC - Discount
+            const totalDisplay = document.getElementById('total_display');
+            if (totalDisplay) {
+                totalDisplay.textContent = '৳' + total.toFixed(2);
+            }
+            @endif
         }
 
         // Toggle payment fields based on payment method
