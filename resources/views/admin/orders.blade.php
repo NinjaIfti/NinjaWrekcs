@@ -357,6 +357,17 @@
                                                 </svg>
                                                 Edit
                                             </a>
+                                            @if($currentView === 'preorder' && $order->is_preorder_booking)
+                                                <form action="{{ route('admin.orders.convert-to-active', $order) }}" method="POST" onsubmit="return confirm('Convert this pre-order to active order? It will now be included in financial calculations (revenue, profit, etc.).');">
+                                                    @csrf
+                                                    <button type="submit" class="px-3 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-600 dark:text-purple-400 rounded-lg transition text-sm font-medium flex items-center gap-1">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        </svg>
+                                                        Convert to Active
+                                                    </button>
+                                                </form>
+                                            @endif
                                             @if($currentView === 'hidden')
                                                 <form action="{{ route('admin.orders.restore', $order) }}" method="POST" onsubmit="return confirm('Restore this order to active orders?');">
                                                     @csrf

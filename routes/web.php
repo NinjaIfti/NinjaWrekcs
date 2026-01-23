@@ -329,6 +329,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/orders/{order}/status', [\App\Http\Controllers\AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
     Route::delete('/orders/{order}', [\App\Http\Controllers\AdminController::class, 'deleteOrder'])->name('orders.delete');
     Route::post('/orders/{order}/restore', [\App\Http\Controllers\AdminController::class, 'restoreOrder'])->name('orders.restore');
+    Route::post('/orders/{order}/convert-to-active', [\App\Http\Controllers\AdminController::class, 'convertPreorderToActive'])->name('orders.convert-to-active');
     Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users'])->name('users');
     
     // Products Management

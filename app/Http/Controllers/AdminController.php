@@ -33,12 +33,17 @@ class AdminController extends Controller
     public function dashboard(): View
     {
         $totalProducts = Product::count();
-        $totalOrders = Order::where('status', '!=', 'pending')->where('status', '!=', 'cancelled')->count();
+        $totalOrders = Order::where('status', '!=', 'pending')
+            ->where('status', '!=', 'cancelled')
+            ->where('is_preorder_booking', false)
+            ->count();
         $totalCustomers = \App\Models\User::where('email', '!=', 'ifti3061@gmail.com')->count();
         
         // Calculate revenue excluding delivery charges (subtotal - discount)
+        // Exclude pre-order bookings from financial calculations
         $orders = Order::where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
+            ->where('is_preorder_booking', false)
             ->get();
         $totalRevenue = $orders->sum(function($order) {
             return $order->subtotal - $order->discount;
@@ -1108,10 +1113,12 @@ class AdminController extends Controller
 
     public function financial(): View
     {
-        // Get confirmed orders (excluding pending, cancelled, and deleted orders)
+        // Get confirmed orders (excluding pending, cancelled, deleted orders, and pre-order bookings)
+        // Pre-orders are excluded from financial calculations until converted to active orders
         $confirmedOrders = Order::notDeleted()
             ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
+            ->where('is_preorder_booking', false)
             ->get();
 
         // Total Revenue (subtotal - discount, excluding delivery charges)
@@ -1119,10 +1126,11 @@ class AdminController extends Controller
             return $order->subtotal - $order->discount;
         });
 
-        // This Month Revenue
+        // This Month Revenue (excluding pre-orders)
         $thisMonthOrders = Order::notDeleted()
             ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
+            ->where('is_preorder_booking', false)
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->get();
@@ -1132,11 +1140,12 @@ class AdminController extends Controller
         });
 
         // Calculate Total Expenses (product costs + operational expenses)
-        // Product costs from sold items
+        // Product costs from sold items (excluding pre-orders)
         $productCosts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
             ->where('orders.is_deleted', false)
+            ->where('orders.is_preorder_booking', false)
             ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
             ->first();
         
@@ -1160,6 +1169,7 @@ class AdminController extends Controller
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
             ->where('orders.is_deleted', false)
+            ->where('orders.is_preorder_booking', false)
             ->whereMonth('orders.created_at', now()->month)
             ->whereYear('orders.created_at', now()->year)
             ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
@@ -1174,28 +1184,31 @@ class AdminController extends Controller
         // Average Order Value (excluding delivery)
         $averageOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
-        // Max Order Value (for progress bar calculation)
+        // Max Order Value (for progress bar calculation, excluding pre-orders)
         $maxOrderValue = Order::notDeleted()
             ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
+            ->where('is_preorder_booking', false)
             ->selectRaw('MAX(subtotal - discount) as max_order')
             ->first()
             ->max_order ?? 1;
 
-        // Monthly Order Goal (based on highest monthly orders or total orders)
+        // Monthly Order Goal (based on highest monthly orders or total orders, excluding pre-orders)
         $monthlyOrderGoal = Order::notDeleted()
             ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
+            ->where('is_preorder_booking', false)
             ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as order_count')
             ->groupBy('year', 'month')
             ->orderBy('order_count', 'DESC')
             ->first()
             ->order_count ?? $totalOrders;
 
-        // Recent Transactions (last 20 orders)
+        // Recent Transactions (last 20 orders, excluding pre-orders)
         $recentTransactions = Order::notDeleted()
             ->where('status', '!=', 'pending')
             ->where('status', '!=', 'cancelled')
+            ->where('is_preorder_booking', false)
             ->with(['user'])
             ->latest()
             ->take(20)
@@ -1528,6 +1541,30 @@ class AdminController extends Controller
         $order->restore();
         
         return redirect()->back()->with('success', "Order #{$order->id} has been restored.");
+    }
+
+    public function convertPreorderToActive(Order $order): RedirectResponse
+    {
+        if (!$order->is_preorder_booking) {
+            return redirect()->back()->with('error', 'This order is not a pre-order booking.');
+        }
+
+        $order->update([
+            'is_preorder_booking' => false,
+        ]);
+
+        // Log the change
+        \App\Models\OrderChange::create([
+            'order_id' => $order->id,
+            'user_id' => auth()->id(),
+            'change_type' => 'order_updated',
+            'description' => 'Pre-order converted to active order - now included in financial calculations',
+            'old_data' => ['is_preorder_booking' => true],
+            'new_data' => ['is_preorder_booking' => false],
+        ]);
+
+        return redirect()->route('admin.orders', ['view' => 'preorder'])
+            ->with('success', 'Order #' . $order->id . ' has been converted to active order and is now included in financial calculations.');
     }
 
     /**
