@@ -422,6 +422,10 @@
             if (appliedCoupon) {
                 if (appliedCoupon.type === 'percentage') {
                     discount = subtotal * (appliedCoupon.value / 100);
+                    // Apply maximum discount limit if set
+                    if (appliedCoupon.maximum_discount && discount > appliedCoupon.maximum_discount) {
+                        discount = appliedCoupon.maximum_discount;
+                    }
                 } else {
                     discount = appliedCoupon.value;
                 }
