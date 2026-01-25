@@ -1514,11 +1514,21 @@ class AdminController extends Controller
     public function sendNewProductNotification(Product $product): RedirectResponse
     {
         try {
+            // Check email configuration first
+            $mailDriver = config('mail.default');
+            if ($mailDriver === 'log') {
+                return redirect()->back()->with('error', 'Email is configured to "log" mode. Please configure SMTP settings in your .env file (MAIL_MAILER=smtp, MAIL_HOST, MAIL_USERNAME, MAIL_PASSWORD, etc.) to actually send emails.');
+            }
+            
             // Collect unique emails from both users table and orders table
+            // Filter out empty, null, and invalid emails
             $userEmails = User::whereNotNull('email')
                 ->where('email', '!=', '')
                 ->where('email', '!=', 'ifti3061@gmail.com')
                 ->pluck('email')
+                ->filter(function($email) {
+                    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+                })
                 ->unique()
                 ->toArray();
             
@@ -1526,17 +1536,31 @@ class AdminController extends Controller
                 ->where('email', '!=', '')
                 ->where('email', '!=', 'ifti3061@gmail.com')
                 ->pluck('email')
+                ->filter(function($email) {
+                    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+                })
                 ->unique()
                 ->toArray();
             
             // Merge and get unique emails
             $allEmails = array_unique(array_merge($userEmails, $orderEmails));
             
+            // Filter out invalid email addresses
+            $validEmails = array_filter($allEmails, function($email) {
+                return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+            });
+            
+            if (empty($validEmails)) {
+                return redirect()->back()->with('error', 'No valid email addresses found to send notifications to.');
+            }
+            
             $sentCount = 0;
             $failedCount = 0;
+            $failedEmails = [];
+            $firstError = null;
             
             // Send email to each unique email address
-            foreach ($allEmails as $email) {
+            foreach ($validEmails as $email) {
                 try {
                     $result = EmailService::sendWithFallback(
                         new \App\Mail\NewProductNotification($product),
@@ -1548,6 +1572,10 @@ class AdminController extends Controller
                         $sentCount++;
                     } else {
                         $failedCount++;
+                        if (!$firstError) {
+                            $firstError = $result['error'] ?? $result['message'] ?? 'Unknown error';
+                        }
+                        $failedEmails[] = $email;
                     }
                 } catch (\Exception $e) {
                     \Log::error('Failed to send new product notification email', [
@@ -1556,18 +1584,46 @@ class AdminController extends Controller
                         'error' => $e->getMessage(),
                     ]);
                     $failedCount++;
+                    if (!$firstError) {
+                        $firstError = $e->getMessage();
+                    }
+                    $failedEmails[] = $email;
                 }
+            }
+            
+            // Log failed emails for debugging
+            if ($failedCount > 0) {
+                \Log::warning('New product notification failures', [
+                    'product_id' => $product->id,
+                    'failed_count' => $failedCount,
+                    'total_emails' => count($validEmails),
+                    'first_error' => $firstError,
+                    'sample_failed_emails' => array_slice($failedEmails, 0, 5), // Log first 5 failures
+                ]);
             }
             
             // Also create in-app notifications for registered users
             NotificationService::newProduct($product);
             
-            $message = "New product notification sent to {$sentCount} email addresses";
+            $message = "New product notification sent to {$sentCount} email address" . ($sentCount !== 1 ? 'es' : '');
             if ($failedCount > 0) {
-                $message .= " ({$failedCount} failed)";
+                $message .= ". {$failedCount} failed";
+                if ($firstError) {
+                    $message .= " (Error: " . substr($firstError, 0, 100) . ")";
+                }
+                $message .= ". Check logs for details.";
             }
             
-            return redirect()->back()->with('success', $message);
+            if ($sentCount > 0) {
+                return redirect()->back()->with('success', $message);
+            } else {
+                $errorMsg = "Failed to send notifications to all {$failedCount} email addresses.";
+                if ($firstError) {
+                    $errorMsg .= " Error: " . substr($firstError, 0, 150);
+                }
+                $errorMsg .= " Please check your email configuration (MAIL_MAILER, MAIL_HOST, MAIL_USERNAME, MAIL_PASSWORD) in .env file.";
+                return redirect()->back()->with('error', $errorMsg);
+            }
         } catch (\Exception $e) {
             \Log::error('Failed to send new product notifications', [
                 'product_id' => $product->id,
@@ -1753,20 +1809,39 @@ class AdminController extends Controller
     public function sendStockNotification(Product $product): RedirectResponse
     {
         try {
+            // Check email configuration first
+            $mailDriver = config('mail.default');
+            if ($mailDriver === 'log') {
+                return redirect()->back()->with('error', 'Email is configured to "log" mode. Please configure SMTP settings in your .env file to actually send emails.');
+            }
+            
             // Get all stock notifications for this product that haven't been notified
+            // Filter out null, empty, and invalid emails
             $notifications = StockNotification::where('product_id', $product->id)
                 ->where('notified', false)
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
                 ->get();
             
             if ($notifications->isEmpty()) {
-                return redirect()->back()->with('error', 'No pending stock notifications found for this product.');
+                return redirect()->back()->with('error', 'No pending stock notifications with valid email addresses found for this product.');
+            }
+            
+            // Filter out invalid email addresses
+            $validNotifications = $notifications->filter(function($notification) {
+                return filter_var($notification->email, FILTER_VALIDATE_EMAIL) !== false;
+            });
+            
+            if ($validNotifications->isEmpty()) {
+                return redirect()->back()->with('error', 'No valid email addresses found in stock notification requests.');
             }
             
             $sentCount = 0;
             $failedCount = 0;
+            $firstError = null;
             
             // Send email to each notification request
-            foreach ($notifications as $notification) {
+            foreach ($validNotifications as $notification) {
                 try {
                     $result = EmailService::sendWithFallback(
                         new \App\Mail\StockAvailableNotification($product),
@@ -1783,6 +1858,9 @@ class AdminController extends Controller
                         $sentCount++;
                     } else {
                         $failedCount++;
+                        if (!$firstError) {
+                            $firstError = $result['error'] ?? $result['message'] ?? 'Unknown error';
+                        }
                     }
                 } catch (\Exception $e) {
                     \Log::error('Failed to send stock notification email', [
@@ -1791,15 +1869,31 @@ class AdminController extends Controller
                         'error' => $e->getMessage(),
                     ]);
                     $failedCount++;
+                    if (!$firstError) {
+                        $firstError = $e->getMessage();
+                    }
                 }
             }
             
-            $message = "Stock notification sent to {$sentCount} email addresses";
+            $message = "Stock notification sent to {$sentCount} email address" . ($sentCount !== 1 ? 'es' : '');
             if ($failedCount > 0) {
-                $message .= " ({$failedCount} failed)";
+                $message .= ". {$failedCount} failed";
+                if ($firstError) {
+                    $message .= " (Error: " . substr($firstError, 0, 100) . ")";
+                }
+                $message .= ". Check logs for details.";
             }
             
-            return redirect()->back()->with('success', $message);
+            if ($sentCount > 0) {
+                return redirect()->back()->with('success', $message);
+            } else {
+                $errorMsg = "Failed to send notifications to all {$failedCount} email addresses.";
+                if ($firstError) {
+                    $errorMsg .= " Error: " . substr($firstError, 0, 150);
+                }
+                $errorMsg .= " Please check your email configuration in .env file.";
+                return redirect()->back()->with('error', $errorMsg);
+            }
         } catch (\Exception $e) {
             \Log::error('Failed to send stock notifications', [
                 'product_id' => $product->id,
