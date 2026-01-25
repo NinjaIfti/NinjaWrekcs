@@ -1748,17 +1748,6 @@ class AdminController extends Controller
     }
 
     /**
-     * Clear shop products pagination cache
-     */
-    private function clearShopProductsCache(): void
-    {
-        // Clear first 10 pages of shop products cache (12 per page)
-        for ($page = 1; $page <= 10; $page++) {
-            \Illuminate\Support\Facades\Cache::forget('shop_products_page_12_' . $page);
-        }
-    }
-
-    /**
      * Send stock available notification to all users who requested it
      */
     public function sendStockNotification(Product $product): RedirectResponse
