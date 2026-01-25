@@ -34,7 +34,7 @@ class NewProductNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.new-product-notification',
+            view: 'emails.new-product-notification',
         );
     }
 }
