@@ -100,12 +100,10 @@ img {
 .header {
     padding: 25px 0;
     text-align: center;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    border-bottom: 3px solid #8b5cf6;
 }
 
 .header a {
-    color: #8b5cf6;
+    color: #18181b;
     font-size: 19px;
     font-weight: bold;
     text-decoration: none;
