@@ -34,7 +34,7 @@ class StockAvailableNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.stock-available-notification',
+            view: 'emails.stock-available-notification',
         );
     }
 }
