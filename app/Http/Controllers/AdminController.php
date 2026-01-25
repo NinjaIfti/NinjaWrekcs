@@ -1330,26 +1330,6 @@ class AdminController extends Controller
         return view('admin.financial', $financialData);
     }
 
-            return [
-                'totalRevenue' => $totalRevenue,
-                'thisMonthRevenue' => $thisMonthRevenue,
-                'totalExpenses' => $totalExpenses,
-                'totalProductCosts' => $totalProductCosts,
-                'totalOperationalExpenses' => $totalOperationalExpenses,
-                'pureProfit' => $pureProfit,
-                'thisMonthExpenses' => $thisMonthTotalExpenses,
-                'thisMonthProfit' => $thisMonthProfit,
-                'totalOrders' => $totalOrders,
-                'averageOrder' => $averageOrder,
-                'maxOrderValue' => $maxOrderValue,
-                'monthlyOrderGoal' => $monthlyOrderGoal,
-                'recentTransactions' => $recentTransactions,
-            ];
-        });
-        
-        return view('admin.financial', $financialData);
-    }
-
     public function coupons(): View
     {
         $coupons = Coupon::latest()->get();

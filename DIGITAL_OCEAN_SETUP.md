@@ -126,6 +126,11 @@ Note your PHP version (e.g., 8.2, 8.1, etc.)
 
 ### Step 2: Install PHP Redis Extension
 
+**For PHP 8.3:**
+```bash
+sudo apt-get install php8.3-redis -y
+```
+
 **For PHP 8.2:**
 ```bash
 sudo apt-get install php8.2-redis -y
