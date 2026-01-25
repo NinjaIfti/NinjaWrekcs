@@ -42,6 +42,236 @@ Route::get('/', function () {
     return view('welcome', $data);
 });
 
+// Email Test Route - Remove in production
+Route::get('/test-email-debug', function () {
+    try {
+        $testEmail = 'ifti306176@gmail.com';
+        $product = \App\Models\Product::where('is_active', true)->first();
+        
+        if (!$product) {
+            return response()->json([
+                'error' => 'No active product found to test with'
+            ], 404);
+        }
+        
+        // Get email configuration
+        $mailConfig = [
+            'driver' => config('mail.default'),
+            'host' => config('mail.mailers.smtp.host'),
+            'port' => config('mail.mailers.smtp.port'),
+            'username' => config('mail.mailers.smtp.username'),
+            'password' => config('mail.mailers.smtp.password') ? '***SET***' : 'NOT SET',
+            'encryption' => config('mail.mailers.smtp.encryption'),
+            'from_address' => config('mail.from.address'),
+            'from_name' => config('mail.from.name'),
+        ];
+        
+        \Illuminate\Support\Facades\Log::info('Testing email send', [
+            'to' => $testEmail,
+            'config' => $mailConfig,
+        ]);
+        
+        // Test 1: Send New Product Notification directly
+        $result1 = null;
+        $error1 = null;
+        try {
+            \Illuminate\Support\Facades\Mail::to($testEmail)->send(new \App\Mail\NewProductNotification($product));
+            $result1 = 'SUCCESS';
+        } catch (\Exception $e) {
+            $error1 = $e->getMessage();
+            $result1 = 'FAILED';
+            \Illuminate\Support\Facades\Log::error('New Product Notification test failed', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
+        
+        // Test 2: Send Stock Available Notification directly
+        $result2 = null;
+        $error2 = null;
+        try {
+            \Illuminate\Support\Facades\Mail::to($testEmail)->send(new \App\Mail\StockAvailableNotification($product));
+            $result2 = 'SUCCESS';
+        } catch (\Exception $e) {
+            $error2 = $e->getMessage();
+            $result2 = 'FAILED';
+            \Illuminate\Support\Facades\Log::error('Stock Available Notification test failed', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
+        
+        // Test 3: Use EmailService
+        $result3 = null;
+        $error3 = null;
+        try {
+            $serviceResult = \App\Services\EmailService::sendWithFallback(
+                new \App\Mail\NewProductNotification($product),
+                $testEmail,
+                'test email'
+            );
+            $result3 = $serviceResult['success'] ? 'SUCCESS' : 'FAILED';
+            $error3 = $serviceResult['error'] ?? $serviceResult['message'] ?? null;
+        } catch (\Exception $e) {
+            $error3 = $e->getMessage();
+            $result3 = 'FAILED';
+            \Illuminate\Support\Facades\Log::error('EmailService test failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+        
+        return response()->json([
+            'email_config' => $mailConfig,
+            'test_email' => $testEmail,
+            'product_used' => [
+                'id' => $product->id,
+                'name' => $product->name,
+            ],
+            'test_results' => [
+                'new_product_notification' => [
+                    'status' => $result1,
+                    'error' => $error1,
+                ],
+                'stock_available_notification' => [
+                    'status' => $result2,
+                    'error' => $error2,
+                ],
+                'email_service_with_fallback' => [
+                    'status' => $result3,
+                    'error' => $error3,
+                ],
+            ],
+            'logs_location' => storage_path('logs/laravel.log'),
+            'instructions' => 'Check the logs at: ' . storage_path('logs/laravel.log'),
+        ], 200, [], JSON_PRETTY_PRINT);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+})->name('test.email.debug');
+
+// Email Debug Test Route - Tests both notification types
+Route::get('/test-email-debug', function () {
+    try {
+        $testEmail = 'ifti306176@gmail.com';
+        $product = \App\Models\Product::where('is_active', true)->first();
+        
+        if (!$product) {
+            return response()->json([
+                'error' => 'No active product found to test with'
+            ], 404);
+        }
+        
+        // Get email configuration
+        $mailConfig = [
+            'driver' => config('mail.default'),
+            'host' => config('mail.mailers.smtp.host'),
+            'port' => config('mail.mailers.smtp.port'),
+            'username' => config('mail.mailers.smtp.username'),
+            'password' => config('mail.mailers.smtp.password') ? '***SET***' : 'NOT SET',
+            'encryption' => config('mail.mailers.smtp.encryption'),
+            'from_address' => config('mail.from.address'),
+            'from_name' => config('mail.from.name'),
+        ];
+        
+        \Illuminate\Support\Facades\Log::info('Testing email send', [
+            'to' => $testEmail,
+            'config' => $mailConfig,
+        ]);
+        
+        // Test 1: Send New Product Notification directly
+        $result1 = null;
+        $error1 = null;
+        try {
+            \Illuminate\Support\Facades\Mail::to($testEmail)->send(new \App\Mail\NewProductNotification($product));
+            $result1 = 'SUCCESS';
+        } catch (\Exception $e) {
+            $error1 = $e->getMessage();
+            $result1 = 'FAILED';
+            \Illuminate\Support\Facades\Log::error('New Product Notification test failed', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
+        
+        // Test 2: Send Stock Available Notification directly
+        $result2 = null;
+        $error2 = null;
+        try {
+            \Illuminate\Support\Facades\Mail::to($testEmail)->send(new \App\Mail\StockAvailableNotification($product));
+            $result2 = 'SUCCESS';
+        } catch (\Exception $e) {
+            $error2 = $e->getMessage();
+            $result2 = 'FAILED';
+            \Illuminate\Support\Facades\Log::error('Stock Available Notification test failed', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
+        
+        // Test 3: Use EmailService
+        $result3 = null;
+        $error3 = null;
+        try {
+            $serviceResult = \App\Services\EmailService::sendWithFallback(
+                new \App\Mail\NewProductNotification($product),
+                $testEmail,
+                'test email'
+            );
+            $result3 = $serviceResult['success'] ? 'SUCCESS' : 'FAILED';
+            $error3 = $serviceResult['error'] ?? $serviceResult['message'] ?? null;
+        } catch (\Exception $e) {
+            $error3 = $e->getMessage();
+            $result3 = 'FAILED';
+            \Illuminate\Support\Facades\Log::error('EmailService test failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+        
+        return response()->json([
+            'email_config' => $mailConfig,
+            'test_email' => $testEmail,
+            'product_used' => [
+                'id' => $product->id,
+                'name' => $product->name,
+            ],
+            'test_results' => [
+                'new_product_notification' => [
+                    'status' => $result1,
+                    'error' => $error1,
+                ],
+                'stock_available_notification' => [
+                    'status' => $result2,
+                    'error' => $error2,
+                ],
+                'email_service_with_fallback' => [
+                    'status' => $result3,
+                    'error' => $error3,
+                ],
+            ],
+            'logs_location' => storage_path('logs/laravel.log'),
+            'instructions' => 'Check the logs at: ' . storage_path('logs/laravel.log'),
+        ], 200, [], JSON_PRETTY_PRINT);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+})->name('test.email.debug');
+
 Route::get('/test-email', function () {
     $toEmail = request('to', 'ninjaifti3061@gmail.com');
     $type = request('type', 'simple'); // simple, order-confirmation, order-status
