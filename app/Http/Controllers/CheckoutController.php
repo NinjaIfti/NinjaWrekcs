@@ -268,7 +268,7 @@ class CheckoutController extends Controller
                     $isBookable = $product && (bool) $product->is_bookable;
                 }
                 
-                // Use original price for pre-order items, regular price for others
+                // Use original price for pre-order items, display_price (deal price) for regular items
                 if ($isBookable) {
                     // Always fetch original price from database for pre-order items
                     $product = Product::find($item->id);
@@ -287,7 +287,15 @@ class CheckoutController extends Controller
                     // Each bookable item has 200 booking fee
                     $totalBookingAmount += 200 * $item->quantity;
                 } else {
-                    $cartSubTotal += $item->price * $item->quantity;
+                    // Regular items: use display_price (includes deals) from database
+                    $product = Product::find($item->id);
+                    if ($product) {
+                        $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                        $cartSubTotal += $displayPrice * $item->quantity;
+                    } else {
+                        // Fallback: use cart price if product not found
+                        $cartSubTotal += $item->price * $item->quantity;
+                    }
                 }
             }
             
@@ -362,8 +370,9 @@ class CheckoutController extends Controller
                         $itemPrice = (float) ($product->display_price ?? 0);
                     }
                 } else {
-                    // Regular items: use cart price as-is
-                    $itemPrice = (float) $item->price;
+                    // Regular items: use display_price (includes deals/offers) from database
+                    // This ensures deal prices are correctly stored in order items
+                    $itemPrice = (float) ($product->display_price ?? $product->price ?? 0);
                 }
                 
                 OrderItem::create([
@@ -380,6 +389,10 @@ class CheckoutController extends Controller
             }
 
             DB::commit();
+
+            // Clear admin dashboard cache when new order is placed
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
+            \Illuminate\Support\Facades\Cache::forget('admin_financial_data');
 
             // Send order confirmation email
             $order->load('items');

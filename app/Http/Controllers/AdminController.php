@@ -32,34 +32,43 @@ class AdminController extends Controller
 {
     public function dashboard(): View
     {
-        $totalProducts = Product::count();
-        $totalOrders = Order::where('status', '!=', 'pending')
-            ->where('status', '!=', 'cancelled')
-            ->where('is_preorder_booking', false)
-            ->count();
-        $totalCustomers = \App\Models\User::where('email', '!=', 'ifti3061@gmail.com')->count();
+        // Cache dashboard stats for 5 minutes (admin data changes frequently)
+        $cacheKey = 'admin_dashboard_stats';
         
-        // Calculate revenue excluding delivery charges (subtotal - discount)
-        // Exclude pre-order bookings from financial calculations
-        $orders = Order::where('status', '!=', 'pending')
-            ->where('status', '!=', 'cancelled')
-            ->where('is_preorder_booking', false)
-            ->get();
-        $totalRevenue = $orders->sum(function($order) {
-            return $order->subtotal - $order->discount;
+        $stats = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () {
+            $totalProducts = Product::count();
+            $totalOrders = Order::where('status', '!=', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->where('is_preorder_booking', false)
+                ->count();
+            $totalCustomers = \App\Models\User::where('email', '!=', 'ifti3061@gmail.com')->count();
+            
+            // Calculate revenue excluding delivery charges (subtotal - discount)
+            // Exclude pre-order bookings from financial calculations
+            $orders = Order::where('status', '!=', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->where('is_preorder_booking', false)
+                ->get();
+            $totalRevenue = $orders->sum(function($order) {
+                return $order->subtotal - $order->discount;
+            });
+            
+            return [
+                'totalProducts' => $totalProducts,
+                'totalOrders' => $totalOrders,
+                'totalCustomers' => $totalCustomers,
+                'totalRevenue' => $totalRevenue,
+            ];
         });
         
+        // Recent data not cached (always fresh)
         $recentOrders = Order::with(['user', 'items'])->latest()->take(5)->get();
         $recentProducts = Product::latest()->take(5)->get();
         
-        return view('admin.dashboard', [
-            'totalProducts' => $totalProducts,
-            'totalOrders' => $totalOrders,
-            'totalCustomers' => $totalCustomers,
-            'totalRevenue' => $totalRevenue,
+        return view('admin.dashboard', array_merge($stats, [
             'recentOrders' => $recentOrders,
             'recentProducts' => $recentProducts,
-        ]);
+        ]));
     }
 
     public function orders(Request $request): View
@@ -144,13 +153,16 @@ class AdminController extends Controller
                     throw new \Exception("Insufficient stock for {$product->name}. Only {$product->quantity} available.");
                 }
                 
-                $itemSubtotal = $product->price * $productData['quantity'];
+                // Use display_price (includes deals/offers) instead of regular price
+                $itemPrice = $product->display_price ?? $product->price;
+                $itemSubtotal = $itemPrice * $productData['quantity'];
                 $subtotal += $itemSubtotal;
                 
                 $orderItems[] = [
                     'product' => $product,
                     'quantity' => $productData['quantity'],
                     'subtotal' => $itemSubtotal,
+                    'price' => $itemPrice,
                 ];
             }
 
@@ -210,7 +222,7 @@ class AdminController extends Controller
                     'order_id' => $order->id,
                     'product_id' => $item['product']->id,
                     'product_name' => $item['product']->name,
-                    'price' => $item['product']->price,
+                    'price' => $item['price'], // Use the deal price if applicable
                     'quantity' => $item['quantity'],
                     'subtotal' => $item['subtotal'],
                 ]);
@@ -241,6 +253,10 @@ class AdminController extends Controller
                     'error' => $e->getMessage(),
                 ]);
             }
+
+            // Clear admin dashboard cache when order is created
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
+            \Illuminate\Support\Facades\Cache::forget('admin_financial_data');
 
             return redirect()->route('admin.orders')->with('success', 'Manual order created successfully! Order #' . $order->id);
             
@@ -306,13 +322,16 @@ class AdminController extends Controller
                 $product = Product::findOrFail($productData['id']);
                 $quantity = $productData['quantity'];
                 
-                $itemSubtotal = $product->price * $quantity;
+                // Use display_price (includes deals/offers) instead of regular price
+                $itemPrice = $product->display_price ?? $product->price;
+                $itemSubtotal = $itemPrice * $quantity;
                 $subtotal += $itemSubtotal;
                 
                 $newItemsData[$product->id] = [
                     'product' => $product,
                     'quantity' => $quantity,
                     'subtotal' => $itemSubtotal,
+                    'price' => $itemPrice,
                 ];
             }
 
@@ -396,7 +415,7 @@ class AdminController extends Controller
                     'order_id' => $order->id,
                     'product_id' => $item['product']->id,
                     'product_name' => $item['product']->name,
-                    'price' => $item['product']->price,
+                    'price' => $item['price'], // Use deal price if applicable
                     'quantity' => $item['quantity'],
                     'subtotal' => $item['subtotal'],
                 ]);
@@ -472,6 +491,10 @@ class AdminController extends Controller
             }
 
             DB::commit();
+
+            // Clear admin dashboard cache when order is updated
+            \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
+            \Illuminate\Support\Facades\Cache::forget('admin_financial_data');
 
             return redirect()->route('admin.orders')->with('success', 'Order #' . $order->id . ' updated successfully!');
             
@@ -700,6 +723,10 @@ class AdminController extends Controller
             $successMessage .= ' Stock has been restored.';
         }
 
+        // Clear admin dashboard cache when order status is updated
+        \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
+        \Illuminate\Support\Facades\Cache::forget('admin_financial_data');
+
         return redirect()->route('admin.orders')->with('success', $successMessage);
     }
 
@@ -835,6 +862,13 @@ class AdminController extends Controller
             }
         }
 
+        // Clear relevant caches
+        \Illuminate\Support\Facades\Cache::forget('homepage_data');
+        \Illuminate\Support\Facades\Cache::forget('shop_categories');
+        \Illuminate\Support\Facades\Cache::forget('shop_category_counts');
+        \Illuminate\Support\Facades\Cache::forget('shop_price_range');
+        \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
+
         return redirect()->route('admin.products')->with('success', 'Product created successfully!');
     }
 
@@ -926,6 +960,17 @@ class AdminController extends Controller
         $primary = $product->images()->orderBy('sort_order')->first();
         $product->update(['image' => $primary->path ?? null]);
 
+        // Clear relevant caches
+        \Illuminate\Support\Facades\Cache::forget('homepage_data');
+        \Illuminate\Support\Facades\Cache::forget('shop_categories');
+        \Illuminate\Support\Facades\Cache::forget('shop_category_counts');
+        \Illuminate\Support\Facades\Cache::forget('shop_price_range');
+        \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
+        \Illuminate\Support\Facades\Cache::forget('product_' . $product->id);
+        \Illuminate\Support\Facades\Cache::forget('deals_page_data');
+        // Clear paginated shop products cache
+        $this->clearShopProductsCache();
+
         return redirect()->route('admin.products')->with('success', 'Product updated successfully!');
     }
 
@@ -941,7 +986,29 @@ class AdminController extends Controller
         
         $product->delete();
 
+        // Clear relevant caches
+        \Illuminate\Support\Facades\Cache::forget('homepage_data');
+        \Illuminate\Support\Facades\Cache::forget('shop_categories');
+        \Illuminate\Support\Facades\Cache::forget('shop_category_counts');
+        \Illuminate\Support\Facades\Cache::forget('shop_price_range');
+        \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
+        \Illuminate\Support\Facades\Cache::forget('product_' . $product->id);
+        \Illuminate\Support\Facades\Cache::forget('deals_page_data');
+        // Clear paginated shop products cache
+        $this->clearShopProductsCache();
+
         return redirect()->route('admin.products')->with('success', 'Product deleted successfully!');
+    }
+
+    /**
+     * Clear shop products pagination cache
+     */
+    private function clearShopProductsCache(): void
+    {
+        // Clear first 10 pages of shop products cache
+        for ($page = 1; $page <= 10; $page++) {
+            \Illuminate\Support\Facades\Cache::forget('shop_products_page_12_' . $page);
+        }
     }
 
     public function categories(): View
@@ -977,6 +1044,11 @@ class AdminController extends Controller
 
         \App\Models\Category::create($validated);
 
+        // Clear relevant caches
+        \Illuminate\Support\Facades\Cache::forget('homepage_data');
+        \Illuminate\Support\Facades\Cache::forget('shop_categories');
+        \Illuminate\Support\Facades\Cache::forget('shop_category_counts');
+
         return redirect()->route('admin.categories')->with('success', 'Category created successfully!');
     }
 
@@ -1004,12 +1076,22 @@ class AdminController extends Controller
 
         $category->update($validated);
 
+        // Clear relevant caches
+        \Illuminate\Support\Facades\Cache::forget('homepage_data');
+        \Illuminate\Support\Facades\Cache::forget('shop_categories');
+        \Illuminate\Support\Facades\Cache::forget('shop_category_counts');
+
         return redirect()->route('admin.categories')->with('success', 'Category updated successfully!');
     }
 
     public function categoryDestroy(\App\Models\Category $category): RedirectResponse
     {
         $category->delete();
+
+        // Clear relevant caches
+        \Illuminate\Support\Facades\Cache::forget('homepage_data');
+        \Illuminate\Support\Facades\Cache::forget('shop_categories');
+        \Illuminate\Support\Facades\Cache::forget('shop_category_counts');
 
         return redirect()->route('admin.categories')->with('success', 'Category deleted successfully!');
     }
@@ -1113,132 +1195,159 @@ class AdminController extends Controller
 
     public function financial(): View
     {
-        // Get confirmed orders (excluding pending, cancelled, deleted orders, and pre-order bookings)
-        // Pre-orders are excluded from financial calculations until converted to active orders
-        $confirmedOrders = Order::notDeleted()
-            ->where('status', '!=', 'pending')
-            ->where('status', '!=', 'cancelled')
-            ->where('is_preorder_booking', false)
-            ->get();
-
-        // Total Revenue (subtotal - discount, excluding delivery charges)
-        $totalRevenue = $confirmedOrders->sum(function($order) {
-            return $order->subtotal - $order->discount;
-        });
-
-        // This Month Revenue (excluding pre-orders)
-        $thisMonthOrders = Order::notDeleted()
-            ->where('status', '!=', 'pending')
-            ->where('status', '!=', 'cancelled')
-            ->where('is_preorder_booking', false)
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->get();
+        // Cache financial data for 5 minutes (admin data changes frequently)
+        $cacheKey = 'admin_financial_data';
         
-        $thisMonthRevenue = $thisMonthOrders->sum(function($order) {
-            return $order->subtotal - $order->discount;
-        });
+        $financialData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () {
+            // Get confirmed orders (excluding pending, cancelled, deleted orders, and pre-order bookings)
+            // Pre-orders are excluded from financial calculations until converted to active orders
+            $confirmedOrders = Order::notDeleted()
+                ->where('status', '!=', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->where('is_preorder_booking', false)
+                ->get();
 
-        // Calculate Total Expenses (product costs + operational expenses)
-        // Product costs from sold items (excluding pre-orders)
-        $productCosts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
-            ->where('orders.is_deleted', false)
-            ->where('orders.is_preorder_booking', false)
-            ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
-            ->first();
-        
-        $totalProductCosts = $productCosts->total_cost ?? 0;
-        
-        // Operational expenses (ads, shipping, courier, packaging, etc.)
-        $totalOperationalExpenses = \App\Models\Expense::sum('amount');
-        
-        // Total Expenses = Product Costs + Operational Expenses
-        $totalExpenses = $totalProductCosts + $totalOperationalExpenses;
-        
-        // Pure Profit = Revenue - Total Expenses
-        $pureProfit = $totalRevenue - $totalExpenses;
-
-        // This Month Expenses
-        $thisMonthExpenses = \App\Models\Expense::whereMonth('expense_date', now()->month)
-            ->whereYear('expense_date', now()->year)
-            ->sum('amount');
-        
-        $thisMonthProductCosts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
-            ->where('orders.is_deleted', false)
-            ->where('orders.is_preorder_booking', false)
-            ->whereMonth('orders.created_at', now()->month)
-            ->whereYear('orders.created_at', now()->year)
-            ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
-            ->first();
-        
-        $thisMonthTotalExpenses = ($thisMonthProductCosts->total_cost ?? 0) + $thisMonthExpenses;
-        $thisMonthProfit = $thisMonthRevenue - $thisMonthTotalExpenses;
-
-        // Total Orders
-        $totalOrders = $confirmedOrders->count();
-
-        // Average Order Value (excluding delivery)
-        $averageOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
-
-        // Max Order Value (for progress bar calculation, excluding pre-orders)
-        $maxOrderValue = Order::notDeleted()
-            ->where('status', '!=', 'pending')
-            ->where('status', '!=', 'cancelled')
-            ->where('is_preorder_booking', false)
-            ->selectRaw('MAX(subtotal - discount) as max_order')
-            ->first()
-            ->max_order ?? 1;
-
-        // Monthly Order Goal (based on highest monthly orders or total orders, excluding pre-orders)
-        $monthlyOrderGoal = Order::notDeleted()
-            ->where('status', '!=', 'pending')
-            ->where('status', '!=', 'cancelled')
-            ->where('is_preorder_booking', false)
-            ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as order_count')
-            ->groupBy('year', 'month')
-            ->orderBy('order_count', 'DESC')
-            ->first()
-            ->order_count ?? $totalOrders;
-
-        // Recent Transactions (last 20 orders, excluding pre-orders)
-        $recentTransactions = Order::notDeleted()
-            ->where('status', '!=', 'pending')
-            ->where('status', '!=', 'cancelled')
-            ->where('is_preorder_booking', false)
-            ->with(['user'])
-            ->latest()
-            ->take(20)
-            ->get()
-            ->map(function ($order) {
-                return [
-                    'transaction_id' => $order->transaction_number ?? 'N/A',
-                    'order_id' => $order->id,
-                    'amount' => $order->subtotal - $order->discount, // Revenue without delivery
-                    'payment_method' => strtoupper($order->payment_method ?? 'N/A'),
-                    'status' => ucfirst($order->status),
-                    'date' => $order->created_at->format('Y-m-d H:i:s'),
-                ];
+            // Total Revenue (subtotal - discount, excluding delivery charges)
+            $totalRevenue = $confirmedOrders->sum(function($order) {
+                return $order->subtotal - $order->discount;
             });
 
-        return view('admin.financial', [
-            'totalRevenue' => $totalRevenue,
-            'thisMonthRevenue' => $thisMonthRevenue,
-            'totalExpenses' => $totalExpenses,
-            'totalProductCosts' => $totalProductCosts,
-            'totalOperationalExpenses' => $totalOperationalExpenses,
-            'pureProfit' => $pureProfit,
-            'thisMonthExpenses' => $thisMonthTotalExpenses,
-            'thisMonthProfit' => $thisMonthProfit,
-            'totalOrders' => $totalOrders,
-            'averageOrder' => $averageOrder,
-            'maxOrderValue' => $maxOrderValue,
-            'monthlyOrderGoal' => $monthlyOrderGoal,
-            'recentTransactions' => $recentTransactions,
-        ]);
+            // This Month Revenue (excluding pre-orders)
+            $thisMonthOrders = Order::notDeleted()
+                ->where('status', '!=', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->where('is_preorder_booking', false)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->get();
+            
+            $thisMonthRevenue = $thisMonthOrders->sum(function($order) {
+                return $order->subtotal - $order->discount;
+            });
+
+            // Calculate Total Expenses (product costs + operational expenses)
+            // Product costs from sold items (excluding pre-orders)
+            $productCosts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
+                ->where('orders.is_deleted', false)
+                ->where('orders.is_preorder_booking', false)
+                ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
+                ->first();
+            
+            $totalProductCosts = $productCosts->total_cost ?? 0;
+            
+            // Operational expenses (ads, shipping, courier, packaging, etc.)
+            $totalOperationalExpenses = \App\Models\Expense::sum('amount');
+            
+            // Total Expenses = Product Costs + Operational Expenses
+            $totalExpenses = $totalProductCosts + $totalOperationalExpenses;
+            
+            // Pure Profit = Revenue - Total Expenses
+            $pureProfit = $totalRevenue - $totalExpenses;
+
+            // This Month Expenses
+            $thisMonthExpenses = \App\Models\Expense::whereMonth('expense_date', now()->month)
+                ->whereYear('expense_date', now()->year)
+                ->sum('amount');
+            
+            $thisMonthProductCosts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->whereIn('orders.status', ['confirmed', 'processing', 'shipped', 'delivered'])
+                ->where('orders.is_deleted', false)
+                ->where('orders.is_preorder_booking', false)
+                ->whereMonth('orders.created_at', now()->month)
+                ->whereYear('orders.created_at', now()->year)
+                ->select(DB::raw('SUM(order_items.quantity * products.cost_price) as total_cost'))
+                ->first();
+            
+            $thisMonthTotalExpenses = ($thisMonthProductCosts->total_cost ?? 0) + $thisMonthExpenses;
+            $thisMonthProfit = $thisMonthRevenue - $thisMonthTotalExpenses;
+
+            // Total Orders
+            $totalOrders = $confirmedOrders->count();
+
+            // Average Order Value (excluding delivery)
+            $averageOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+
+            // Max Order Value (for progress bar calculation, excluding pre-orders)
+            $maxOrderValue = Order::notDeleted()
+                ->where('status', '!=', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->where('is_preorder_booking', false)
+                ->selectRaw('MAX(subtotal - discount) as max_order')
+                ->first()
+                ->max_order ?? 1;
+
+            // Monthly Order Goal (based on highest monthly orders or total orders, excluding pre-orders)
+            $monthlyOrderGoal = Order::notDeleted()
+                ->where('status', '!=', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->where('is_preorder_booking', false)
+                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as order_count')
+                ->groupBy('year', 'month')
+                ->orderBy('order_count', 'DESC')
+                ->first()
+                ->order_count ?? $totalOrders;
+
+            // Recent Transactions (last 20 orders, excluding pre-orders)
+            $recentTransactions = Order::notDeleted()
+                ->where('status', '!=', 'pending')
+                ->where('status', '!=', 'cancelled')
+                ->where('is_preorder_booking', false)
+                ->with(['user'])
+                ->latest()
+                ->take(20)
+                ->get()
+                ->map(function ($order) {
+                    return [
+                        'transaction_id' => $order->transaction_number ?? 'N/A',
+                        'order_id' => $order->id,
+                        'amount' => $order->subtotal - $order->discount, // Revenue without delivery
+                        'payment_method' => strtoupper($order->payment_method ?? 'N/A'),
+                        'status' => ucfirst($order->status),
+                        'date' => $order->created_at->format('Y-m-d H:i:s'),
+                    ];
+                });
+            
+            return [
+                'totalRevenue' => $totalRevenue,
+                'thisMonthRevenue' => $thisMonthRevenue,
+                'totalExpenses' => $totalExpenses,
+                'totalProductCosts' => $totalProductCosts,
+                'totalOperationalExpenses' => $totalOperationalExpenses,
+                'pureProfit' => $pureProfit,
+                'thisMonthExpenses' => $thisMonthTotalExpenses,
+                'thisMonthProfit' => $thisMonthProfit,
+                'totalOrders' => $totalOrders,
+                'averageOrder' => $averageOrder,
+                'maxOrderValue' => $maxOrderValue,
+                'monthlyOrderGoal' => $monthlyOrderGoal,
+                'recentTransactions' => $recentTransactions,
+            ];
+        });
+        
+        return view('admin.financial', $financialData);
+    }
+
+            return [
+                'totalRevenue' => $totalRevenue,
+                'thisMonthRevenue' => $thisMonthRevenue,
+                'totalExpenses' => $totalExpenses,
+                'totalProductCosts' => $totalProductCosts,
+                'totalOperationalExpenses' => $totalOperationalExpenses,
+                'pureProfit' => $pureProfit,
+                'thisMonthExpenses' => $thisMonthTotalExpenses,
+                'thisMonthProfit' => $thisMonthProfit,
+                'totalOrders' => $totalOrders,
+                'averageOrder' => $averageOrder,
+                'maxOrderValue' => $maxOrderValue,
+                'monthlyOrderGoal' => $monthlyOrderGoal,
+                'recentTransactions' => $recentTransactions,
+            ];
+        });
+        
+        return view('admin.financial', $financialData);
     }
 
     public function coupons(): View
@@ -1356,7 +1465,38 @@ class AdminController extends Controller
     public function sendNotifications(): View
     {
         $products = Product::where('is_active', true)->latest()->get();
-        $totalUsers = User::where('email', '!=', 'ifti3061@gmail.com')->count();
+        
+        // Count unique emails from both users and orders
+        $userEmails = User::whereNotNull('email')
+            ->where('email', '!=', '')
+            ->where('email', '!=', 'ifti3061@gmail.com')
+            ->pluck('email')
+            ->unique()
+            ->count();
+        
+        $orderEmails = Order::whereNotNull('email')
+            ->where('email', '!=', '')
+            ->where('email', '!=', 'ifti3061@gmail.com')
+            ->pluck('email')
+            ->unique()
+            ->count();
+        
+        // Merge and get unique count
+        $allUserEmails = User::whereNotNull('email')
+            ->where('email', '!=', '')
+            ->where('email', '!=', 'ifti3061@gmail.com')
+            ->pluck('email')
+            ->unique()
+            ->toArray();
+        
+        $allOrderEmails = Order::whereNotNull('email')
+            ->where('email', '!=', '')
+            ->where('email', '!=', 'ifti3061@gmail.com')
+            ->pluck('email')
+            ->unique()
+            ->toArray();
+        
+        $totalUsers = count(array_unique(array_merge($allUserEmails, $allOrderEmails)));
         
         // Get stock notifications grouped by product
         $stockNotifications = StockNotification::with('product')
@@ -1393,9 +1533,69 @@ class AdminController extends Controller
      */
     public function sendNewProductNotification(Product $product): RedirectResponse
     {
-        NotificationService::newProduct($product);
-        
-        return redirect()->back()->with('success', "New product notification sent for: {$product->name}");
+        try {
+            // Collect unique emails from both users table and orders table
+            $userEmails = User::whereNotNull('email')
+                ->where('email', '!=', '')
+                ->where('email', '!=', 'ifti3061@gmail.com')
+                ->pluck('email')
+                ->unique()
+                ->toArray();
+            
+            $orderEmails = Order::whereNotNull('email')
+                ->where('email', '!=', '')
+                ->where('email', '!=', 'ifti3061@gmail.com')
+                ->pluck('email')
+                ->unique()
+                ->toArray();
+            
+            // Merge and get unique emails
+            $allEmails = array_unique(array_merge($userEmails, $orderEmails));
+            
+            $sentCount = 0;
+            $failedCount = 0;
+            
+            // Send email to each unique email address
+            foreach ($allEmails as $email) {
+                try {
+                    $result = EmailService::sendWithFallback(
+                        new \App\Mail\NewProductNotification($product),
+                        $email,
+                        'new product notification'
+                    );
+                    
+                    if ($result['success']) {
+                        $sentCount++;
+                    } else {
+                        $failedCount++;
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send new product notification email', [
+                        'email' => $email,
+                        'product_id' => $product->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $failedCount++;
+                }
+            }
+            
+            // Also create in-app notifications for registered users
+            NotificationService::newProduct($product);
+            
+            $message = "New product notification sent to {$sentCount} email addresses";
+            if ($failedCount > 0) {
+                $message .= " ({$failedCount} failed)";
+            }
+            
+            return redirect()->back()->with('success', $message);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send new product notifications', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return redirect()->back()->with('error', 'Failed to send notifications: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -1565,6 +1765,80 @@ class AdminController extends Controller
 
         return redirect()->route('admin.orders', ['view' => 'preorder'])
             ->with('success', 'Order #' . $order->id . ' has been converted to active order and is now included in financial calculations.');
+    }
+
+    /**
+     * Clear shop products pagination cache
+     */
+    private function clearShopProductsCache(): void
+    {
+        // Clear first 10 pages of shop products cache (12 per page)
+        for ($page = 1; $page <= 10; $page++) {
+            \Illuminate\Support\Facades\Cache::forget('shop_products_page_12_' . $page);
+        }
+    }
+
+    /**
+     * Send stock available notification to all users who requested it
+     */
+    public function sendStockNotification(Product $product): RedirectResponse
+    {
+        try {
+            // Get all stock notifications for this product that haven't been notified
+            $notifications = StockNotification::where('product_id', $product->id)
+                ->where('notified', false)
+                ->get();
+            
+            if ($notifications->isEmpty()) {
+                return redirect()->back()->with('error', 'No pending stock notifications found for this product.');
+            }
+            
+            $sentCount = 0;
+            $failedCount = 0;
+            
+            // Send email to each notification request
+            foreach ($notifications as $notification) {
+                try {
+                    $result = EmailService::sendWithFallback(
+                        new \App\Mail\StockAvailableNotification($product),
+                        $notification->email,
+                        'stock available notification'
+                    );
+                    
+                    if ($result['success']) {
+                        // Mark as notified
+                        $notification->update([
+                            'notified' => true,
+                            'notified_at' => now(),
+                        ]);
+                        $sentCount++;
+                    } else {
+                        $failedCount++;
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send stock notification email', [
+                        'email' => $notification->email,
+                        'product_id' => $product->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $failedCount++;
+                }
+            }
+            
+            $message = "Stock notification sent to {$sentCount} email addresses";
+            if ($failedCount > 0) {
+                $message .= " ({$failedCount} failed)";
+            }
+            
+            return redirect()->back()->with('success', $message);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send stock notifications', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return redirect()->back()->with('error', 'Failed to send stock notifications: ' . $e->getMessage());
+        }
     }
 
     /**

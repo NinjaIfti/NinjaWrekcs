@@ -260,15 +260,33 @@
                 <select name="products[INDEX][id]" class="product-select w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm mb-2" required>
                     <option value="">Select Product</option>
                     @foreach($products as $product)
-                        <option value="{{ $product->id }}" data-price="{{ $product->price }}" data-stock="{{ $product->quantity }}">
-                            {{ $product->name }} - ৳{{ number_format($product->price, 2) }} (Stock: {{ $product->quantity }})
+                        @php
+                            $displayPrice = $product->display_price ?? $product->price;
+                            $originalPrice = $product->price;
+                            $hasDeal = ($product->has_active_offer || $product->has_sale_price) && $displayPrice < $originalPrice;
+                        @endphp
+                        <option value="{{ $product->id }}" 
+                                data-price="{{ $displayPrice }}" 
+                                data-original-price="{{ $originalPrice }}"
+                                data-stock="{{ $product->quantity }}"
+                                data-has-deal="{{ $hasDeal ? '1' : '0' }}">
+                            {{ $product->name }} 
+                            @if($hasDeal)
+                                - ৳{{ number_format($displayPrice, 2) }} <span class="text-red-600">(Deal: Was ৳{{ number_format($originalPrice, 2) }})</span>
+                            @else
+                                - ৳{{ number_format($displayPrice, 2) }}
+                            @endif
+                            (Stock: {{ $product->quantity }})
                         </option>
                     @endforeach
                 </select>
                 <div class="flex items-center gap-2">
                     <label class="text-xs text-gray-600 dark:text-gray-400">Qty:</label>
                     <input type="number" name="products[INDEX][quantity]" class="product-quantity w-20 border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" min="1" value="1" required>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">Price: ৳<span class="item-price">0.00</span></span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                        Price: ৳<span class="item-price">0.00</span>
+                        <span class="item-deal-info text-red-600 font-semibold ml-1"></span>
+                    </span>
                 </div>
             </div>
             <button type="button" class="remove-product text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 mt-2">
@@ -315,6 +333,8 @@
                 const quantity = parseInt(item.querySelector('.product-quantity').value) || 0;
                 const option = select.options[select.selectedIndex];
                 const price = parseFloat(option.getAttribute('data-price')) || 0;
+                const originalPrice = parseFloat(option.getAttribute('data-original-price')) || price;
+                const hasDeal = option.getAttribute('data-has-deal') === '1';
                 const stock = parseInt(option.getAttribute('data-stock')) || 0;
                 
                 // Check stock
@@ -326,6 +346,17 @@
                 
                 const itemTotal = price * quantity;
                 item.querySelector('.item-price').textContent = itemTotal.toFixed(2);
+                
+                // Show deal info if applicable
+                const dealInfo = item.querySelector('.item-deal-info');
+                if (hasDeal && originalPrice > price) {
+                    const savings = (originalPrice - price) * quantity;
+                    dealInfo.textContent = `(Deal: Save ৳${savings.toFixed(2)})`;
+                    dealInfo.style.display = 'inline';
+                } else {
+                    dealInfo.textContent = '';
+                    dealInfo.style.display = 'none';
+                }
                 
                 updateOrderSummary();
             }
@@ -351,6 +382,10 @@
             if (appliedCoupon) {
                 if (appliedCoupon.type === 'percentage') {
                     discount = subtotal * (appliedCoupon.value / 100);
+                    // Apply maximum discount limit if set
+                    if (appliedCoupon.maximum_discount && discount > appliedCoupon.maximum_discount) {
+                        discount = appliedCoupon.maximum_discount;
+                    }
                 } else {
                     discount = appliedCoupon.value;
                 }

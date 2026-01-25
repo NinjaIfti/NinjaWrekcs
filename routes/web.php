@@ -8,31 +8,38 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Mail;
 
 Route::get('/', function () {
-    $products = \App\Models\Product::with('images')
-        ->where('is_active', true)
-        ->where('is_featured', true)
-        ->latest()
-        ->get();
+    // Cache homepage data for 30 minutes
+    $cacheKey = 'homepage_data';
     
-    // If no featured products, fallback to latest active products
-    if ($products->count() === 0) {
+    $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1800, function () {
         $products = \App\Models\Product::with('images')
             ->where('is_active', true)
+            ->where('is_featured', true)
             ->latest()
-            ->take(4)
             ->get();
-    }
+        
+        // If no featured products, fallback to latest active products
+        if ($products->count() === 0) {
+            $products = \App\Models\Product::with('images')
+                ->where('is_active', true)
+                ->latest()
+                ->take(4)
+                ->get();
+        }
+        
+        // Get categories with products for showcase
+        $categories = \App\Models\Category::with(['children', 'products' => function($query) {
+            $query->where('is_active', true)->with('images')->latest()->take(4);
+        }])
+        ->whereNull('parent_id')
+        ->whereIn('slug', ['valorant', 'csgo', 'pre-order-upcoming'])
+        ->orderBy('order')
+        ->get();
+        
+        return compact('products', 'categories');
+    });
     
-    // Get categories with products for showcase
-    $categories = \App\Models\Category::with(['children', 'products' => function($query) {
-        $query->where('is_active', true)->with('images')->latest()->take(4);
-    }])
-    ->whereNull('parent_id')
-    ->whereIn('slug', ['valorant', 'csgo', 'pre-order-upcoming'])
-    ->orderBy('order')
-    ->get();
-    
-    return view('welcome', compact('products', 'categories'));
+    return view('welcome', $data);
 });
 
 Route::get('/test-email', function () {
@@ -235,42 +242,49 @@ Route::get('/shop/api/recent-purchases', [ShopController::class, 'recentPurchase
 
 // Deals Page
 Route::get('/deals', function () {
-    // Get products with active offers
-    $offerProducts = \App\Models\Product::with('images', 'category')
-        ->where('is_active', true)
-        ->where(function($query) {
-            $query->whereNotNull('offer_price')
-                  ->where('offer_starts_at', '<=', now())
-                  ->where('offer_ends_at', '>=', now());
-        })
-        ->latest()
-        ->get();
+    // Cache deals page data for 30 minutes
+    $cacheKey = 'deals_page_data';
     
-    // Get products with sale prices
-    $saleProducts = \App\Models\Product::with('images', 'category')
-        ->where('is_active', true)
-        ->whereNotNull('sale_price')
-        ->whereNull('offer_price')
-        ->latest()
-        ->get();
+    $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1800, function () {
+        // Get products with active offers
+        $offerProducts = \App\Models\Product::with('images', 'category')
+            ->where('is_active', true)
+            ->where(function($query) {
+                $query->whereNotNull('offer_price')
+                      ->where('offer_starts_at', '<=', now())
+                      ->where('offer_ends_at', '>=', now());
+            })
+            ->latest()
+            ->get();
+        
+        // Get products with sale prices
+        $saleProducts = \App\Models\Product::with('images', 'category')
+            ->where('is_active', true)
+            ->whereNotNull('sale_price')
+            ->whereNull('offer_price')
+            ->latest()
+            ->get();
+        
+        // Get featured deals (products marked as featured with discounts)
+        $featuredDeals = \App\Models\Product::with('images', 'category')
+            ->where('is_active', true)
+            ->where('is_featured', true)
+            ->where(function($query) {
+                $query->whereNotNull('sale_price')
+                      ->orWhere(function($q) {
+                          $q->whereNotNull('offer_price')
+                            ->where('offer_starts_at', '<=', now())
+                            ->where('offer_ends_at', '>=', now());
+                      });
+            })
+            ->latest()
+            ->take(4)
+            ->get();
+        
+        return compact('offerProducts', 'saleProducts', 'featuredDeals');
+    });
     
-    // Get featured deals (products marked as featured with discounts)
-    $featuredDeals = \App\Models\Product::with('images', 'category')
-        ->where('is_active', true)
-        ->where('is_featured', true)
-        ->where(function($query) {
-            $query->whereNotNull('sale_price')
-                  ->orWhere(function($q) {
-                      $q->whereNotNull('offer_price')
-                        ->where('offer_starts_at', '<=', now())
-                        ->where('offer_ends_at', '>=', now());
-                  });
-        })
-        ->latest()
-        ->take(4)
-        ->get();
-    
-    return view('deals.index', compact('offerProducts', 'saleProducts', 'featuredDeals'));
+    return view('deals.index', $data);
 })->name('deals.index');
 
 // Stock Notification Routes
@@ -385,6 +399,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/send-notifications', [\App\Http\Controllers\AdminController::class, 'sendNotifications'])->name('send-notifications');
     Route::post('/send-special-offer', [\App\Http\Controllers\AdminController::class, 'sendSpecialOffer'])->name('send-special-offer');
     Route::post('/send-new-product/{product}', [\App\Http\Controllers\AdminController::class, 'sendNewProductNotification'])->name('send-new-product');
+    Route::post('/send-stock-notification/{product}', [\App\Http\Controllers\AdminController::class, 'sendStockNotification'])->name('send-stock-notification');
     
     // Costing & Expenses Management (formerly Analytics)
     Route::get('/costing', [\App\Http\Controllers\AdminController::class, 'costing'])->name('costing');

@@ -40,8 +40,15 @@ class CartController extends Controller
                     $cartSubTotal += $originalPrice * $item->quantity;
                 }
             } else {
-                // Regular items: use cart price as-is
-                $cartSubTotal += $item->price * $item->quantity;
+                // Regular items: use display_price (includes deals) from database
+                $product = Product::find($item->id);
+                if ($product) {
+                    $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                    $cartSubTotal += $displayPrice * $item->quantity;
+                } else {
+                    // Fallback: use cart price if product not found
+                    $cartSubTotal += $item->price * $item->quantity;
+                }
             }
         }
         

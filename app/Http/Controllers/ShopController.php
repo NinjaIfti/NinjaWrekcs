@@ -23,137 +23,153 @@ class ShopController extends Controller
         $inStock = $request->query('in_stock', '');
         $perPage = $request->query('per_page', 12);
         
-        // Get all categories from database
-        // Get the 4 main top-level categories: Valorant, CS:GO, Toys, Pre-order/Upcoming
-        try {
-            $categories = \App\Models\Category::with(['children' => function($query) {
-                    $query->where('is_active', true)->orderBy('order');
-                }])
-                ->whereNull('parent_id')
-                ->where('is_active', true)
-                ->orderByRaw('COALESCE(`order`, 999) ASC')
-                ->get();
-        } catch (\Exception $e) {
-            // Fallback if order column doesn't exist or other issues
-            $categories = \App\Models\Category::with(['children' => function($query) {
-                    $query->where('is_active', true);
-                }])
-                ->whereNull('parent_id')
-                ->where('is_active', true)
-                ->orderBy('id')
-                ->get();
-        }
-        
-        // Get category counts
-        $categoryCounts = [];
-        foreach ($categories as $parentCategory) {
-            // Count products directly in parent category
-            $parentCount = Product::where('is_active', true)
-                ->where('category_id', $parentCategory->id)
-                ->count();
-            
-            if ($parentCategory->hasChildren()) {
-                // Count products in each child category
-                foreach ($parentCategory->children as $childCategory) {
-                    $categoryCounts[$childCategory->id] = Product::where('is_active', true)
-                        ->where('category_id', $childCategory->id)
-                        ->count();
-                }
-                // Also store parent count (in case products are assigned to parent)
-                $categoryCounts[$parentCategory->id] = $parentCount;
-            } else {
-                // No children, just count parent category products
-                $categoryCounts[$parentCategory->id] = $parentCount;
+        // Get all categories from cache (cache for 1 hour)
+        $categories = \Illuminate\Support\Facades\Cache::remember('shop_categories', 3600, function () {
+            try {
+                return \App\Models\Category::with(['children' => function($query) {
+                        $query->where('is_active', true)->orderBy('order');
+                    }])
+                    ->whereNull('parent_id')
+                    ->where('is_active', true)
+                    ->orderByRaw('COALESCE(`order`, 999) ASC')
+                    ->get();
+            } catch (\Exception $e) {
+                return \App\Models\Category::with(['children' => function($query) {
+                        $query->where('is_active', true);
+                    }])
+                    ->whereNull('parent_id')
+                    ->where('is_active', true)
+                    ->orderBy('id')
+                    ->get();
             }
-        }
+        });
         
-        // Fetch products from database
-        // Exclude products with null category_id when filtering by category
-        $query = Product::with('images', 'category')->where('is_active', true);
+        // Get category counts from cache (cache for 1 hour)
+        $categoryCounts = \Illuminate\Support\Facades\Cache::remember('shop_category_counts', 3600, function () use ($categories) {
+            $counts = [];
+            foreach ($categories as $parentCategory) {
+                $parentCount = Product::where('is_active', true)
+                    ->where('category_id', $parentCategory->id)
+                    ->count();
+                
+                if ($parentCategory->hasChildren()) {
+                    foreach ($parentCategory->children as $childCategory) {
+                        $counts[$childCategory->id] = Product::where('is_active', true)
+                            ->where('category_id', $childCategory->id)
+                            ->count();
+                    }
+                    $counts[$parentCategory->id] = $parentCount;
+                } else {
+                    $counts[$parentCategory->id] = $parentCount;
+                }
+            }
+            return $counts;
+        });
         
-        // If filtering by category, exclude products with null category_id
-        if ($categoryId) {
-            $query->whereNotNull('category_id');
-        }
+        // Build cache key based on filters (don't cache search results or filtered results)
+        // Only cache default shop page (no filters, newest sort)
+        $shouldCache = !$search && !$categoryId && $minPrice === '' && $maxPrice === '' && !$inStock && $sort === 'newest';
+        $cacheKey = $shouldCache ? 'shop_products_page_' . $perPage . '_' . request()->get('page', 1) : null;
         
-        // Initialize selected category model
-        $selectedCategoryModel = null;
-        
-        // Search filter
-        if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%");
+        if ($shouldCache && $cacheKey) {
+            $products = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1800, function () use ($perPage) {
+                return Product::with('images', 'category')
+                    ->where('is_active', true)
+                    ->latest()
+                    ->paginate($perPage);
             });
-        }
-        
-        // Category filter
-        if ($categoryId) {
-            $selectedCategoryModel = \App\Models\Category::with(['children' => function($query) {
-                $query->where('is_active', true);
-            }])->find($categoryId);
+            $selectedCategoryModel = null;
+        } else {
+            // Fetch products from database (not cached when filters are applied)
+            // Exclude products with null category_id when filtering by category
+            $query = Product::with('images', 'category')->where('is_active', true);
             
-            if ($selectedCategoryModel) {
-                // Always include the selected category ID
-                $categoryIds = [$categoryId];
-                
-                // If it's a parent category with active children, include child category products too
-                if ($selectedCategoryModel->hasChildren() && $selectedCategoryModel->children->count() > 0) {
-                    $childCategoryIds = $selectedCategoryModel->children->pluck('id')->toArray();
-                    $categoryIds = array_merge($categoryIds, $childCategoryIds);
-                }
-                
-                // Query products from parent category AND any child categories
-                $query->whereIn('category_id', $categoryIds);
-            } else {
-                // Category not found, show no products
-                $query->where('category_id', -1);
+            // If filtering by category, exclude products with null category_id
+            if ($categoryId) {
+                $query->whereNotNull('category_id');
             }
+            
+            // Initialize selected category model
+            $selectedCategoryModel = null;
+            
+            // Search filter
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhere('notes', 'like', "%{$search}%");
+                });
+            }
+            
+            // Category filter
+            if ($categoryId) {
+                $selectedCategoryModel = \App\Models\Category::with(['children' => function($query) {
+                    $query->where('is_active', true);
+                }])->find($categoryId);
+                
+                if ($selectedCategoryModel) {
+                    // Always include the selected category ID
+                    $categoryIds = [$categoryId];
+                    
+                    // If it's a parent category with active children, include child category products too
+                    if ($selectedCategoryModel->hasChildren() && $selectedCategoryModel->children->count() > 0) {
+                        $childCategoryIds = $selectedCategoryModel->children->pluck('id')->toArray();
+                        $categoryIds = array_merge($categoryIds, $childCategoryIds);
+                    }
+                    
+                    // Query products from parent category AND any child categories
+                    $query->whereIn('category_id', $categoryIds);
+                } else {
+                    // Category not found, show no products
+                    $query->where('category_id', -1);
+                }
+            }
+            
+            // Price range filter
+            if ($minPrice !== '' && is_numeric($minPrice)) {
+                $query->where('price', '>=', $minPrice);
+            }
+            
+            if ($maxPrice !== '' && is_numeric($maxPrice)) {
+                $query->where('price', '<=', $maxPrice);
+            }
+            
+            // In stock filter
+            if ($inStock) {
+                $query->where('quantity', '>', 0);
+            }
+            
+            // Sorting
+            switch ($sort) {
+                case 'price_asc':
+                    $query->orderBy('price', 'asc');
+                    break;
+                case 'price_desc':
+                    $query->orderBy('price', 'desc');
+                    break;
+                case 'name_asc':
+                    $query->orderBy('name', 'asc');
+                    break;
+                case 'name_desc':
+                    $query->orderBy('name', 'desc');
+                    break;
+                case 'popular':
+                    $query->orderBy('reviews', 'desc')->orderBy('rating', 'desc');
+                    break;
+                case 'newest':
+                default:
+                    $query->latest();
+                    break;
+            }
+            
+            // Use pagination for infinite scroll
+            $products = $query->paginate($perPage);
         }
         
-        // Price range filter
-        if ($minPrice !== '' && is_numeric($minPrice)) {
-            $query->where('price', '>=', $minPrice);
-        }
-        
-        if ($maxPrice !== '' && is_numeric($maxPrice)) {
-            $query->where('price', '<=', $maxPrice);
-        }
-        
-        // In stock filter
-        if ($inStock) {
-            $query->where('quantity', '>', 0);
-        }
-        
-        // Sorting
-        switch ($sort) {
-            case 'price_asc':
-                $query->orderBy('price', 'asc');
-                break;
-            case 'price_desc':
-                $query->orderBy('price', 'desc');
-                break;
-            case 'name_asc':
-                $query->orderBy('name', 'asc');
-                break;
-            case 'name_desc':
-                $query->orderBy('name', 'desc');
-                break;
-            case 'popular':
-                $query->orderBy('reviews', 'desc')->orderBy('rating', 'desc');
-                break;
-            case 'newest':
-            default:
-                $query->latest();
-                break;
-        }
-        
-        // Use pagination for infinite scroll
-        $products = $query->paginate($perPage);
-        
-        // Get price range for filter
-        $priceRange = Product::where('is_active', true)->selectRaw('MIN(price) as min, MAX(price) as max')->first();
+        // Get price range for filter (cache for 1 hour)
+        $priceRange = \Illuminate\Support\Facades\Cache::remember('shop_price_range', 3600, function () {
+            return Product::where('is_active', true)->selectRaw('MIN(price) as min, MAX(price) as max')->first();
+        });
         
         // For AJAX requests (infinite scroll), return JSON
         if ($request->ajax() || $request->wantsJson()) {
@@ -190,21 +206,32 @@ class ShopController extends Controller
             abort(404);
         }
         
-        $product->load('images');
+        // Cache product details for 1 hour (only if not already loaded)
+        if (!$product->relationLoaded('images')) {
+            $cacheKey = 'product_' . $product->id;
+            $product = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($product) {
+                return $product->load('images');
+            });
+        }
 
         return view('shop.show', compact('product'));
     }
 
     public function recentPurchases()
     {
-        // Get a random recent order item from the last 7 days
-        $orderItem = OrderItem::whereHas('order', function($query) {
-                $query->where('created_at', '>=', now()->subDays(7))
-                      ->where('status', '!=', 'cancelled');
-            })
-            ->with(['order', 'product'])
-            ->inRandomOrder()
-            ->first();
+        // Cache recent purchases for 10 minutes
+        $cacheKey = 'recent_purchases';
+        
+        $orderItem = \Illuminate\Support\Facades\Cache::remember($cacheKey, 600, function () {
+            // Get a random recent order item from the last 7 days
+            return OrderItem::whereHas('order', function($query) {
+                    $query->where('created_at', '>=', now()->subDays(7))
+                          ->where('status', '!=', 'cancelled');
+                })
+                ->with(['order', 'product'])
+                ->inRandomOrder()
+                ->first();
+        });
 
         if (!$orderItem) {
             return response()->json([

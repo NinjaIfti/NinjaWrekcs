@@ -147,10 +147,19 @@
                                         {{ $notifications->count() }} {{ Str::plural('person', $notifications->count()) }} waiting
                                     </p>
                                 </div>
-                                <a href="{{ route('admin.products.edit', $product) }}" 
-                                   class="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 transition">
-                                    Edit Product
-                                </a>
+                                <div class="flex items-center gap-2">
+                                    <form action="{{ route('admin.send-stock-notification', $product) }}" method="POST" onsubmit="return confirm('Send stock notification to all {{ $notifications->count() }} users who requested it?');">
+                                        @csrf
+                                        <button type="submit" 
+                                                class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition">
+                                            🔔 Send
+                                        </button>
+                                    </form>
+                                    <a href="{{ route('admin.products.edit', $product) }}" 
+                                       class="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700 transition">
+                                        Edit Product
+                                    </a>
+                                </div>
                             </div>
                             
                             <!-- Email List -->
