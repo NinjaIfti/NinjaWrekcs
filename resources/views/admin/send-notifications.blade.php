@@ -37,6 +37,9 @@
                                 —
                             @endif
                         </p>
+                        @if(!empty($smsBalanceError))
+                            <p class="text-xs text-amber-600 dark:text-amber-400 mt-1" title="{{ $smsBalanceError }}">{{ Str::limit($smsBalanceError, 50) }}</p>
+                        @endif
                     </div>
                 </div>
 
@@ -80,7 +83,7 @@
                                             <label class="flex items-center gap-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
                                                 <input type="checkbox" name="recipients[]" value="{{ $r['phone'] }}" class="sms-recipient sms-users rounded border-gray-300">
                                                 <span class="text-sm text-gray-900 dark:text-white font-medium">{{ $r['name'] }}</span>
-                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ $r['phone'] }}</span>
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">+{{ $r['phone'] }}</span>
                                             </label>
                                         @endforeach
                                     </div>
@@ -97,7 +100,7 @@
                                                 <input type="checkbox" name="recipients[]" value="{{ $r['phone'] }}" class="sms-recipient sms-orders rounded border-gray-300">
                                                 <span class="text-sm text-gray-900 dark:text-white font-medium">{{ $r['name'] }}</span>
                                                 <span class="text-xs text-gray-500 dark:text-gray-400">Order #{{ $r['order_id'] }}</span>
-                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ $r['phone'] }}</span>
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">+{{ $r['phone'] }}</span>
                                             </label>
                                         @endforeach
                                     </div>

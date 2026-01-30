@@ -1488,6 +1488,7 @@ class AdminController extends Controller
 
         // SMS: balance and recipients (users + orders with name)
         $smsBalance = null;
+        $smsBalanceError = null;
         $smsRecipientsFromUsers = [];
         $smsRecipientsFromOrders = [];
         $smsConfigured = !empty(config('services.sms_net_bd.api_key'));
@@ -1495,6 +1496,7 @@ class AdminController extends Controller
             $smsService = new SmsNetBdService();
             $balanceResult = $smsService->getBalance();
             $smsBalance = $balanceResult['success'] ? $balanceResult['balance'] : null;
+            $smsBalanceError = !$balanceResult['success'] ? ($balanceResult['error'] ?? null) : null;
 
             $usersWithPhone = User::whereNotNull('phone')
                 ->where('phone', '!=', '')
@@ -1528,7 +1530,7 @@ class AdminController extends Controller
         
         return view('admin.send-notifications', compact(
             'products', 'totalUsers', 'stockNotifications',
-            'smsBalance', 'smsRecipientsFromUsers', 'smsRecipientsFromOrders', 'smsConfigured'
+            'smsBalance', 'smsBalanceError', 'smsRecipientsFromUsers', 'smsRecipientsFromOrders', 'smsConfigured'
         ));
     }
 
