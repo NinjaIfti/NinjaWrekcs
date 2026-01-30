@@ -40,4 +40,8 @@ return [
         'search_console_verification' => env('GOOGLE_SEARCH_CONSOLE_VERIFICATION'),
     ],
 
+    'sms_net_bd' => [
+        'api_key' => env('SMS_NET_BD_API_KEY'),
+    ],
+
 ];

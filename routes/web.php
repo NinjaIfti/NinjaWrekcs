@@ -316,6 +316,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/send-special-offer', [\App\Http\Controllers\AdminController::class, 'sendSpecialOffer'])->name('send-special-offer');
     Route::post('/send-new-product/{product}', [\App\Http\Controllers\AdminController::class, 'sendNewProductNotification'])->name('send-new-product');
     Route::post('/send-stock-notification/{product}', [\App\Http\Controllers\AdminController::class, 'sendStockNotification'])->name('send-stock-notification');
+    Route::post('/send-sms', [\App\Http\Controllers\AdminController::class, 'sendSms'])->name('send-sms');
     
     // Costing & Expenses Management (formerly Analytics)
     Route::get('/costing', [\App\Http\Controllers\AdminController::class, 'costing'])->name('costing');

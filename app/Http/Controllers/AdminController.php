@@ -18,6 +18,7 @@ use App\Mail\AdminOrderNotification;
 use App\Services\AnalyticsService;
 use App\Services\NotificationService;
 use App\Services\EmailService;
+use App\Services\SmsNetBdService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -1484,12 +1485,83 @@ class AdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->groupBy('product_id');
+
+        // SMS: balance and recipients (users + orders with name)
+        $smsBalance = null;
+        $smsRecipientsFromUsers = [];
+        $smsRecipientsFromOrders = [];
+        $smsConfigured = !empty(config('services.sms_net_bd.api_key'));
+        if ($smsConfigured) {
+            $smsService = new SmsNetBdService();
+            $balanceResult = $smsService->getBalance();
+            $smsBalance = $balanceResult['success'] ? $balanceResult['balance'] : null;
+
+            $usersWithPhone = User::whereNotNull('phone')
+                ->where('phone', '!=', '')
+                ->get(['id', 'name', 'phone']);
+            foreach ($usersWithPhone as $u) {
+                $phone = SmsNetBdService::normalizePhone($u->phone);
+                if (strlen($phone) >= 11) {
+                    $smsRecipientsFromUsers[] = [
+                        'phone' => $phone,
+                        'name' => $u->name ?: ('User #' . $u->id),
+                        'id' => $u->id,
+                    ];
+                }
+            }
+
+            $ordersWithPhone = Order::notDeleted()
+                ->whereNotNull('phone')
+                ->where('phone', '!=', '')
+                ->get(['id', 'name', 'phone']);
+            foreach ($ordersWithPhone as $o) {
+                $phone = SmsNetBdService::normalizePhone($o->phone);
+                if (strlen($phone) >= 11) {
+                    $smsRecipientsFromOrders[] = [
+                        'phone' => $phone,
+                        'name' => $o->name ?: ('Order #' . $o->id),
+                        'order_id' => $o->id,
+                    ];
+                }
+            }
+        }
         
-        return view('admin.send-notifications', compact('products', 'totalUsers', 'stockNotifications'));
+        return view('admin.send-notifications', compact(
+            'products', 'totalUsers', 'stockNotifications',
+            'smsBalance', 'smsRecipientsFromUsers', 'smsRecipientsFromOrders', 'smsConfigured'
+        ));
     }
 
     /**
-     * Send special offer notification to all users
+     * Send SMS via SMS.net.bd (admin send notifications page)
+     */
+    public function sendSms(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'msg' => 'required|string|max:1000',
+            'recipients' => 'required|array|min:1',
+            'recipients.*' => 'string|regex:/^880\d{10,11}$/',
+        ], [
+            'recipients.required' => 'Select at least one recipient.',
+            'recipients.*.regex' => 'Invalid phone number format (use 880XXXXXXXXXX).',
+        ]);
+
+        $to = implode(',', array_unique($validated['recipients']));
+        $smsService = new SmsNetBdService();
+        $result = $smsService->sendSms($validated['msg'], $to);
+
+        if ($result['success']) {
+            return redirect()->route('admin.send-notifications')
+                ->with('success', 'SMS sent successfully. Request ID: ' . ($result['request_id'] ?? 'N/A'));
+        }
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'SMS failed: ' . ($result['error'] ?? 'Unknown error'));
+    }
+
+    /**
+     * Send special offer notification to all users (in-app + email)
      */
     public function sendSpecialOffer(Request $request): RedirectResponse
     {
@@ -1499,13 +1571,79 @@ class AdminController extends Controller
             'url' => 'nullable|url',
         ]);
 
-        NotificationService::specialOffer(
-            $validated['title'],
-            $validated['message'],
-            $validated['url'] ?? null
-        );
+        $title = $validated['title'];
+        $message = $validated['message'];
+        $url = $validated['url'] ?? null;
 
-        return redirect()->back()->with('success', 'Special offer notification sent to all users!');
+        NotificationService::specialOffer($title, $message, $url);
+
+        try {
+            $mailDriver = config('mail.default');
+            if ($mailDriver === 'log') {
+                return redirect()->back()->with('success', 'Special offer in-app notifications sent. Email is in "log" mode; configure SMTP in .env to send emails.');
+            }
+
+            $userEmails = User::whereNotNull('email')
+                ->where('email', '!=', '')
+                ->pluck('email')
+                ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL) !== false)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $orderEmails = Order::whereNotNull('email')
+                ->where('email', '!=', '')
+                ->pluck('email')
+                ->filter(fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL) !== false)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $allEmails = array_unique(array_merge($userEmails, $orderEmails));
+
+            if (empty($allEmails)) {
+                return redirect()->back()->with('success', 'Special offer in-app notifications sent. No valid email addresses found for email delivery.');
+            }
+
+            $sentCount = 0;
+            $failedCount = 0;
+            $firstError = null;
+
+            foreach ($allEmails as $email) {
+                try {
+                    $mailable = new \App\Mail\SpecialOfferNotification($title, $message, $url);
+                    $result = EmailService::sendWithFallback($mailable, $email, 'special offer');
+                    if ($result['success']) {
+                        $sentCount++;
+                    } else {
+                        $failedCount++;
+                        if (!$firstError) {
+                            $firstError = $result['error'] ?? $result['message'] ?? 'Unknown error';
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    if (!$firstError) {
+                        $firstError = $e->getMessage();
+                    }
+                    \Log::error('Special offer email failed', ['email' => $email, 'error' => $e->getMessage()]);
+                }
+            }
+
+            $msg = "Special offer sent. In-app notifications created. Emails: {$sentCount} sent";
+            if ($failedCount > 0) {
+                $msg .= ", {$failedCount} failed";
+                if ($firstError) {
+                    $msg .= " (" . substr($firstError, 0, 80) . ")";
+                }
+            }
+            $msg .= ".";
+
+            return redirect()->back()->with('success', $msg);
+        } catch (\Exception $e) {
+            \Log::error('Special offer email batch failed', ['error' => $e->getMessage()]);
+            return redirect()->back()->with('success', 'Special offer in-app notifications sent. Email delivery failed: ' . $e->getMessage());
+        }
     }
 
     /**

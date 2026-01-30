@@ -10,6 +10,121 @@
             {{ session('success') }}
         </div>
     @endif
+    @if(session('error'))
+        <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <!-- Send SMS Section -->
+    @if($smsConfigured ?? false)
+        <div class="mb-6 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <span class="text-4xl mr-3">📱</span>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Send SMS</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Send SMS via SMS.net.bd to users or order customers</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Balance</span>
+                        <p class="text-xl font-bold text-green-600 dark:text-green-400">
+                            @if(isset($smsBalance))
+                                ৳{{ number_format((float) $smsBalance, 2) }}
+                            @else
+                                —
+                            @endif
+                        </p>
+                    </div>
+                </div>
+
+                <form action="{{ route('admin.send-sms') }}" method="POST" id="sms-form" class="space-y-4">
+                    @csrf
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Message *
+                        </label>
+                        <textarea name="msg" 
+                                  id="sms-msg"
+                                  rows="3" 
+                                  required 
+                                  placeholder="Type your SMS message here..."
+                                  maxlength="1000"
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"></textarea>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Max 1000 characters</p>
+                        @error('msg')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Recipients (select from users or orders)
+                        </label>
+                        <div class="flex gap-2 mb-2">
+                            <button type="button" onclick="smsSelectAll('users')" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Select all users</button>
+                            <button type="button" onclick="smsSelectAll('orders')" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Select all orders</button>
+                            <button type="button" onclick="smsSelectNone()" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Clear selection</button>
+                        </div>
+                        <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3 bg-gray-50 dark:bg-gray-900">
+                            @if(count($smsRecipientsFromUsers ?? []) > 0)
+                                <details open class="group">
+                                    <summary class="cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                                        <span>From users ({{ count($smsRecipientsFromUsers) }})</span>
+                                    </summary>
+                                    <div class="space-y-2 pl-2">
+                                        @foreach($smsRecipientsFromUsers as $r)
+                                            <label class="flex items-center gap-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+                                                <input type="checkbox" name="recipients[]" value="{{ $r['phone'] }}" class="sms-recipient sms-users rounded border-gray-300">
+                                                <span class="text-sm text-gray-900 dark:text-white font-medium">{{ $r['name'] }}</span>
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ $r['phone'] }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </details>
+                            @endif
+                            @if(count($smsRecipientsFromOrders ?? []) > 0)
+                                <details open class="group">
+                                    <summary class="cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                                        <span>From orders ({{ count($smsRecipientsFromOrders) }})</span>
+                                    </summary>
+                                    <div class="space-y-2 pl-2">
+                                        @foreach($smsRecipientsFromOrders as $r)
+                                            <label class="flex items-center gap-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+                                                <input type="checkbox" name="recipients[]" value="{{ $r['phone'] }}" class="sms-recipient sms-orders rounded border-gray-300">
+                                                <span class="text-sm text-gray-900 dark:text-white font-medium">{{ $r['name'] }}</span>
+                                                <span class="text-xs text-gray-500 dark:text-gray-400">Order #{{ $r['order_id'] }}</span>
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ $r['phone'] }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </details>
+                            @endif
+                            @if(empty($smsRecipientsFromUsers) && empty($smsRecipientsFromOrders))
+                                <p class="text-sm text-gray-500 dark:text-gray-400">No phone numbers found in users or orders.</p>
+                            @endif
+                        </div>
+                        @error('recipients')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <button type="submit" 
+                            id="sms-submit"
+                            class="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-teal-700 hover:to-cyan-700 transition disabled:opacity-50">
+                        📱 Send SMS
+                    </button>
+                </form>
+            </div>
+        </div>
+    @else
+        <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200 text-sm">
+            SMS is not configured. Add <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">SMS_NET_BD_API_KEY</code> to your <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">.env</code> to enable Send SMS.
+        </div>
+    @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Send Special Offer -->
@@ -225,7 +340,7 @@
         </ul>
     </div>
 
-    <!-- JavaScript for Copy Functions -->
+    <!-- JavaScript for Copy and SMS -->
     <script>
         function copyEmail(email) {
             navigator.clipboard.writeText(email).then(() => {
@@ -246,6 +361,21 @@
                 alert('Copied ' + emails.length + ' email addresses!');
             });
         }
+
+        function smsSelectAll(source) {
+            document.querySelectorAll('.sms-recipient.sms-' + source).forEach(cb => cb.checked = true);
+        }
+        function smsSelectNone() {
+            document.querySelectorAll('.sms-recipient').forEach(cb => cb.checked = false);
+        }
+
+        document.getElementById('sms-form')?.addEventListener('submit', function(e) {
+            const checked = this.querySelectorAll('input[name="recipients[]"]:checked');
+            if (checked.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one recipient.');
+            }
+        });
     </script>
 </x-admin-layout>
 
