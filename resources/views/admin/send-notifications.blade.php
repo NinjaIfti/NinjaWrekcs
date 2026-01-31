@@ -24,8 +24,8 @@
                     <div class="flex items-center">
                         <span class="text-4xl mr-3">📱</span>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Bulk SMS</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Send SMS via MiMSMS to users or order customers ({{ count($smsRecipients ?? []) }} recipients)</p>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Send SMS</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Send single or bulk SMS via MiMSMS ({{ count($smsRecipients ?? []) }} recipients)</p>
                         </div>
                     </div>
                     <div class="text-right">
@@ -48,6 +48,22 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Send mode
+                        </label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="sms_mode" value="single" id="sms-mode-single" class="rounded border-gray-300" checked>
+                                <span class="text-gray-900 dark:text-white">Single SMS</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="sms_mode" value="bulk" id="sms-mode-bulk" class="rounded border-gray-300">
+                                <span class="text-gray-900 dark:text-white">Bulk SMS</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Message *
                         </label>
                         <textarea name="msg" 
@@ -63,9 +79,24 @@
                         @enderror
                     </div>
 
-                    <div>
+                    <div id="sms-single-wrap">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Recipients (unique numbers only)
+                            Recipient (single)
+                        </label>
+                        <select name="single_recipient" id="sms-single-recipient" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+                            <option value="">— Choose one —</option>
+                            @foreach($smsRecipients ?? [] as $r)
+                                <option value="{{ $r['phone'] }}">{{ $r['name'] }} — +{{ $r['phone'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('single_recipient')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div id="sms-bulk-wrap" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Recipients (bulk)
                         </label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <button type="button" onclick="smsSelectAll()" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Select all</button>
@@ -98,7 +129,7 @@
                     <button type="submit" 
                             id="sms-submit"
                             class="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-teal-700 hover:to-cyan-700 transition disabled:opacity-50">
-                        📱 Send bulk SMS
+                        📱 Send SMS
                     </button>
                 </form>
             </div>
@@ -360,11 +391,29 @@
             }
         }
 
+        function smsToggleMode() {
+            const single = document.getElementById('sms-mode-single')?.checked;
+            document.getElementById('sms-single-wrap')?.classList.toggle('hidden', !single);
+            document.getElementById('sms-bulk-wrap')?.classList.toggle('hidden', single);
+        }
+        document.getElementById('sms-mode-single')?.addEventListener('change', smsToggleMode);
+        document.getElementById('sms-mode-bulk')?.addEventListener('change', smsToggleMode);
+        smsToggleMode();
+
         document.getElementById('sms-form')?.addEventListener('submit', function(e) {
+            const mode = this.querySelector('input[name="sms_mode"]:checked')?.value;
+            if (mode === 'single') {
+                const single = document.getElementById('sms-single-recipient')?.value;
+                if (!single) {
+                    e.preventDefault();
+                    alert('Please select one recipient for single SMS.');
+                }
+                return;
+            }
             const checked = this.querySelectorAll('input[name="recipients[]"]:checked');
             if (checked.length === 0) {
                 e.preventDefault();
-                alert('Please select at least one recipient.');
+                alert('Please select at least one recipient for bulk SMS.');
                 return;
             }
             if (checked.length > 50 && !confirm('Send bulk SMS to ' + checked.length + ' recipients? This may take a moment.')) {

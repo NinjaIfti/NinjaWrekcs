@@ -1536,22 +1536,33 @@ class AdminController extends Controller
     }
 
     /**
-     * Send SMS via MiMSMS (admin send notifications page)
+     * Send SMS via MiMSMS (single or bulk)
      */
     public function sendSms(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $request->validate([
             'msg' => 'required|string|max:1000',
-            'recipients' => 'required|array|min:1',
-            'recipients.*' => 'string|regex:/^880\d{10,11}$/',
-        ], [
-            'recipients.required' => 'Select at least one recipient.',
-            'recipients.*.regex' => 'Invalid phone number format (use 880XXXXXXXXXX).',
+            'sms_mode' => 'required|in:single,bulk',
         ]);
 
-        $to = implode(',', array_unique($validated['recipients']));
+        if ($request->sms_mode === 'single') {
+            $request->validate([
+                'single_recipient' => 'required|string|regex:/^880\d{10,11}$/',
+            ], ['single_recipient.required' => 'Select one recipient for single SMS.']);
+            $to = $request->single_recipient;
+        } else {
+            $request->validate([
+                'recipients' => 'required|array|min:1',
+                'recipients.*' => 'string|regex:/^880\d{10,11}$/',
+            ], [
+                'recipients.required' => 'Select at least one recipient for bulk SMS.',
+                'recipients.*.regex' => 'Invalid phone number format (use 880XXXXXXXXXX).',
+            ]);
+            $to = implode(',', array_unique($request->recipients));
+        }
+
         $smsService = new MimsmsService();
-        $result = $smsService->sendSms($validated['msg'], $to);
+        $result = $smsService->sendSms($request->msg, $to);
 
         if ($result['success']) {
             $msg = 'SMS sent successfully. ' . ($result['sent_count'] ?? 0) . ' message(s) sent.';
