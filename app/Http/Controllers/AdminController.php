@@ -1486,11 +1486,10 @@ class AdminController extends Controller
             ->get()
             ->groupBy('product_id');
 
-        // SMS: balance and recipients (users + orders with name)
+        // SMS: balance and recipients (users + orders, unique by phone)
         $smsBalance = null;
         $smsBalanceError = null;
-        $smsRecipientsFromUsers = [];
-        $smsRecipientsFromOrders = [];
+        $smsRecipients = [];
         $smsConfigured = !empty(config('services.sms_net_bd.api_key'));
         if ($smsConfigured) {
             $smsService = new SmsNetBdService();
@@ -1498,16 +1497,17 @@ class AdminController extends Controller
             $smsBalance = $balanceResult['success'] ? $balanceResult['balance'] : null;
             $smsBalanceError = !$balanceResult['success'] ? ($balanceResult['error'] ?? null) : null;
 
+            $byPhone = [];
             $usersWithPhone = User::whereNotNull('phone')
                 ->where('phone', '!=', '')
                 ->get(['id', 'name', 'phone']);
             foreach ($usersWithPhone as $u) {
                 $phone = SmsNetBdService::normalizePhone($u->phone);
-                if (strlen($phone) >= 11) {
-                    $smsRecipientsFromUsers[] = [
+                if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
+                    $byPhone[$phone] = [
                         'phone' => $phone,
                         'name' => $u->name ?: ('User #' . $u->id),
-                        'id' => $u->id,
+                        'source' => 'User',
                     ];
                 }
             }
@@ -1518,19 +1518,20 @@ class AdminController extends Controller
                 ->get(['id', 'name', 'phone']);
             foreach ($ordersWithPhone as $o) {
                 $phone = SmsNetBdService::normalizePhone($o->phone);
-                if (strlen($phone) >= 11) {
-                    $smsRecipientsFromOrders[] = [
+                if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
+                    $byPhone[$phone] = [
                         'phone' => $phone,
                         'name' => $o->name ?: ('Order #' . $o->id),
-                        'order_id' => $o->id,
+                        'source' => 'Order #' . $o->id,
                     ];
                 }
             }
+            $smsRecipients = array_values($byPhone);
         }
         
         return view('admin.send-notifications', compact(
             'products', 'totalUsers', 'stockNotifications',
-            'smsBalance', 'smsBalanceError', 'smsRecipientsFromUsers', 'smsRecipientsFromOrders', 'smsConfigured'
+            'smsBalance', 'smsBalanceError', 'smsRecipients', 'smsConfigured'
         ));
     }
 
@@ -1560,6 +1561,47 @@ class AdminController extends Controller
         return redirect()->back()
             ->withInput()
             ->with('error', 'SMS failed: ' . ($result['error'] ?? 'Unknown error'));
+    }
+
+    /**
+     * Export SMS recipients (users + orders with phone, unique by phone) as Excel
+     */
+    public function exportSmsRecipients()
+    {
+        $byPhone = [];
+
+        $usersWithPhone = User::whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->get(['id', 'name', 'phone']);
+        foreach ($usersWithPhone as $u) {
+            $phone = SmsNetBdService::normalizePhone($u->phone);
+            if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
+                $byPhone[$phone] = [
+                    $u->name ?: ('User #' . $u->id),
+                    '+' . $phone,
+                    'User',
+                ];
+            }
+        }
+
+        $ordersWithPhone = Order::notDeleted()
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->get(['id', 'name', 'phone']);
+        foreach ($ordersWithPhone as $o) {
+            $phone = SmsNetBdService::normalizePhone($o->phone);
+            if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
+                $byPhone[$phone] = [
+                    $o->name ?: ('Order #' . $o->id),
+                    '+' . $phone,
+                    'Order #' . $o->id,
+                ];
+            }
+        }
+
+        $rows = array_values($byPhone);
+        $fileName = 'sms-recipients-' . now()->format('Y-m-d-His') . '.xlsx';
+        return Excel::download(new \App\Exports\SmsRecipientsExport($rows), $fileName);
     }
 
     /**

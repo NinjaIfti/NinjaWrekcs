@@ -65,48 +65,27 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Recipients (select from users or orders)
+                            Recipients (unique numbers only)
                         </label>
-                        <div class="flex gap-2 mb-2">
-                            <button type="button" onclick="smsSelectAll('users')" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Select all users</button>
-                            <button type="button" onclick="smsSelectAll('orders')" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Select all orders</button>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <button type="button" onclick="smsSelectAll()" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Select all</button>
                             <button type="button" onclick="smsSelectNone()" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Clear selection</button>
+                            <a href="{{ route('admin.sms-recipients-export') }}" class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition inline-flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                Export to Excel
+                            </a>
                         </div>
-                        <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3 bg-gray-50 dark:bg-gray-900">
-                            @if(count($smsRecipientsFromUsers ?? []) > 0)
-                                <details open class="group">
-                                    <summary class="cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                        <span>From users ({{ count($smsRecipientsFromUsers) }})</span>
-                                    </summary>
-                                    <div class="space-y-2 pl-2">
-                                        @foreach($smsRecipientsFromUsers as $r)
-                                            <label class="flex items-center gap-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
-                                                <input type="checkbox" name="recipients[]" value="{{ $r['phone'] }}" class="sms-recipient sms-users rounded border-gray-300">
-                                                <span class="text-sm text-gray-900 dark:text-white font-medium">{{ $r['name'] }}</span>
-                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">+{{ $r['phone'] }}</span>
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                </details>
-                            @endif
-                            @if(count($smsRecipientsFromOrders ?? []) > 0)
-                                <details open class="group">
-                                    <summary class="cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                                        <span>From orders ({{ count($smsRecipientsFromOrders) }})</span>
-                                    </summary>
-                                    <div class="space-y-2 pl-2">
-                                        @foreach($smsRecipientsFromOrders as $r)
-                                            <label class="flex items-center gap-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
-                                                <input type="checkbox" name="recipients[]" value="{{ $r['phone'] }}" class="sms-recipient sms-orders rounded border-gray-300">
-                                                <span class="text-sm text-gray-900 dark:text-white font-medium">{{ $r['name'] }}</span>
-                                                <span class="text-xs text-gray-500 dark:text-gray-400">Order #{{ $r['order_id'] }}</span>
-                                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">+{{ $r['phone'] }}</span>
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                </details>
-                            @endif
-                            @if(empty($smsRecipientsFromUsers) && empty($smsRecipientsFromOrders))
+                        <div class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2 bg-gray-50 dark:bg-gray-900">
+                            @if(count($smsRecipients ?? []) > 0)
+                                @foreach($smsRecipients as $r)
+                                    <label class="flex items-center gap-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+                                        <input type="checkbox" name="recipients[]" value="{{ $r['phone'] }}" class="sms-recipient rounded border-gray-300">
+                                        <span class="text-sm text-gray-900 dark:text-white font-medium">{{ $r['name'] }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ $r['source'] }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">+{{ $r['phone'] }}</span>
+                                    </label>
+                                @endforeach
+                            @else
                                 <p class="text-sm text-gray-500 dark:text-gray-400">No phone numbers found in users or orders.</p>
                             @endif
                         </div>
@@ -365,8 +344,8 @@
             });
         }
 
-        function smsSelectAll(source) {
-            document.querySelectorAll('.sms-recipient.sms-' + source).forEach(cb => cb.checked = true);
+        function smsSelectAll() {
+            document.querySelectorAll('.sms-recipient').forEach(cb => cb.checked = true);
         }
         function smsSelectNone() {
             document.querySelectorAll('.sms-recipient').forEach(cb => cb.checked = false);
