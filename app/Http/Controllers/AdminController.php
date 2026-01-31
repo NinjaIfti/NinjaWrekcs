@@ -1578,8 +1578,7 @@ class AdminController extends Controller
             if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
                 $byPhone[$phone] = [
                     $u->name ?: ('User #' . $u->id),
-                    '+' . $phone,
-                    'User',
+                    self::phoneToLocal($phone),
                 ];
             }
         }
@@ -1593,8 +1592,7 @@ class AdminController extends Controller
             if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
                 $byPhone[$phone] = [
                     $o->name ?: ('Order #' . $o->id),
-                    '+' . $phone,
-                    'Order #' . $o->id,
+                    self::phoneToLocal($phone),
                 ];
             }
         }
@@ -1602,6 +1600,20 @@ class AdminController extends Controller
         $rows = array_values($byPhone);
         $fileName = 'sms-recipients-' . now()->format('Y-m-d-His') . '.xlsx';
         return Excel::download(new \App\Exports\SmsRecipientsExport($rows), $fileName);
+    }
+
+    /**
+     * Format 880XXXXXXXXX as 01XXXXXXXXX for export
+     */
+    private static function phoneToLocal(string $phone): string
+    {
+        if (str_starts_with($phone, '880')) {
+            return '0' . substr($phone, 3);
+        }
+        if (str_starts_with($phone, '0')) {
+            return $phone;
+        }
+        return '0' . $phone;
     }
 
     /**

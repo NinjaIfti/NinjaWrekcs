@@ -24,7 +24,7 @@ class SmsRecipientsExport implements FromArray, WithHeadings, WithStyles, WithTi
 
     public function headings(): array
     {
-        return ['Name', 'Phone', 'Source'];
+        return ['Name', 'MobileNo'];
     }
 
     public function styles(Worksheet $sheet)
