@@ -44,4 +44,11 @@ return [
         'api_key' => env('SMS_NET_BD_API_KEY'),
     ],
 
+    'mimsms' => [
+        'username' => env('MIMSMS_USERNAME'),
+        'api_key' => env('MIMSMS_API_KEY'),
+        'sender_name' => env('MIMSMS_SENDER_NAME'),
+        'campaign_id' => env('MIMSMS_CAMPAIGN_ID'),
+    ],
+
 ];

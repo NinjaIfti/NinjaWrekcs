@@ -24,8 +24,8 @@
                     <div class="flex items-center">
                         <span class="text-4xl mr-3">📱</span>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Send SMS</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Send SMS via SMS.net.bd to users or order customers</p>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Bulk SMS</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Send SMS via MiMSMS to users or order customers ({{ count($smsRecipients ?? []) }} recipients)</p>
                         </div>
                     </div>
                     <div class="text-right">
@@ -69,6 +69,7 @@
                         </label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <button type="button" onclick="smsSelectAll()" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Select all</button>
+                            <button type="button" onclick="smsSendToAll()" class="px-3 py-1 text-xs bg-teal-600 text-white rounded hover:bg-teal-700 transition">Send to all</button>
                             <button type="button" onclick="smsSelectNone()" class="px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Clear selection</button>
                             <a href="{{ route('admin.sms-recipients-export') }}" class="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition inline-flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -97,14 +98,14 @@
                     <button type="submit" 
                             id="sms-submit"
                             class="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-teal-700 hover:to-cyan-700 transition disabled:opacity-50">
-                        📱 Send SMS
+                        📱 Send bulk SMS
                     </button>
                 </form>
             </div>
         </div>
     @else
         <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200 text-sm">
-            SMS is not configured. Add <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">SMS_NET_BD_API_KEY</code> to your <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">.env</code> to enable Send SMS.
+            SMS is not configured. Add <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">MIMSMS_USERNAME</code>, <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">MIMSMS_API_KEY</code>, and <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">MIMSMS_SENDER_NAME</code> to your <code class="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">.env</code> to enable Send SMS (MiMSMS).
         </div>
     @endif
 
@@ -351,11 +352,23 @@
             document.querySelectorAll('.sms-recipient').forEach(cb => cb.checked = false);
         }
 
+        function smsSendToAll() {
+            smsSelectAll();
+            const total = document.querySelectorAll('.sms-recipient').length;
+            if (total > 0 && !confirm('Send bulk SMS to all ' + total + ' recipients? Make sure your message is ready.')) {
+                smsSelectNone();
+            }
+        }
+
         document.getElementById('sms-form')?.addEventListener('submit', function(e) {
             const checked = this.querySelectorAll('input[name="recipients[]"]:checked');
             if (checked.length === 0) {
                 e.preventDefault();
                 alert('Please select at least one recipient.');
+                return;
+            }
+            if (checked.length > 50 && !confirm('Send bulk SMS to ' + checked.length + ' recipients? This may take a moment.')) {
+                e.preventDefault();
             }
         });
     </script>

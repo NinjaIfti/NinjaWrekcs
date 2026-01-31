@@ -18,7 +18,7 @@ use App\Mail\AdminOrderNotification;
 use App\Services\AnalyticsService;
 use App\Services\NotificationService;
 use App\Services\EmailService;
-use App\Services\SmsNetBdService;
+use App\Services\MimsmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -1490,9 +1490,9 @@ class AdminController extends Controller
         $smsBalance = null;
         $smsBalanceError = null;
         $smsRecipients = [];
-        $smsConfigured = !empty(config('services.sms_net_bd.api_key'));
+        $smsService = new MimsmsService();
+        $smsConfigured = $smsService->isConfigured();
         if ($smsConfigured) {
-            $smsService = new SmsNetBdService();
             $balanceResult = $smsService->getBalance();
             $smsBalance = $balanceResult['success'] ? $balanceResult['balance'] : null;
             $smsBalanceError = !$balanceResult['success'] ? ($balanceResult['error'] ?? null) : null;
@@ -1502,7 +1502,7 @@ class AdminController extends Controller
                 ->where('phone', '!=', '')
                 ->get(['id', 'name', 'phone']);
             foreach ($usersWithPhone as $u) {
-                $phone = SmsNetBdService::normalizePhone($u->phone);
+                $phone = MimsmsService::normalizePhone($u->phone);
                 if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
                     $byPhone[$phone] = [
                         'phone' => $phone,
@@ -1517,7 +1517,7 @@ class AdminController extends Controller
                 ->where('phone', '!=', '')
                 ->get(['id', 'name', 'phone']);
             foreach ($ordersWithPhone as $o) {
-                $phone = SmsNetBdService::normalizePhone($o->phone);
+                $phone = MimsmsService::normalizePhone($o->phone);
                 if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
                     $byPhone[$phone] = [
                         'phone' => $phone,
@@ -1536,7 +1536,7 @@ class AdminController extends Controller
     }
 
     /**
-     * Send SMS via SMS.net.bd (admin send notifications page)
+     * Send SMS via MiMSMS (admin send notifications page)
      */
     public function sendSms(Request $request): RedirectResponse
     {
@@ -1550,12 +1550,21 @@ class AdminController extends Controller
         ]);
 
         $to = implode(',', array_unique($validated['recipients']));
-        $smsService = new SmsNetBdService();
+        $smsService = new MimsmsService();
         $result = $smsService->sendSms($validated['msg'], $to);
 
         if ($result['success']) {
-            return redirect()->route('admin.send-notifications')
-                ->with('success', 'SMS sent successfully. Request ID: ' . ($result['request_id'] ?? 'N/A'));
+            $msg = 'SMS sent successfully. ' . ($result['sent_count'] ?? 0) . ' message(s) sent.';
+            if (!empty($result['trxn_ids'])) {
+                $msg .= ' Transaction ID(s): ' . implode(', ', array_slice($result['trxn_ids'], 0, 5));
+                if (count($result['trxn_ids']) > 5) {
+                    $msg .= ' … (+' . (count($result['trxn_ids']) - 5) . ' more)';
+                }
+            }
+            if (!empty($result['failed_count']) && $result['failed_count'] > 0) {
+                $msg .= ' ' . $result['failed_count'] . ' failed.';
+            }
+            return redirect()->route('admin.send-notifications')->with('success', $msg);
         }
 
         return redirect()->back()
@@ -1574,7 +1583,7 @@ class AdminController extends Controller
             ->where('phone', '!=', '')
             ->get(['id', 'name', 'phone']);
         foreach ($usersWithPhone as $u) {
-            $phone = SmsNetBdService::normalizePhone($u->phone);
+            $phone = MimsmsService::normalizePhone($u->phone);
             if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
                 $byPhone[$phone] = [
                     $u->name ?: ('User #' . $u->id),
@@ -1588,7 +1597,7 @@ class AdminController extends Controller
             ->where('phone', '!=', '')
             ->get(['id', 'name', 'phone']);
         foreach ($ordersWithPhone as $o) {
-            $phone = SmsNetBdService::normalizePhone($o->phone);
+            $phone = MimsmsService::normalizePhone($o->phone);
             if (strlen($phone) >= 11 && !isset($byPhone[$phone])) {
                 $byPhone[$phone] = [
                     $o->name ?: ('Order #' . $o->id),
