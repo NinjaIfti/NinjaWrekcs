@@ -57,10 +57,10 @@
     <div class="email-container">
         <h1>🎁 {{ $title }}</h1>
         
-        <p>{!! nl2br(e($message)) !!}</p>
+        <p>{!! nl2br(e((string) ($message ?? ''))) !!}</p>
         
         <div style="text-align: center;">
-            <a href="{{ $url }}" class="button">View Offer</a>
+            <a href="{{ $url ?? '#' }}" class="button">View Offer</a>
         </div>
         
         <p>Thanks,<br>{{ config('app.name') }}</p>

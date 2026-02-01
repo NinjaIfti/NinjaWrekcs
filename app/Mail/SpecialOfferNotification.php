@@ -14,13 +14,13 @@ class SpecialOfferNotification extends Mailable
 
     public string $title;
     public string $message;
-    public ?string $url;
+    public string $url;
 
     public function __construct(string $title, string $message, ?string $url = null)
     {
-        $this->title = $title;
-        $this->message = $message;
-        $this->url = $url ?? route('shop.index');
+        $this->title = (string) $title;
+        $this->message = (string) $message;
+        $this->url = $url !== null && $url !== '' ? (string) $url : route('shop.index');
     }
 
     public function envelope(): Envelope

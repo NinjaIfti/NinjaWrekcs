@@ -1709,8 +1709,8 @@ class AdminController extends Controller
             $msg = "Special offer sent. In-app notifications created. Emails: {$sentCount} sent";
             if ($failedCount > 0) {
                 $msg .= ", {$failedCount} failed";
-                if ($firstError) {
-                    $msg .= " (" . substr($firstError, 0, 80) . ")";
+                if ($firstError !== null && $firstError !== '') {
+                    $msg .= " (" . substr((string) $firstError, 0, 80) . ")";
                 }
             }
             $msg .= ".";
