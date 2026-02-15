@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\ProductVariant;
+use App\Models\ProductVariantImage;
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
@@ -798,8 +801,9 @@ class AdminController extends Controller
             ->active()
             ->orderBy('order')
             ->get();
-        
-        return view('admin.product-create', compact('categories'));
+        $keychainsCategoryId = \App\Models\Category::where('slug', 'valorant-keychains-stickers')->value('id');
+
+        return view('admin.product-create', compact('categories', 'keychainsCategoryId'));
     }
 
     public function productStore(Request $request): RedirectResponse
@@ -827,6 +831,12 @@ class AdminController extends Controller
             'is_new' => 'boolean',
             'is_bestseller' => 'boolean',
             'is_limited_edition' => 'boolean',
+            'cover_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'new_variants' => 'nullable|array',
+            'new_variants.*.name' => 'nullable|string|max:255',
+            'new_variants.*.price' => 'nullable|numeric|min:0',
+            'new_variants.*.images' => 'nullable|array',
+            'new_variants.*.images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
         $uploadedPaths = [];
@@ -855,11 +865,41 @@ class AdminController extends Controller
         $validated['rating'] = $validated['rating'] ?? 0;
         $validated['reviews'] = $validated['reviews'] ?? 0;
 
+        $keychainsCategoryId = Category::where('slug', 'valorant-keychains-stickers')->value('id');
+        if ($request->category_id == $keychainsCategoryId && $request->hasFile('cover_photo')) {
+            $validated['cover_photo'] = $request->file('cover_photo')->store('products', 'public');
+        }
+
         $product = Product::create($validated);
 
         if (!empty($uploadedPaths)) {
             foreach ($uploadedPaths as $pathData) {
                 $product->images()->create($pathData);
+            }
+        }
+
+        if ($request->category_id == $keychainsCategoryId && is_array($request->new_variants)) {
+            $sortOrder = 0;
+            foreach ($request->new_variants as $idx => $v) {
+                if (empty($v['name']) || !isset($v['price'])) {
+                    continue;
+                }
+                $variant = $product->variants()->create([
+                    'name' => $v['name'],
+                    'price' => (float) $v['price'],
+                    'sort_order' => $sortOrder++,
+                ]);
+                $variantImages = $request->file("new_variants.{$idx}.images");
+                if (is_array($variantImages)) {
+                    foreach ($variantImages as $imgIdx => $file) {
+                        if ($file && $file->isValid()) {
+                            $variant->images()->create([
+                                'path' => $file->store('products', 'public'),
+                                'sort_order' => $imgIdx,
+                            ]);
+                        }
+                    }
+                }
             }
         }
 
@@ -875,13 +915,15 @@ class AdminController extends Controller
 
     public function productEdit(Product $product): View
     {
+        $product->load(['category', 'variants.images']);
         $categories = \App\Models\Category::with('children')
             ->whereNull('parent_id')
             ->active()
             ->orderBy('order')
             ->get();
-        
-        return view('admin.product-edit', compact('product', 'categories'));
+        $keychainsCategoryId = \App\Models\Category::where('slug', 'valorant-keychains-stickers')->value('id');
+
+        return view('admin.product-edit', compact('product', 'categories', 'keychainsCategoryId'));
     }
 
     public function productUpdate(Request $request, Product $product): RedirectResponse
@@ -912,7 +954,100 @@ class AdminController extends Controller
             'is_new' => 'boolean',
             'is_bestseller' => 'boolean',
             'is_limited_edition' => 'boolean',
+            'cover_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'delete_cover_photo' => 'nullable|boolean',
+            'variants' => 'nullable|array',
+            'variants.*.name' => 'nullable|string|max:255',
+            'variants.*.price' => 'nullable|numeric|min:0',
+            'variants.*.delete_images' => 'nullable|array',
+            'variants.*.delete_images.*' => 'integer',
+            'variants.*.images' => 'nullable|array',
+            'variants.*.images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
+            'delete_variants' => 'nullable|array',
+            'delete_variants.*' => 'integer',
+            'new_variants' => 'nullable|array',
+            'new_variants.*.name' => 'nullable|string|max:255',
+            'new_variants.*.price' => 'nullable|numeric|min:0',
+            'new_variants.*.images' => 'nullable|array',
+            'new_variants.*.images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
+
+        $keychainsCategoryId = Category::where('slug', 'valorant-keychains-stickers')->value('id');
+        if ($product->category_id == $keychainsCategoryId) {
+            if ($request->has('delete_cover_photo') && $product->cover_photo) {
+                Storage::disk('public')->delete($product->cover_photo);
+                $validated['cover_photo'] = null;
+            } elseif ($request->hasFile('cover_photo')) {
+                if ($product->cover_photo) {
+                    Storage::disk('public')->delete($product->cover_photo);
+                }
+                $validated['cover_photo'] = $request->file('cover_photo')->store('products', 'public');
+            }
+            $deleteVariantIds = $request->input('delete_variants', []);
+            if (!empty($deleteVariantIds)) {
+                $product->variants()->whereIn('id', $deleteVariantIds)->get()->each(function ($v) {
+                    foreach ($v->images as $img) {
+                        Storage::disk('public')->delete($img->path);
+                    }
+                    $v->delete();
+                });
+            }
+            $variantsData = $request->input('variants', []);
+            foreach ($variantsData as $variantId => $v) {
+                $variant = $product->variants()->find($variantId);
+                if (!$variant) {
+                    continue;
+                }
+                $variant->update([
+                    'name' => $v['name'] ?? $variant->name,
+                    'price' => isset($v['price']) ? (float) $v['price'] : $variant->price,
+                ]);
+                $deleteImgIds = $v['delete_images'] ?? [];
+                if (!empty($deleteImgIds)) {
+                    $variant->images()->whereIn('id', $deleteImgIds)->get()->each(function ($img) {
+                        Storage::disk('public')->delete($img->path);
+                        $img->delete();
+                    });
+                }
+                $existingVariantImages = $request->file("variants.{$variantId}.images");
+                if (is_array($existingVariantImages)) {
+                    $maxOrder = $variant->images()->max('sort_order') ?? -1;
+                    foreach ($existingVariantImages as $idx => $file) {
+                        if ($file && $file->isValid()) {
+                            $variant->images()->create([
+                                'path' => $file->store('products', 'public'),
+                                'sort_order' => $maxOrder + 1 + $idx,
+                            ]);
+                        }
+                    }
+                }
+            }
+            if (is_array($request->new_variants)) {
+                $sortOrder = $product->variants()->max('sort_order') ?? -1;
+                foreach ($request->new_variants as $nIdx => $v) {
+                    if (empty($v['name']) || !isset($v['price'])) {
+                        continue;
+                    }
+                    $sortOrder++;
+                    $variant = $product->variants()->create([
+                        'name' => $v['name'],
+                        'price' => (float) $v['price'],
+                        'sort_order' => $sortOrder,
+                    ]);
+                    $variantImages = $request->file("new_variants.{$nIdx}.images");
+                    if (is_array($variantImages)) {
+                        foreach ($variantImages as $imgIdx => $file) {
+                            if ($file && $file->isValid()) {
+                                $variant->images()->create([
+                                    'path' => $file->store('products', 'public'),
+                                    'sort_order' => $imgIdx,
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Delete selected images
         $deleteIds = $request->input('delete_images', []);
@@ -980,11 +1115,17 @@ class AdminController extends Controller
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
         }
-        // Delete additional images
+        if ($product->cover_photo) {
+            Storage::disk('public')->delete($product->cover_photo);
+        }
         foreach ($product->images as $image) {
             Storage::disk('public')->delete($image->path);
         }
-        
+        foreach ($product->variants as $variant) {
+            foreach ($variant->images as $img) {
+                Storage::disk('public')->delete($img->path);
+            }
+        }
         $product->delete();
 
         // Clear relevant caches

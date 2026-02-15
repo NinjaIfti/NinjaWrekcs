@@ -41,16 +41,14 @@ class CheckoutController extends Controller
                 $isBookable = (bool) $item->attributes->is_bookable;
             }
             
-            // If not in attributes or not bookable, check database
             if (!$isBookable) {
-                $product = Product::find($item->id);
+                $productId = is_string($item->id) && str_contains($item->id, '_') ? (int) explode('_', $item->id)[0] : $item->id;
+                $product = Product::find($productId);
                 $isBookable = $product && (bool) $product->is_bookable;
             }
-            
-            // Use original price for pre-order items, regular price for others
             if ($isBookable) {
-                // Always fetch original price from database for pre-order items
-                $product = Product::find($item->id);
+                $productId = is_string($item->id) && str_contains($item->id, '_') ? (int) explode('_', $item->id)[0] : $item->id;
+                $product = Product::find($productId);
                 if ($product) {
                     $originalPrice = (float) ($product->display_price ?? $product->price ?? 0);
                     $cartSubTotal += $originalPrice * $item->quantity;
@@ -348,43 +346,39 @@ class CheckoutController extends Controller
 
             // Create order items
             foreach ($cartItems as $item) {
-                $product = Product::find($item->id);
-                
-                if (!$product) {
-                    throw new \Exception("Product with ID {$item->id} not found.");
-                }
+                $productId = is_string($item->id) && str_contains($item->id, '_')
+                    ? (int) explode('_', $item->id)[0]
+                    : $item->id;
+                $product = Product::find($productId);
 
-                // Check stock availability
+                if (!$product) {
+                    throw new \Exception("Product with ID {$productId} not found.");
+                }
                 if ($product->quantity < $item->quantity) {
                     throw new \Exception("Insufficient stock for {$product->name}. Only {$product->quantity} available, but {$item->quantity} requested.");
                 }
-                
-                // Determine if this item is bookable
+
                 $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
-                
-                // For pre-order items, use original price from database, not the reduced cart price
+                $variantId = $item->attributes->variant_id ?? null;
+
                 if ($isBookable) {
-                    // Use the product's price directly (original, not reduced)
-                    $itemPrice = (float) ($product->price ?? 0);
-                    if ($itemPrice == 0) {
-                        $itemPrice = (float) ($product->display_price ?? 0);
-                    }
+                    $itemPrice = (float) ($product->price ?? $product->display_price ?? 0);
+                } elseif ($variantId) {
+                    $itemPrice = (float) $item->price;
                 } else {
-                    // Regular items: use display_price (includes deals/offers) from database
-                    // This ensures deal prices are correctly stored in order items
                     $itemPrice = (float) ($product->display_price ?? $product->price ?? 0);
                 }
-                
+
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'product_id' => $item->id,
+                    'product_id' => $product->id,
+                    'product_variant_id' => $variantId,
                     'product_name' => $item->name,
                     'price' => $itemPrice,
                     'quantity' => $item->quantity,
                     'subtotal' => $itemPrice * $item->quantity,
                 ]);
 
-                // Update product quantity
                 $product->decrement('quantity', $item->quantity);
             }
 

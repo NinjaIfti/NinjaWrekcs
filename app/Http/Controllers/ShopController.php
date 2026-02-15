@@ -201,18 +201,11 @@ class ShopController extends Controller
 
     public function show(Product $product): View
     {
-        // Only show active products
         if (!$product->is_active) {
             abort(404);
         }
-        
-        // Cache product details for 1 hour (only if not already loaded)
-        if (!$product->relationLoaded('images')) {
-            $cacheKey = 'product_' . $product->id;
-            $product = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($product) {
-                return $product->load('images');
-            });
-        }
+
+        $product->load(['images', 'category', 'variants.images']);
 
         return view('shop.show', compact('product'));
     }

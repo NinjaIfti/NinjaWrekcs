@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,38 +18,25 @@ class CartController extends Controller
         $hasBookableItems = false;
         
         foreach ($cartItems as $item) {
-            // Check if item is bookable
+            $productId = is_string($item->id) && str_contains($item->id, '_') ? (int) explode('_', $item->id)[0] : $item->id;
+            $product = Product::find($productId);
             $isBookable = false;
             if (isset($item->attributes->is_bookable)) {
                 $isBookable = (bool) $item->attributes->is_bookable;
             } else {
-                $product = Product::find($item->id);
                 $isBookable = $product && (bool) $product->is_bookable;
             }
-            
             if ($isBookable) {
                 $hasBookableItems = true;
-                // For pre-order items, ALWAYS fetch original price from database
-                $product = Product::find($item->id);
                 if ($product) {
-                    // Use the product's display_price or price (original, not reduced)
                     $originalPrice = (float) ($product->display_price ?? $product->price ?? 0);
                     $cartSubTotal += $originalPrice * $item->quantity;
                 } else {
-                    // Fallback: use original_price from attributes if product not found
                     $originalPrice = (float) ($item->attributes->original_price ?? $item->price);
                     $cartSubTotal += $originalPrice * $item->quantity;
                 }
             } else {
-                // Regular items: use display_price (includes deals) from database
-                $product = Product::find($item->id);
-                if ($product) {
-                    $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
-                    $cartSubTotal += $displayPrice * $item->quantity;
-                } else {
-                    // Fallback: use cart price if product not found
-                    $cartSubTotal += $item->price * $item->quantity;
-                }
+                $cartSubTotal += $item->price * $item->quantity;
             }
         }
         
@@ -69,23 +57,28 @@ class CartController extends Controller
             return redirect()->back()->with('error', 'This item is upcoming and cannot be added to cart yet.');
         }
 
-        // Check if price is 0 or TBA - prevent adding to cart
-        $displayPrice = $product->display_price ?? 0;
-        if ($product->price_tba || $product->price == 0 || $displayPrice == 0 || !$displayPrice) {
+        $variantId = $request->input('variant_id');
+        $variant = null;
+        if ($variantId) {
+            $variant = ProductVariant::where('product_id', $product->id)->find($variantId);
+            if (!$variant) {
+                return redirect()->back()->with('error', 'Invalid variant selected.');
+            }
+        }
+
+        $itemPrice = $variant ? (float) $variant->price : ($product->display_price ?? 0);
+        if (!$variant && ($product->price_tba || $product->price == 0 || $itemPrice == 0 || !$itemPrice)) {
             return redirect()->back()->with('error', 'Price will be announced later. Please check back once pricing is available.');
         }
 
         $quantity = $request->input('quantity', 1);
-        
-        // Check stock availability
         if ($product->quantity < $quantity) {
             return redirect()->back()->with('error', 'Insufficient stock. Only ' . $product->quantity . ' available.');
         }
 
-        // Check if item already in cart
-        $cartItem = \Cart::get($product->id);
+        $cartId = $variant ? $product->id . '_' . $variant->id : $product->id;
+        $cartItem = \Cart::get($cartId);
         $currentQuantity = $cartItem ? $cartItem->quantity : 0;
-        
         if (($currentQuantity + $quantity) > $product->quantity) {
             return redirect()->back()->with('error', 'Cannot add more items. Only ' . $product->quantity . ' available in stock.');
         }
@@ -126,23 +119,29 @@ class CartController extends Controller
             }
         }
 
-        // Calculate price: if bookable, customer pays (price - 200) + delivery
-        $itemPrice = $product->display_price ?? 0;
-        if ($product->is_bookable && $itemPrice > 200) {
-            $itemPrice = $itemPrice - 200; // Deduct booking amount
+        if (!$variant && $product->is_bookable && $itemPrice > 200) {
+            $itemPrice = $itemPrice - 200;
         }
 
+        $imagePath = $variant && $variant->images->isNotEmpty()
+            ? $variant->images->first()->path
+            : ($product->cover_photo ?? $product->image);
+        $displayName = $variant ? $product->name . ' — ' . $variant->name : $product->name;
+
         \Cart::add([
-            'id' => $product->id,
-            'name' => $product->name,
+            'id' => $cartId,
+            'name' => $displayName,
             'price' => $itemPrice,
             'quantity' => $quantity,
             'attributes' => [
-                'image' => $product->image,
+                'image' => $imagePath,
                 'category' => $product->category_name,
-                'slug' => $product->id,
-                'is_bookable' => (bool) $product->is_bookable, // Explicitly convert to boolean
-                'original_price' => $product->display_price ?? 0,
+                'slug' => $product->slug ?? $product->id,
+                'product_id' => $product->id,
+                'variant_id' => $variant?->id,
+                'variant_name' => $variant?->name,
+                'is_bookable' => (bool) $product->is_bookable,
+                'original_price' => $variant ? (float) $variant->price : ($product->display_price ?? 0),
             ]
         ]);
 
@@ -152,21 +151,18 @@ class CartController extends Controller
     public function update(Request $request, $itemId)
     {
         $quantity = $request->input('quantity', 1);
-        
         $cartItem = \Cart::get($itemId);
         if (!$cartItem) {
             return redirect()->route('cart.index')->with('error', 'Item not found in cart.');
         }
-
-        $product = Product::find($itemId);
+        $productId = is_string($itemId) && str_contains($itemId, '_') ? (int) explode('_', $itemId)[0] : $itemId;
+        $product = Product::find($productId);
         if (!$product || !$product->is_active) {
             return redirect()->route('cart.index')->with('error', 'Product is no longer available.');
         }
-
         if ($quantity > $product->quantity) {
             return redirect()->route('cart.index')->with('error', 'Insufficient stock. Only ' . $product->quantity . ' available.');
         }
-
         \Cart::update($itemId, [
             'quantity' => [
                 'relative' => false,

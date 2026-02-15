@@ -56,7 +56,8 @@
                             'category_name' => $product->category_name,
                             'image' => $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg',
                             'url' => route('shop.show', $product),
-                            'add_to_cart_url' => route('cart.add', $product)
+                            'add_to_cart_url' => route('cart.add', $product),
+                            'is_keychain' => $product->isKeychain()
                         ]) }});" 
                         title="Quick View">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,9 +68,19 @@
             </div>
             
             <!-- Add to Cart Button (Shows on Hover) -->
-            @if($product->quantity > 0 && !$product->price_tba && $product->price > 0 && $product->display_price)
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                <form action="{{ route('cart.add', $product) }}" method="POST" class="w-full px-4" onclick="event.stopPropagation();">
+            @if($product->quantity > 0)
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" onclick="event.stopPropagation();">
+                @if($product->isKeychain())
+                <a href="{{ route('shop.show', $product) }}" class="w-full px-4">
+                    <span class="flex w-full px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all relative overflow-hidden group/btn justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        Add to Cart
+                    </span>
+                </a>
+                @elseif(!$product->price_tba && $product->price > 0 && $product->display_price)
+                <form action="{{ route('cart.add', $product) }}" method="POST" class="w-full px-4">
                     @csrf
                     <button type="submit" class="w-full px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all relative overflow-hidden group/btn">
                         <span class="relative z-10 flex items-center justify-center">
@@ -81,8 +92,9 @@
                         <span class="absolute inset-0 bg-gradient-to-r from-purple-600 to-violet-600 opacity-0 group-hover/btn:opacity-100 transition-opacity"></span>
                     </button>
                 </form>
+                @endif
             </div>
-            @else
+            @elseif(!$product->isKeychain())
             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
                 <div class="w-full px-4">
                     <button onclick="event.preventDefault(); event.stopPropagation(); openNotifyModal({{ $product->id }}, '{{ $product->name }}');" 

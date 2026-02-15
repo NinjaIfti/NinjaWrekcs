@@ -50,7 +50,8 @@
                 'category_name' => $product->category_name,
                 'image' => $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg',
                 'url' => route('shop.show', $product),
-                'add_to_cart_url' => route('cart.add', $product)
+                'add_to_cart_url' => route('cart.add', $product),
+                'is_keychain' => $product->isKeychain()
             ]) }});" 
             class="absolute top-3 right-3 w-9 h-9 bg-black/70 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-violet-600/90 hover:scale-110 transition-all shadow-lg border border-white/10 z-10">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,13 +106,19 @@
             </div>
             
             <!-- Add Button -->
-            @if($product->quantity > 0 && !$product->price_tba && $product->price > 0 && $product->display_price)
+            @if($product->quantity > 0)
+                @if($product->isKeychain())
+                <a href="{{ route('shop.show', $product) }}" onclick="event.stopPropagation();" class="ml-auto px-4 py-1.5 text-xs font-semibold bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-full hover:from-violet-500 hover:to-pink-500 hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all shadow-md inline-block text-center">
+                    ADD
+                </a>
+                @elseif(!$product->price_tba && $product->price > 0 && $product->display_price)
                 <form action="{{ route('cart.add', $product) }}" method="POST" onclick="event.stopPropagation();" class="ml-auto">
                     @csrf
                     <button type="submit" class="px-4 py-1.5 text-xs font-semibold bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-full hover:from-violet-500 hover:to-pink-500 hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all shadow-md">
                         ADD
                     </button>
                 </form>
+                @endif
             @endif
         </div>
     </div>

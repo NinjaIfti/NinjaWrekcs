@@ -57,7 +57,8 @@
                                 <div class="flex gap-4 md:gap-6">
                                     <!-- Product Image -->
                                     <div class="flex-shrink-0">
-                                        <a href="{{ route('shop.show', $item->attributes->slug) }}">
+                                        @php $cartProductId = $item->attributes->product_id ?? $item->id; @endphp
+                                        <a href="{{ route('shop.show', $cartProductId) }}">
                                             <img src="{{ $item->attributes->image ? asset('storage/' . $item->attributes->image) : '/img/placeholder.jpg' }}" 
                                                  alt="{{ $item->name }}" 
                                                  class="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg border border-violet-500/30">
@@ -68,7 +69,7 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex justify-between items-start mb-3 md:mb-4 gap-2">
                                             <div class="flex-1 min-w-0">
-                                                <a href="{{ route('shop.show', $item->attributes->slug) }}" class="text-lg md:text-xl font-bold text-white hover:text-violet-400 transition-colors line-clamp-2">
+                                                <a href="{{ route('shop.show', $cartProductId) }}" class="text-lg md:text-xl font-bold text-white hover:text-violet-400 transition-colors line-clamp-2">
                                                     {{ $item->name }}
                                                 </a>
                                                 <p class="text-xs md:text-sm text-gray-400 mt-1">{{ $item->attributes->category }}</p>
@@ -113,13 +114,11 @@
                                                 
                                                 // If not set in attributes, check database
                                                 if (!$isBookable) {
-                                                    $productCheck = \App\Models\Product::find($item->id);
+                                                    $productCheck = \App\Models\Product::find($cartProductId);
                                                     $isBookable = $productCheck && (bool) $productCheck->is_bookable;
                                                 }
-                                                
-                                                // For pre-order items, ALWAYS fetch original price from database
                                                 if ($isBookable) {
-                                                    $product = \App\Models\Product::find($item->id);
+                                                    $product = \App\Models\Product::find($cartProductId);
                                                     if ($product) {
                                                         // Always use the product's display_price or price (original, not reduced)
                                                         $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);

@@ -51,11 +51,22 @@
                 <!-- Product Images -->
                 <div class="relative">
                     @php
-                        $gallery = $product->images->count() ? $product->images : collect($product->image ? [(object)['path' => $product->image]] : []);
+                        $hasVariants = $product->variants->isNotEmpty();
+                        if ($hasVariants && $product->cover_photo) {
+                            $gallery = collect([(object)['path' => $product->cover_photo]]);
+                            $firstVariant = $product->variants->first();
+                            foreach ($firstVariant->images as $img) {
+                                $gallery->push($img);
+                            }
+                        } elseif ($hasVariants && $product->variants->first() && $product->variants->first()->images->isNotEmpty()) {
+                            $gallery = $product->variants->first()->images;
+                        } else {
+                            $gallery = $product->images->count() ? $product->images : collect($product->image ? [(object)['path' => $product->image]] : []);
+                        }
                     @endphp
-                    <div class="relative rounded-2xl overflow-hidden border border-violet-500/30 bg-gray-900">
+                    <div class="relative rounded-2xl overflow-hidden border border-violet-500/30 bg-gray-900" id="product-gallery-wrap">
                         @if($gallery->count())
-                            <div class="product-slideshow">
+                            <div class="product-slideshow" id="product-slideshow">
                                 @foreach($gallery as $idx => $img)
                                     <div class="product-slide {{ $idx === 0 ? 'active' : '' }}">
                                         <img src="{{ asset('storage/' . $img->path) }}" alt="{{ $product->name }}" class="w-full h-auto object-cover">
@@ -100,7 +111,19 @@
                         <span class="glitch-text" data-text="{{ $product->name }}">{{ $product->name }}</span>
                     </h1>
 
-                    <!-- Rating -->
+                    @if($hasVariants)
+                    <!-- Keychain variant selector -->
+                    <div class="space-y-2">
+                        <label for="variant_id" class="block text-sm font-medium text-gray-400">Choose variant</label>
+                        <select id="variant_id" name="variant_id" class="w-full max-w-md px-4 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">
+                            @foreach($product->variants as $v)
+                            <option value="{{ $v->id }}" data-price="{{ $v->price }}" data-images="{{ $v->images->map(fn($i) => asset('storage/'.$i->path))->values()->toJson() }}" data-cover="{{ $product->cover_photo ? asset('storage/'.$product->cover_photo) : '' }}">
+                                {{ $v->name }} — ৳{{ number_format($v->price, 2) }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
 
                     <!-- Price -->
                     @if($product->price_tba)
@@ -111,17 +134,19 @@
                             </div>
                         </div>
                     </div>
-                    @elseif($product->price_tba || $product->price == 0 || !$product->display_price)
+                    @elseif($product->price_tba || $product->price == 0 || (!$product->display_price && !$hasVariants))
                         <div class="text-center py-8">
                             <div class="text-2xl font-bold text-yellow-400 mb-2">
                                 ⏳ Price to be announced
                             </div>
                             <p class="text-gray-400">We're finalizing the pricing for this product. Please check back soon!</p>
                         </div>
-                    @elseif($product->display_price)
-                    <div class="space-y-3">
+                    @elseif($hasVariants || $product->display_price)
+                    <div class="space-y-3" id="price-block">
                         <div class="flex items-center gap-3">
-                            @if($product->has_discount)
+                            @if($hasVariants)
+                                <div class="text-3xl font-bold text-violet-400" id="variant-price">৳{{ number_format($product->variants->first()->price ?? 0, 2) }}</div>
+                            @elseif($product->has_discount)
                                 <div class="text-3xl font-bold text-violet-400">
                                     ৳{{ number_format($product->display_price, 2) }}
                                 </div>
@@ -186,9 +211,13 @@
 
                     <!-- Action Buttons -->
                     <div class="border-t border-violet-500/20 pt-6 space-y-4">
-                        @if($product->quantity > 0 && !$product->price_tba && $product->price > 0 && $product->display_price)
-                            <form action="{{ route('cart.add', $product) }}" method="POST" class="space-y-4">
+                        @php $canAddToCart = $product->quantity > 0 && !$product->price_tba && ($hasVariants || ($product->price > 0 && $product->display_price)); @endphp
+                        @if($canAddToCart)
+                            <form action="{{ route('cart.add', $product) }}" method="POST" class="space-y-4" id="add-to-cart-form">
                                 @csrf
+                                @if($hasVariants)
+                                    <input type="hidden" name="variant_id" id="form_variant_id" value="{{ $product->variants->first()->id }}">
+                                @endif
                                 <div class="flex items-center space-x-4">
                                     <label for="quantity" class="text-gray-300">Quantity:</label>
                                     <input type="number" 
@@ -211,7 +240,7 @@
                             </form>
                         @else
                             <button disabled class="w-full px-8 py-4 bg-gray-600 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
-                                @if($product->price_tba || $product->price == 0 || !$product->display_price)
+                                @if($product->price_tba || $product->price == 0 || (!$product->display_price && !$hasVariants))
                                     Price to be announced
                                 @elseif($product->quantity <= 0)
                                     Out of Stock
@@ -254,32 +283,67 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const slides = Array.from(document.querySelectorAll('.product-slide'));
-            if (slides.length === 0) return;
-            const dots = Array.from(document.querySelectorAll('.product-dot'));
-            const prev = document.querySelector('.product-prev');
-            const next = document.querySelector('.product-next');
-            let current = 0;
+            const slideshow = document.getElementById('product-slideshow');
+            const wrap = document.getElementById('product-gallery-wrap');
+            const variantSelect = document.getElementById('variant_id');
+            const variantPriceEl = document.getElementById('variant-price');
+            const formVariantInput = document.getElementById('form_variant_id');
 
-            const showSlide = (index) => {
-                slides.forEach((s, i) => {
-                    s.classList.toggle('active', i === index);
+            const rebuildSlideshow = (imageUrls) => {
+                if (!wrap || !imageUrls || !imageUrls.length) return;
+                let html = '<div class="product-slideshow" id="product-slideshow">';
+                imageUrls.forEach((url, i) => {
+                    html += '<div class="product-slide' + (i === 0 ? ' active' : '') + '"><img src="' + url + '" alt="" class="w-full h-auto object-cover"><div class="absolute inset-0 glitch-overlay opacity-30"></div></div>';
                 });
-                dots.forEach((d, i) => {
-                    d.classList.toggle('bg-violet-400', i === index);
-                    d.classList.toggle('bg-violet-500/40', i !== index);
-                });
-                current = index;
+                html += '</div>';
+                if (imageUrls.length > 1) {
+                    html += '<div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">';
+                    imageUrls.forEach((_, i) => {
+                        html += '<button class="product-dot ' + (i === 0 ? 'bg-violet-400' : 'bg-violet-500/40') + '" data-slide="' + i + '" aria-label="Slide ' + (i+1) + '"></button>';
+                    });
+                    html += '</div><button class="product-nav product-prev" aria-label="Previous"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button><button class="product-nav product-next" aria-label="Next"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>';
+                }
+                wrap.innerHTML = html;
+                initSlideshow();
             };
 
-            const nextSlide = () => showSlide((current + 1) % slides.length);
-            const prevSlide = () => showSlide((current - 1 + slides.length) % slides.length);
+            const initSlideshow = () => {
+                const slides = Array.from(document.querySelectorAll('.product-slide'));
+                if (slides.length === 0) return;
+                const dots = Array.from(document.querySelectorAll('.product-dot'));
+                const prev = document.querySelector('.product-prev');
+                const next = document.querySelector('.product-next');
+                let current = 0;
+                const showSlide = (index) => {
+                    slides.forEach((s, i) => s.classList.toggle('active', i === index));
+                    dots.forEach((d, i) => {
+                        d.classList.toggle('bg-violet-400', i === index);
+                        d.classList.toggle('bg-violet-500/40', i !== index);
+                    });
+                    current = index;
+                };
+                dots.forEach((dot, i) => dot.addEventListener('click', () => showSlide(i)));
+                if (next) next.addEventListener('click', () => showSlide((current + 1) % slides.length));
+                if (prev) prev.addEventListener('click', () => showSlide((current - 1 + slides.length) % slides.length));
+            };
 
-            dots.forEach((dot, i) => dot.addEventListener('click', () => showSlide(i)));
-            if (next) next.addEventListener('click', nextSlide);
-            if (prev) prev.addEventListener('click', prevSlide);
+            if (variantSelect) {
+                variantSelect.addEventListener('change', function() {
+                    const opt = this.options[this.selectedIndex];
+                    const price = opt.getAttribute('data-price');
+                    const imagesJson = opt.getAttribute('data-images');
+                    const cover = opt.getAttribute('data-cover') || '';
+                    if (formVariantInput) formVariantInput.value = this.value;
+                    if (variantPriceEl && price) variantPriceEl.textContent = '৳' + parseFloat(price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    if (imagesJson) {
+                        let urls = JSON.parse(imagesJson);
+                        if (cover) urls = [cover].concat(urls);
+                        rebuildSlideshow(urls);
+                    }
+                });
+            }
 
-            showSlide(0);
+            initSlideshow();
         });
     </script>
     

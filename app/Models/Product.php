@@ -24,6 +24,7 @@ class Product extends Model
         'offer_starts_at',
         'offer_ends_at',
         'image',
+        'cover_photo',
         'category',
         'category_id',
         'rating',
@@ -74,6 +75,19 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)->orderBy('sort_order');
+    }
+
+    public function isKeychain(): bool
+    {
+        $category = $this->relationLoaded('category')
+            ? $this->getRelation('category')
+            : $this->category()->first();
+        return $category && is_object($category) && $category->slug === 'valorant-keychains-stickers';
     }
 
     public function getCategoryNameAttribute()

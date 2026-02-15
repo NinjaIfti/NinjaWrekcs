@@ -12,7 +12,7 @@
 
     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
         <div class="p-6">
-            <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" id="product-create-form" data-keychains-category-id="{{ $keychainsCategoryId ?? '' }}">
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -178,7 +178,23 @@
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Upload one or more images. Max size: 10MB each. Formats: JPEG, PNG, JPG, GIF</p>
                         </div>
 
-                        <!-- Rating & Reviews -->
+                        <!-- Keychain-only: Cover photo & Variants (show when category = Keychains & Stickers) -->
+                        <div id="keychain-section" class="border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-lg p-4 bg-amber-50 dark:bg-amber-900/20 space-y-6" style="display: none;">
+                            <h3 class="text-sm font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                                <span>🔑</span> Keychain options (variants, pricing, pictures) — Valorant Keychains & Stickers only
+                            </h3>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cover photo (keychain product)</label>
+                                <input type="file" name="cover_photo" accept="image/*" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Variants (name, price, pictures)</label>
+                                <div id="new-variants-container-create"></div>
+                                <button type="button" id="add-variant-btn-create" class="mt-2 inline-flex items-center px-3 py-2 text-sm font-semibold border border-dashed border-amber-500 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-500/10 transition">
+                                    <span class="text-lg leading-none mr-2">+</span> Add variant
+                                </button>
+                            </div>
+                        </div>
 
                         <!-- Active Status -->
                         <div>
@@ -244,6 +260,36 @@
                     input.accept = 'image/*';
                     input.className = 'w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
                     container.appendChild(input);
+                });
+            }
+
+            const form = document.getElementById('product-create-form');
+            const keychainSection = document.getElementById('keychain-section');
+            const categorySelect = document.getElementById('category_id');
+            const keychainsCategoryId = form && form.dataset.keychainsCategoryId ? String(form.dataset.keychainsCategoryId) : '';
+            function toggleKeychainSection() {
+                if (!keychainSection || !categorySelect) return;
+                keychainSection.style.display = categorySelect.value === keychainsCategoryId ? 'block' : 'none';
+            }
+            if (categorySelect) {
+                categorySelect.addEventListener('change', toggleKeychainSection);
+                toggleKeychainSection();
+            }
+
+            let newVariantIndexCreate = 0;
+            const newVariantsContainerCreate = document.getElementById('new-variants-container-create');
+            const addVariantBtnCreate = document.getElementById('add-variant-btn-create');
+            if (newVariantsContainerCreate && addVariantBtnCreate) {
+                addVariantBtnCreate.addEventListener('click', () => {
+                    const block = document.createElement('div');
+                    block.className = 'mb-4 p-4 border border-amber-200 dark:border-amber-800 rounded-lg bg-amber-50/50 dark:bg-amber-900/10';
+                    block.innerHTML = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">' +
+                        '<input type="text" name="new_variants[' + newVariantIndexCreate + '][name]" placeholder="Variant name" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">' +
+                        '<input type="number" name="new_variants[' + newVariantIndexCreate + '][price]" step="0.01" min="0" placeholder="Price ৳" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">' +
+                        '</div>' +
+                        '<input type="file" name="new_variants[' + newVariantIndexCreate + '][images][]" accept="image/*" multiple class="w-full text-sm border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">';
+                    newVariantsContainerCreate.appendChild(block);
+                    newVariantIndexCreate++;
                 });
             }
         });

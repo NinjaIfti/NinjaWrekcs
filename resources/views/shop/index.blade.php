@@ -489,6 +489,12 @@
                     
                     <!-- Actions -->
                     <div class="flex gap-3 pt-4">
+                        <a id="qv-add-to-cart-link" href="#" class="flex-1 hidden px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition-all flex items-center justify-center text-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            Add to Cart
+                        </a>
                         <form id="qv-add-to-cart-form" method="POST" class="flex-1">
                             <input type="hidden" name="_token" value="{{ csrf_token() }}">
                             <button type="submit" id="qv-add-to-cart-btn" class="w-full px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition-all flex items-center justify-center">
@@ -727,31 +733,39 @@
                 stockContainer.innerHTML = `<p class="text-sm text-red-400">✗ Out of Stock</p>`;
             }
             
-            // Set form action and button
+            // Set form / link for Add to Cart (keychains go to product page)
             const form = document.getElementById('qv-add-to-cart-form');
+            const addLink = document.getElementById('qv-add-to-cart-link');
             const addButton = document.getElementById('qv-add-to-cart-btn');
-            form.action = product.add_to_cart_url;
             
-            const canAddToCart = product.quantity > 0 && !product.price_tba && price > 0 && displayPrice;
-            
-            if (canAddToCart) {
-                addButton.disabled = false;
-                addButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                addButton.innerHTML = `
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-                    </svg>
-                    Add to Cart
-                `;
+            if (product.is_keychain && product.quantity > 0) {
+                addLink.href = product.url;
+                addLink.classList.remove('hidden');
+                form.classList.add('hidden');
             } else {
-                addButton.disabled = true;
-                addButton.classList.add('opacity-50', 'cursor-not-allowed');
-                if (product.quantity <= 0) {
-                    addButton.innerHTML = 'Out of Stock';
-                } else if (product.price_tba || price === 0 || !displayPrice) {
-                    addButton.innerHTML = 'Price to be announced';
+                addLink.classList.add('hidden');
+                form.classList.remove('hidden');
+                form.action = product.add_to_cart_url;
+                const canAddToCart = product.quantity > 0 && !product.price_tba && price > 0 && displayPrice;
+                if (canAddToCart) {
+                    addButton.disabled = false;
+                    addButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    addButton.innerHTML = `
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        Add to Cart
+                    `;
                 } else {
-                    addButton.innerHTML = 'Unavailable';
+                    addButton.disabled = true;
+                    addButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    if (product.quantity <= 0) {
+                        addButton.innerHTML = 'Out of Stock';
+                    } else if (product.price_tba || price === 0 || !displayPrice) {
+                        addButton.innerHTML = 'Price to be announced';
+                    } else {
+                        addButton.innerHTML = 'Unavailable';
+                    }
                 }
             }
             

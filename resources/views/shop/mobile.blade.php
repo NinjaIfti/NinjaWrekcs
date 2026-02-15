@@ -326,7 +326,8 @@
                             'category_name' => $product->category_name,
                             'image' => $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg',
                             'url' => route('shop.show', $product),
-                            'add_to_cart_url' => route('cart.add', $product)
+                            'add_to_cart_url' => route('cart.add', $product),
+                            'is_keychain' => $product->isKeychain()
                         ]) }});" class="absolute top-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-violet-600 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -375,12 +376,18 @@
                         @endif
                         
                         @if($product->quantity > 0)
+                            @if($product->isKeychain())
+                            <a href="{{ route('shop.show', $product) }}" onclick="event.stopPropagation();" class="px-3 py-2 text-xs font-semibold bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg hover:scale-105 transition inline-block">
+                                Add
+                            </a>
+                            @else
                             <form action="{{ route('cart.add', $product) }}" method="POST" onclick="event.stopPropagation();">
                                 @csrf
                                 <button type="submit" class="px-3 py-2 text-xs font-semibold bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg hover:scale-105 transition">
                                     Add
                                 </button>
                             </form>
+                            @endif
                         @endif
                     </div>
                 </div>

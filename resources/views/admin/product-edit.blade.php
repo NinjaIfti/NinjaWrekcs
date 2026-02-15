@@ -205,6 +205,55 @@
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Upload one or more images. Max size: 10MB each.</p>
                         </div>
 
+                        @if($product->isKeychain())
+                        <!-- Keychain-only: Cover photo & Variants (Valorant Keychains & Stickers) -->
+                        <div class="border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-lg p-4 bg-amber-50 dark:bg-amber-900/20 space-y-6">
+                            <h3 class="text-sm font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                                <span>🔑</span> Keychain options (variants, pricing, pictures)
+                            </h3>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cover photo (keychain product)</label>
+                                @if($product->cover_photo)
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <img src="{{ asset('storage/' . $product->cover_photo) }}" alt="Cover" class="h-24 w-24 object-cover rounded-lg border border-gray-300 dark:border-gray-700">
+                                        <label class="flex items-center"><input type="checkbox" name="delete_cover_photo" value="1" class="rounded border-gray-300 dark:border-gray-700 text-amber-600"> <span class="ml-2 text-sm">Remove cover photo</span></label>
+                                    </div>
+                                @endif
+                                <input type="file" name="cover_photo" accept="image/*" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Single image used as main cover for this keychain product.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Variants (name, price, pictures)</label>
+                                @foreach($product->variants as $v)
+                                <div class="variant-block mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900/50" data-variant-id="{{ $v->id }}">
+                                    <div class="flex justify-between items-start gap-2 mb-2">
+                                        <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <input type="text" name="variants[{{ $v->id }}][name]" value="{{ old('variants.'.$v->id.'.name', $v->name) }}" placeholder="Variant name" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">
+                                            <input type="number" name="variants[{{ $v->id }}][price]" value="{{ old('variants.'.$v->id.'.price', $v->price) }}" step="0.01" min="0" placeholder="Price ৳" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">
+                                        </div>
+                                        <label class="flex items-center shrink-0 text-red-600 dark:text-red-400 text-sm whitespace-nowrap"><input type="checkbox" name="delete_variants[]" value="{{ $v->id }}" class="rounded"> <span class="ml-1">Delete</span></label>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2 mb-2">
+                                        @foreach($v->images as $img)
+                                        <div class="flex flex-col items-center">
+                                            <img src="{{ asset('storage/' . $img->path) }}" alt="" class="h-16 w-16 object-cover rounded border border-gray-300 dark:border-gray-700">
+                                            <label class="text-xs mt-1 flex items-center gap-1"><input type="checkbox" name="variants[{{ $v->id }}][delete_images][]" value="{{ $img->id }}" class="rounded"> Remove</label>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                    <input type="file" name="variants[{{ $v->id }}][images][]" accept="image/*" multiple class="w-full text-sm border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+                                </div>
+                                @endforeach
+
+                                <div id="new-variants-container"></div>
+                                <button type="button" id="add-variant-btn" class="mt-2 inline-flex items-center px-3 py-2 text-sm font-semibold border border-dashed border-amber-500 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-500/10 transition">
+                                    <span class="text-lg leading-none mr-2">+</span> Add variant
+                                </button>
+                            </div>
+                        </div>
+                        @endif
 
                         <!-- Active Status -->
                         <div>
@@ -270,6 +319,23 @@
                     input.accept = 'image/*';
                     input.className = 'w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
                     container.appendChild(input);
+                });
+            }
+
+            let newVariantIndex = 0;
+            const newVariantsContainer = document.getElementById('new-variants-container');
+            const addVariantBtn = document.getElementById('add-variant-btn');
+            if (newVariantsContainer && addVariantBtn) {
+                addVariantBtn.addEventListener('click', () => {
+                    const block = document.createElement('div');
+                    block.className = 'mb-4 p-4 border border-amber-200 dark:border-amber-800 rounded-lg bg-amber-50/50 dark:bg-amber-900/10';
+                    block.innerHTML = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">' +
+                        '<input type="text" name="new_variants[' + newVariantIndex + '][name]" placeholder="Variant name" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">' +
+                        '<input type="number" name="new_variants[' + newVariantIndex + '][price]" step="0.01" min="0" placeholder="Price ৳" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">' +
+                        '</div>' +
+                        '<input type="file" name="new_variants[' + newVariantIndex + '][images][]" accept="image/*" multiple class="w-full text-sm border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">';
+                    newVariantsContainer.appendChild(block);
+                    newVariantIndex++;
                 });
             }
         });
