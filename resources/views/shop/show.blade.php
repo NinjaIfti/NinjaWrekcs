@@ -107,8 +107,8 @@
                     </div>
 
                     <!-- Product Name -->
-                    <h1 class="text-4xl md:text-5xl font-bold">
-                        <span class="glitch-text" data-text="{{ $product->name }}">{{ $product->name }}</span>
+                    <h1 class="text-4xl md:text-5xl font-bold text-white">
+                        {{ $product->name }}
                     </h1>
 
                     @if($hasVariants)

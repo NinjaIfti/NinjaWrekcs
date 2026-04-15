@@ -163,10 +163,13 @@ class CheckoutController extends Controller
             }
         }
 
-        // Add email and password fields for non-logged-in users (required)
         if (!$isLoggedIn) {
-            $rules['email'] = 'required|email|max:255';
-            $rules['password'] = 'required|string|min:8';
+            if ($request->boolean('create_account')) {
+                $rules['email'] = 'required|email|max:255';
+                $rules['password'] = 'required|string|min:8';
+            } else {
+                $rules['email'] = 'nullable|email|max:255';
+            }
         }
 
         $validated = $request->validate($rules);
@@ -184,27 +187,22 @@ class CheckoutController extends Controller
             $accountCreated = false;
             $passwordUpdated = false;
             
-            if (!$isLoggedIn) {
-                // Check if email already exists
+            if (!$isLoggedIn && $request->boolean('create_account')) {
                 $existingUser = \App\Models\User::where('email', $validated['email'])->first();
-                
+
                 if ($existingUser) {
-                    // Email exists - update the existing account with new password and info
                     $existingUser->update([
                         'name' => $validated['name'],
                         'phone' => $validated['phone'],
                         'address' => $validated['address'],
                         'password' => Hash::make($validated['password']),
                     ]);
-                    
+
                     $user = $existingUser;
                     $passwordUpdated = true;
-                    
-                    // Auto-login the user with updated credentials
+
                     Auth::login($user);
-                    
                 } else {
-                    // Create new user account
                     $user = \App\Models\User::create([
                         'name' => $validated['name'],
                         'email' => $validated['email'],
@@ -216,10 +214,8 @@ class CheckoutController extends Controller
 
                     $accountCreated = true;
 
-                    // Auto-login the new user
                     Auth::login($user);
 
-                    // Send welcome notification
                     NotificationService::create(
                         $user,
                         NotificationService::TYPE_ORDER_UPDATE,
@@ -231,6 +227,8 @@ class CheckoutController extends Controller
                         'green'
                     );
                 }
+            } elseif (!$isLoggedIn) {
+                $user = null;
             } else {
                 $user = Auth::user();
                 
@@ -313,9 +311,14 @@ class CheckoutController extends Controller
             
             $finalTotal = max(0, $cartSubTotal + $deliveryCharge - $totalDiscount);
 
+            $orderEmail = $user?->email;
+            if (!$orderEmail && !empty($validated['email'] ?? null)) {
+                $orderEmail = $validated['email'];
+            }
+
             // Create order
             $order = Order::create([
-                'user_id' => $user->id,
+                'user_id' => $user?->id,
                 'coupon_id' => $coupon?->id,
                 'coupon_code' => $coupon?->code,
                 'coupon_discount' => $couponDiscount,
@@ -324,7 +327,7 @@ class CheckoutController extends Controller
                 'address' => $validated['address'],
                 'delivery_location' => $validated['delivery_location'],
                 'delivery_charge' => $deliveryCharge,
-                'email' => $user->email,
+                'email' => $orderEmail,
                 'subtotal' => $cartSubTotal,
                 'discount' => $totalDiscount,
                 'total' => $finalTotal,
@@ -388,17 +391,18 @@ class CheckoutController extends Controller
             \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
             \Illuminate\Support\Facades\Cache::forget('admin_financial_data');
 
-            // Send order confirmation email
+            // Send order confirmation email when we have a valid address
             $order->load('items');
-            $emailResult = EmailService::sendWithFallback(
-                new OrderConfirmation($order),
-                $order->email,
-                'order confirmation'
-            );
+            if ($order->email && filter_var($order->email, FILTER_VALIDATE_EMAIL)) {
+                $emailResult = EmailService::sendWithFallback(
+                    new OrderConfirmation($order),
+                    $order->email,
+                    'order confirmation'
+                );
 
-            // Add email status to session if failed
-            if (!$emailResult['success']) {
-                session()->flash('email_warning', 'Order placed successfully, but confirmation email could not be sent. Please check your email or contact support.');
+                if (!$emailResult['success']) {
+                    session()->flash('email_warning', 'Order placed successfully, but confirmation email could not be sent. Please check your email or contact support.');
+                }
             }
 
             // Send admin notification email
@@ -422,6 +426,11 @@ class CheckoutController extends Controller
                 $successMessage = 'Order placed successfully! 🎉 Your account has been created and you are now logged in. You can track your order from your profile.';
             } elseif ($passwordUpdated) {
                 $successMessage = 'Order placed successfully! We found an existing account with your email, so we updated your password and logged you in.';
+            } elseif (!$isLoggedIn && !$request->boolean('create_account')) {
+                $successMessage = 'Order placed successfully! Your order number is #' . $order->id . '.';
+                if (!empty($order->email)) {
+                    $successMessage .= ' We sent a confirmation to your email.';
+                }
             } else {
                 $successMessage = 'Order placed successfully!';
             }
@@ -458,8 +467,7 @@ class CheckoutController extends Controller
 
     public function success(Order $order): View
     {
-        // For checkout success, only allow if user owns the order OR if it's a guest order
-        if ($order->user_id && Auth::id() !== $order->user_id) {
+        if ($order->user_id !== null && Auth::id() !== $order->user_id) {
             abort(403);
         }
 
