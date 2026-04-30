@@ -7,6 +7,44 @@
 
     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
         <div class="p-6">
+            @if(session('success'))
+                <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('warning'))
+                <div class="mb-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+                    {{ session('warning') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
+            <form action="{{ route('admin.giveaway.manual-store') }}" method="POST" class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                @csrf
+                <label for="manual_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    Manual phone entry
+                </label>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input
+                        id="manual_phone"
+                        name="phone"
+                        type="text"
+                        placeholder="+8801XXXXXXXXX / 8801XXXXXXXXX / 01XXXXXXXXX"
+                        class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        required
+                    >
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition whitespace-nowrap">
+                        Add Manual Entry
+                    </button>
+                </div>
+            </form>
+
             <div class="mb-6 flex flex-wrap gap-3 items-center justify-between">
                 <div class="text-sm text-gray-600 dark:text-gray-300">
                     Total entries: <span class="font-bold text-gray-900 dark:text-white">{{ $entries->count() }}</span>

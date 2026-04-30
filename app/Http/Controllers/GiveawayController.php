@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GiveawayEntry;
 use App\Models\Order;
+use App\Services\MimsmsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -21,14 +22,18 @@ class GiveawayController extends Controller
             'phone' => 'required|string|max:30',
         ]);
 
-        $phone = trim($request->string('phone')->toString());
+        $phone = trim((string) $request->input('phone', ''));
+        $phoneCore = $this->phoneCore($phone);
 
         $orders = Order::query()
             ->where('is_deleted', false)
             ->where('status', 'delivered')
-            ->where('phone', 'like', '%' . $phone . '%')
             ->latest()
-            ->get();
+            ->get()
+            ->filter(function (Order $order) use ($phoneCore) {
+                return $this->phoneCore((string) $order->phone) === $phoneCore;
+            })
+            ->values();
 
         $enteredOrderIds = GiveawayEntry::query()
             ->whereIn('order_id', $orders->pluck('id'))
@@ -78,5 +83,49 @@ class GiveawayController extends Controller
         return view('admin.giveaway', [
             'entries' => $entries,
         ]);
+    }
+
+    public function manualStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'phone' => 'required|string|max:30',
+        ]);
+
+        $normalizedPhone = MimsmsService::normalizePhone($validated['phone']);
+        $phoneCore = $this->phoneCore($normalizedPhone);
+        if ($phoneCore === '') {
+            return back()->with('warning', 'Invalid phone number format.');
+        }
+
+        GiveawayEntry::create([
+            'order_id' => null,
+            'phone' => $normalizedPhone,
+            'invoice_number' => 'MANUAL-' . now()->format('YmdHis'),
+            'order_date' => now(),
+        ]);
+
+        return back()->with('success', 'Manual phone entry added.');
+    }
+
+    private function phoneCore(string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', $phone) ?? '';
+        if ($digits === '') {
+            return '';
+        }
+
+        if (str_starts_with($digits, '880') && strlen($digits) >= 13) {
+            return substr($digits, -10);
+        }
+
+        if (str_starts_with($digits, '0') && strlen($digits) >= 11) {
+            return substr($digits, -10);
+        }
+
+        if (strlen($digits) >= 10) {
+            return substr($digits, -10);
+        }
+
+        return '';
     }
 }

@@ -73,7 +73,7 @@ Route::get('/terms', function () {
 })->name('terms');
 
 Route::get('/agent-code', [GiveawayController::class, 'page'])->name('agent-code');
-Route::post('/agent-code/search', [GiveawayController::class, 'search'])->name('agent-code.search');
+Route::match(['get', 'post'], '/agent-code/search', [GiveawayController::class, 'search'])->name('agent-code.search');
 Route::post('/agent-code/enter', [GiveawayController::class, 'enter'])->name('agent-code.enter');
 
 // Sitemap
@@ -329,6 +329,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');
     Route::get('/giveaway', [GiveawayController::class, 'adminIndex'])->name('giveaway');
+    Route::post('/giveaway/manual', [GiveawayController::class, 'manualStore'])->name('giveaway.manual-store');
 });
 
 require __DIR__.'/auth.php';
