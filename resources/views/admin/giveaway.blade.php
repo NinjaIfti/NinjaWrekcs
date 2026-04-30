@@ -73,6 +73,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Invoice</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Order Date</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Entered At</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Action</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="giveawayBody">
@@ -83,6 +84,15 @@
                                     <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $entry->invoice_number ?? ('INV-' . $entry->order_id) }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ optional($entry->order_date)->format('d M Y h:i A') ?? '-' }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $entry->created_at->format('d M Y h:i A') }}</td>
+                                    <td class="px-4 py-3 text-right">
+                                        <form action="{{ route('admin.giveaway.destroy', $entry) }}" method="POST" onsubmit="return confirm('Delete this giveaway entry?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

@@ -330,6 +330,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');
     Route::get('/giveaway', [GiveawayController::class, 'adminIndex'])->name('giveaway');
     Route::post('/giveaway/manual', [GiveawayController::class, 'manualStore'])->name('giveaway.manual-store');
+    Route::delete('/giveaway/{entry}', [GiveawayController::class, 'destroy'])->name('giveaway.destroy');
 });
 
 require __DIR__.'/auth.php';

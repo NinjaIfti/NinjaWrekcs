@@ -107,6 +107,13 @@ class GiveawayController extends Controller
         return back()->with('success', 'Manual phone entry added.');
     }
 
+    public function destroy(GiveawayEntry $entry): RedirectResponse
+    {
+        $entry->delete();
+
+        return back()->with('success', 'Giveaway entry deleted.');
+    }
+
     private function phoneCore(string $phone): string
     {
         $digits = preg_replace('/\D/', '', $phone) ?? '';
