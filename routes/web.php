@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GiveawayController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StockNotificationController;
 use Illuminate\Support\Facades\Auth;
@@ -71,9 +72,9 @@ Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
 
-Route::get('/agent-code', function () {
-    return view('agent-code');
-})->name('agent-code');
+Route::get('/agent-code', [GiveawayController::class, 'page'])->name('agent-code');
+Route::post('/agent-code/search', [GiveawayController::class, 'search'])->name('agent-code.search');
+Route::post('/agent-code/enter', [GiveawayController::class, 'enter'])->name('agent-code.enter');
 
 // Sitemap
 Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
@@ -327,6 +328,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');
+    Route::get('/giveaway', [GiveawayController::class, 'adminIndex'])->name('giveaway');
 });
 
 require __DIR__.'/auth.php';
