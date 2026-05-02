@@ -47,8 +47,7 @@
                     </div>
                 @endif
 
-                <form action="{{ route('agent-code.search') }}" method="POST" class="mb-6">
-                    @csrf
+                <form action="{{ route('agent-code.search') }}" method="GET" class="mb-6">
                     <label for="phone" class="block text-sm font-medium text-gray-300 mb-2">Phone number</label>
                     <div class="flex flex-col sm:flex-row gap-3">
                         <input
