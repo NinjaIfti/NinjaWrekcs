@@ -61,8 +61,8 @@
             </nav>
 
             <!-- Show Main Categories OR Subcategories based on selection -->
-            @if(!$selectedCategoryId)
-                <!-- Main Category Cards - Show when NO category selected -->
+            @if(!$selectedCategoryId && !$search)
+                <!-- Main Category Cards - Show when NO category selected and not searching -->
                 <div class="mb-12">
                     <div class="text-center mb-12">
                         <h1 class="text-5xl md:text-6xl font-bold mb-4">
@@ -129,8 +129,8 @@
                 <!-- Show Selected Category Products -->
             <div id="products-section" class="mb-8 overflow-visible">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">
-                        <span class="glitch-text" data-text="{{ $selectedCategory ? $selectedCategory->name : 'Shop' }}">
-                            {{ $selectedCategory ? $selectedCategory->name : 'Shop' }}
+                        <span class="glitch-text" data-text="{{ $selectedCategory ? $selectedCategory->name : ($search ? 'Search Results' : 'Shop') }}">
+                            {{ $selectedCategory ? $selectedCategory->name : ($search ? 'Search Results' : 'Shop') }}
                         </span>
                 </h1>
                     <div class="flex items-center gap-4 mb-8">
@@ -168,7 +168,7 @@
                             @endif
                         </div>
                         <!-- Hidden inputs to preserve other filters -->
-                        @if($selectedCategory)<input type="hidden" name="category" value="{{ $selectedCategory }}">@endif
+                        @if($selectedCategoryId)<input type="hidden" name="category_id" value="{{ $selectedCategoryId }}">@endif
                         @if($minPrice)<input type="hidden" name="min_price" value="{{ $minPrice }}">@endif
                         @if($maxPrice)<input type="hidden" name="max_price" value="{{ $maxPrice }}">@endif
                         @if($sort !== 'newest')<input type="hidden" name="sort" value="{{ $sort }}">@endif

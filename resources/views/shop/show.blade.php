@@ -211,7 +211,7 @@
 
                     <!-- Action Buttons -->
                     <div class="border-t border-violet-500/20 pt-6 space-y-4">
-                        @php $canAddToCart = $product->quantity > 0 && !$product->price_tba && ($hasVariants || ($product->price > 0 && $product->display_price)); @endphp
+                        @php $canAddToCart = $product->quantity > 0 && !$product->price_tba && !$product->is_upcoming && ($hasVariants || ($product->price > 0 && $product->display_price)); @endphp
                         @if($canAddToCart)
                             <form action="{{ route('cart.add', $product) }}" method="POST" class="space-y-4" id="add-to-cart-form">
                                 @csrf

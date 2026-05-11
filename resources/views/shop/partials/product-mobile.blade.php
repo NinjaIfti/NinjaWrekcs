@@ -106,10 +106,12 @@
             </div>
             
             <!-- Add Button -->
+            @php $hasVariants = $product->variants->isNotEmpty(); @endphp
             @if($product->quantity > 0)
-                @if($product->isKeychain())
+                @if($product->isKeychain() || $hasVariants)
+                {{-- Keychains and multi-variant products need the PDP to pick options --}}
                 <a href="{{ route('shop.show', $product) }}" onclick="event.stopPropagation();" class="ml-auto px-4 py-1.5 text-xs font-semibold bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-full hover:from-violet-500 hover:to-pink-500 hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all shadow-md inline-block text-center">
-                    ADD
+                    {{ $hasVariants ? 'OPTIONS' : 'ADD' }}
                 </a>
                 @elseif(!$product->price_tba && $product->price > 0 && $product->display_price)
                 <form action="{{ route('cart.add', $product) }}" method="POST" onclick="event.stopPropagation();" class="ml-auto">

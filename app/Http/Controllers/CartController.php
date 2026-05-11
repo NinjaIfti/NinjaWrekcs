@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
@@ -97,8 +96,11 @@ class CartController extends Controller
                 if (isset($item->attributes->is_bookable)) {
                     $isBookable = (bool) $item->attributes->is_bookable;
                 } else {
-                    // Fallback to database check
-                    $existingProduct = Product::find($item->id);
+                    // Parse composite ids like "12_3" (product_variant) before DB lookup
+                    $existingProductId = is_string($item->id) && str_contains($item->id, '_')
+                        ? (int) explode('_', $item->id)[0]
+                        : $item->id;
+                    $existingProduct = Product::find($existingProductId);
                     $isBookable = $existingProduct && (bool) $existingProduct->is_bookable;
                 }
                 
@@ -150,7 +152,10 @@ class CartController extends Controller
 
     public function update(Request $request, $itemId)
     {
-        $quantity = $request->input('quantity', 1);
+        $quantity = (int) $request->input('quantity', 1);
+        if ($quantity < 1) {
+            return redirect()->route('cart.index')->with('error', 'Quantity must be at least 1.');
+        }
         $cartItem = \Cart::get($itemId);
         if (!$cartItem) {
             return redirect()->route('cart.index')->with('error', 'Item not found in cart.');

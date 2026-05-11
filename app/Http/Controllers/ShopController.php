@@ -73,7 +73,7 @@ class ShopController extends Controller
         
         if ($shouldCache && $cacheKey) {
             $products = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1800, function () use ($perPage) {
-                return Product::with('images', 'category')
+                return Product::with('images', 'category', 'variants')
                     ->where('is_active', true)
                     ->latest()
                     ->paginate($perPage);
@@ -82,7 +82,7 @@ class ShopController extends Controller
         } else {
             // Fetch products from database (not cached when filters are applied)
             // Exclude products with null category_id when filtering by category
-            $query = Product::with('images', 'category')->where('is_active', true);
+            $query = Product::with('images', 'category', 'variants')->where('is_active', true);
             
             // If filtering by category, exclude products with null category_id
             if ($categoryId) {

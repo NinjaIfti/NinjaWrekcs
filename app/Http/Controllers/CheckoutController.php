@@ -435,6 +435,10 @@ class CheckoutController extends Controller
                 $successMessage = 'Order placed successfully!';
             }
 
+            // Store order ID in session so the success page can verify access
+            // even if Auth::login() session regeneration doesn't carry over cleanly
+            session(['checkout_order_id' => $order->id]);
+
             return redirect()->route('checkout.success', $order)
                 ->with('success', $successMessage)
                 ->with('account_created', $accountCreated)
@@ -467,7 +471,15 @@ class CheckoutController extends Controller
 
     public function success(Order $order): View
     {
-        if ($order->user_id !== null && Auth::id() !== $order->user_id) {
+        // Allow access if:
+        // 1. It is a guest order (no user attached) — open to the URL holder
+        // 2. The authenticated user owns the order
+        // 3. The order was placed in this very session (handles the case where
+        //    Auth::login() session regeneration doesn't survive the redirect,
+        //    which is the root cause of the intermittent 403)
+        $placedInThisSession = session('checkout_order_id') == $order->id;
+
+        if ($order->user_id !== null && Auth::id() !== $order->user_id && !$placedInThisSession) {
             abort(403);
         }
 
