@@ -9,9 +9,11 @@
         <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
 
         <!-- Scripts -->
+        @include('components.analytics')
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="antialiased bg-black text-white">
+        @include('components.analytics-noscript')
         <!-- Include Navigation -->
         @include('home.components.navigation')
         
