@@ -7,6 +7,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-NRSV8VFV');</script>
 <!-- End Google Tag Manager -->
 
+<script>
+window.dataLayer = window.dataLayer || [];
+window.dataLayer.push({
+  event: 'page_view',
+  page_title: document.title,
+  page_location: @json(url()->current()),
+  page_path: @json(request()->path() === '' ? '/' : '/' . request()->path())
+});
+</script>
+
 @if(config('services.google.analytics_id') && app()->environment('production'))
 <!-- Google Analytics (GA4) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google.analytics_id') }}"></script>
