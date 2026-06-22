@@ -18,6 +18,24 @@
     
     @include('components.analytics')
     
+    @php
+        $viewItemPrice = $product->variants->first()->price ?? $product->display_price ?? $product->price;
+    @endphp
+    <x-data-layer :payload="[
+        'event' => 'view_item',
+        'ecommerce' => [
+            'currency' => 'BDT',
+            'value' => (float) $viewItemPrice,
+            'items' => [[
+                'item_id' => (string) $product->id,
+                'item_name' => $product->name,
+                'item_category' => $product->category ?? 'Valorant Collectibles',
+                'price' => (float) $viewItemPrice,
+                'quantity' => 1,
+            ]],
+        ],
+    ]" />
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased bg-black text-white">

@@ -5,9 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Order Success - NinjaWrecks</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
+    @include('components.analytics')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased bg-black text-white">
+    @include('components.analytics-noscript')
+
+    @php
+        $order->loadMissing('items');
+        $purchaseItems = $order->items->map(fn ($item) => [
+            'item_id' => (string) ($item->product_id ?? $item->id),
+            'item_name' => $item->product_name,
+            'price' => (float) $item->price,
+            'quantity' => (int) $item->quantity,
+        ])->values()->all();
+    @endphp
+    <x-data-layer :payload="[
+        'event' => 'purchase',
+        'ecommerce' => [
+            'transaction_id' => (string) $order->id,
+            'value' => (float) $order->total,
+            'currency' => 'BDT',
+            'items' => $purchaseItems,
+        ],
+    ]" />
     @include('home.components.navigation')
     
     <section class="pt-20 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
