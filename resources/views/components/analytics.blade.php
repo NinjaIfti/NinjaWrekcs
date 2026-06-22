@@ -34,3 +34,5 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   fbq('track', 'PageView');
 </script>
 <!-- End Meta Pixel Code -->
+
+@include('components.data-layer-flash')

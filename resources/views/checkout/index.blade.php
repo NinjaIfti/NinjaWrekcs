@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Checkout - NinjaWrecks</title>
     <link rel="icon" type="image/png" href="{{ asset('img/fav.png') }}">
+    @include('components.analytics')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .delivery-option {
@@ -22,6 +23,36 @@
     </style>
 </head>
 <body class="antialiased bg-black text-white">
+    @include('components.analytics-noscript')
+
+    @if($cartItems->count() > 0)
+        @php
+            $checkoutItems = $cartItems->map(function ($item) {
+                $productId = $item->attributes->product_id ?? (
+                    is_string($item->id) && str_contains($item->id, '_')
+                        ? (int) explode('_', $item->id)[0]
+                        : $item->id
+                );
+
+                return [
+                    'item_id' => (string) $productId,
+                    'item_name' => $item->name,
+                    'item_category' => $item->attributes->category ?? 'Valorant Collectibles',
+                    'price' => (float) $item->price,
+                    'quantity' => (int) $item->quantity,
+                ];
+            })->values()->all();
+        @endphp
+        <x-data-layer :payload="[
+            'event' => 'begin_checkout',
+            'ecommerce' => [
+                'currency' => 'BDT',
+                'value' => (float) $cartSubTotal,
+                'items' => $checkoutItems,
+            ],
+        ]" />
+    @endif
+
     @include('home.components.navigation')
     
     <section class="pt-16 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">

@@ -147,7 +147,22 @@ class CartController extends Controller
             ]
         ]);
 
-        return redirect()->back()->with('success', 'Product added to cart successfully!');
+        return redirect()->back()
+            ->with('success', 'Product added to cart successfully!')
+            ->with('data_layer_event', [
+                'event' => 'add_to_cart',
+                'ecommerce' => [
+                    'currency' => 'BDT',
+                    'value' => (float) ($itemPrice * $quantity),
+                    'items' => [[
+                        'item_id' => (string) $product->id,
+                        'item_name' => $displayName,
+                        'item_category' => $product->category_name ?? $product->category ?? 'Valorant Collectibles',
+                        'price' => (float) $itemPrice,
+                        'quantity' => (int) $quantity,
+                    ]],
+                ],
+            ]);
     }
 
     public function update(Request $request, $itemId)

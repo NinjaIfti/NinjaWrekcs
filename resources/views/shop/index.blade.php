@@ -29,6 +29,7 @@
     </style>
 </head>
 <body class="antialiased bg-black text-white">
+    @include('components.analytics-noscript')
     <!-- Include Navigation -->
     @include('home.components.navigation')
     
