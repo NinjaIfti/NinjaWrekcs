@@ -6,9 +6,6 @@
 <!-- Pre-Order Popup Modal -->
 <div id="preOrderModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 invisible transition-all duration-300 p-2 md:p-4" style="display: none;">
     <div class="relative max-w-md w-full mx-2 md:mx-4 bg-gradient-to-br from-black via-violet-950 to-purple-950 rounded-xl md:rounded-2xl border-2 border-violet-500/50 shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
-        <!-- Glitch Background Overlay -->
-        <div class="absolute inset-0 glitch-bg opacity-30"></div>
-        
         <!-- Close Button -->
         <button onclick="closePreOrderModal()" class="absolute top-4 right-4 z-20 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,7 +18,7 @@
             <!-- Badge -->
             @if($popupSettings->badge_text)
             <div class="text-center mb-3 md:mb-6">
-                <span class="inline-block px-3 py-1 md:px-4 md:py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-full text-xs md:text-sm font-bold glitch-pulse">
+                <span class="inline-block px-3 py-1 md:px-4 md:py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-full text-xs md:text-sm font-bold">
                     {{ $popupSettings->badge_text }}
                 </span>
             </div>
@@ -29,8 +26,8 @@
 
             <!-- Main Heading -->
             @if($popupSettings->main_heading)
-            <h2 class="text-2xl md:text-4xl font-bold text-center mb-3 md:mb-4">
-                <span class="glitch-text-large" data-text="{{ $popupSettings->main_heading }}" style="text-transform: none;">{{ $popupSettings->main_heading }}</span>
+            <h2 class="text-2xl md:text-4xl font-bold text-center mb-3 md:mb-4 text-white">
+                {{ $popupSettings->main_heading }}
             </h2>
             @endif
 
