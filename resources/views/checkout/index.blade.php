@@ -26,31 +26,7 @@
     @include('components.analytics-noscript')
 
     @if($cartItems->count() > 0)
-        @php
-            $checkoutItems = $cartItems->map(function ($item) {
-                $productId = $item->attributes->product_id ?? (
-                    is_string($item->id) && str_contains($item->id, '_')
-                        ? (int) explode('_', $item->id)[0]
-                        : $item->id
-                );
-
-                return [
-                    'item_id' => (string) $productId,
-                    'item_name' => $item->name,
-                    'item_category' => $item->attributes->category ?? 'Valorant Collectibles',
-                    'price' => (float) $item->price,
-                    'quantity' => (int) $item->quantity,
-                ];
-            })->values()->all();
-        @endphp
-        <x-data-layer :payload="[
-            'event' => 'begin_checkout',
-            'ecommerce' => [
-                'currency' => 'BDT',
-                'value' => (float) $cartSubTotal,
-                'items' => $checkoutItems,
-            ],
-        ]" />
+        <x-data-layer :payload="\App\Support\DataLayerHelper::beginCheckoutPayload($cartItems, (float) $cartSubTotal, $hasBookableItems, (float) $totalBookingAmount)" />
     @endif
 
     @include('home.components.navigation')
@@ -82,8 +58,9 @@
                 </div>
             @endguest
 
-            <form action="{{ route('checkout.store') }}" method="POST" class="grid lg:grid-cols-3 gap-8">
+            <form action="{{ route('checkout.store') }}" method="POST" class="grid lg:grid-cols-3 gap-8" data-user-email="{{ auth()->user()?->email ?? '' }}">
                 @csrf
+                <input type="hidden" id="checkout_discount_value" value="0">
 
                 <!-- Left Column - Form -->
                 <div class="lg:col-span-2 space-y-6">
@@ -527,6 +504,10 @@
         function updateTotal() {
             const bookingAmount = {{ $hasBookableItems ? $totalBookingAmount : 0 }};
             const total = baseSubtotal + deliveryCharge - currentDiscount;
+            const discountField = document.getElementById('checkout_discount_value');
+            if (discountField) {
+                discountField.value = currentDiscount;
+            }
             
             @if($hasBookableItems)
             // For pre-order items: Total = Subtotal + DC, DUE = Total - Booking Fee
@@ -728,6 +709,10 @@
             }
         });
     </script>
+
+    @if($cartItems->count() > 0)
+        @include('components.checkout-data-layer-scripts')
+    @endif
 </body>
 </html>
 

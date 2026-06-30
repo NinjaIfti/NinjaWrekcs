@@ -13,22 +13,8 @@
 
     @php
         $order->loadMissing('items');
-        $purchaseItems = $order->items->map(fn ($item) => [
-            'item_id' => (string) ($item->product_id ?? $item->id),
-            'item_name' => $item->product_name,
-            'price' => (float) $item->price,
-            'quantity' => (int) $item->quantity,
-        ])->values()->all();
     @endphp
-    <x-data-layer :payload="[
-        'event' => 'purchase',
-        'ecommerce' => [
-            'transaction_id' => (string) $order->id,
-            'value' => (float) $order->total,
-            'currency' => 'BDT',
-            'items' => $purchaseItems,
-        ],
-    ]" />
+    <x-data-layer :payload="\App\Support\DataLayerHelper::purchasePayload($order)" />
     @include('home.components.navigation')
     
     <section class="pt-20 md:pt-32 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
