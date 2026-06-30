@@ -13,7 +13,7 @@ window.dataLayer.push({
   event: 'page_view',
   page_title: document.title,
   page_location: @json(url()->current()),
-  page_path: @json(request()->path() === '' ? '/' : '/' . request()->path())
+  page_path: @json('/' . ltrim(request()->path(), '/'))
 });
 </script>
 
