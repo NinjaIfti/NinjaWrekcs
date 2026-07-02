@@ -104,6 +104,7 @@ class AdminController extends Controller
             'orders' => $orders,
             'selectedStatus' => $status,
             'currentView' => $view,
+            'incompleteOrdersCount' => \App\Models\IncompleteOrder::count(),
         ]);
     }
 
@@ -2156,6 +2157,27 @@ class AdminController extends Controller
 
         return redirect()->route('admin.orders', ['view' => 'preorder'])
             ->with('success', 'Order #' . $order->id . ' has been converted to active order and is now included in financial calculations.');
+    }
+
+    /**
+     * List checkouts customers started (typed name/phone/address) but never submitted.
+     */
+    public function incompleteOrders(): View
+    {
+        $incompleteOrders = \App\Models\IncompleteOrder::with('user')
+            ->latest('last_activity_at')
+            ->get();
+
+        return view('admin.incomplete-orders', [
+            'incompleteOrders' => $incompleteOrders,
+        ]);
+    }
+
+    public function deleteIncompleteOrder(\App\Models\IncompleteOrder $incompleteOrder): RedirectResponse
+    {
+        $incompleteOrder->delete();
+
+        return redirect()->back()->with('success', 'Incomplete checkout entry removed.');
     }
 
     /**

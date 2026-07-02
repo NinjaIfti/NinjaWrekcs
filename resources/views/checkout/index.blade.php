@@ -710,6 +710,63 @@
         });
     </script>
 
+    <script>
+        // Autosave in-progress checkout details so abandoned checkouts show up
+        // in the admin "Incomplete Orders" tab, even if the customer never presses Place Order.
+        (function () {
+            const saveProgressUrl = '{{ route("checkout.save-progress") }}';
+            const csrfToken = '{{ csrf_token() }}';
+
+            function collectProgressData() {
+                return {
+                    name: document.getElementById('name')?.value.trim() || '',
+                    phone: document.getElementById('phone')?.value.trim() || '',
+                    address: document.getElementById('address')?.value.trim() || '',
+                    email: document.getElementById('email')?.value.trim() || '',
+                    delivery_location: document.querySelector('input[name="delivery_location"]:checked')?.value || '',
+                };
+            }
+
+            function saveProgress(useBeacon) {
+                const data = collectProgressData();
+                if (!data.name && !data.phone) return;
+
+                if (useBeacon && navigator.sendBeacon) {
+                    const formData = new FormData();
+                    formData.append('_token', csrfToken);
+                    Object.entries(data).forEach(([key, value]) => formData.append(key, value));
+                    navigator.sendBeacon(saveProgressUrl, formData);
+                    return;
+                }
+
+                fetch(saveProgressUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify(data),
+                    keepalive: true,
+                }).catch(() => {});
+            }
+
+            let debounceTimer = null;
+            ['name', 'phone', 'address', 'email'].forEach(function (fieldId) {
+                const field = document.getElementById(fieldId);
+                if (!field) return;
+                field.addEventListener('input', function () {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(function () { saveProgress(false); }, 1500);
+                });
+                field.addEventListener('blur', function () { saveProgress(false); });
+            });
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'hidden') saveProgress(true);
+            });
+        })();
+    </script>
+
     @if($cartItems->count() > 0)
         @include('components.checkout-data-layer-scripts')
     @endif

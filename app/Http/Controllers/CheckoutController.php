@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Coupon;
+use App\Models\IncompleteOrder;
 use App\Mail\OrderConfirmation;
 use App\Mail\AdminOrderNotification;
 use App\Services\EmailService;
@@ -113,6 +114,46 @@ class CheckoutController extends Controller
             'type' => $coupon->type,
             'value' => $coupon->value
         ]);
+    }
+
+    /**
+     * Autosave in-progress checkout details (name/phone/address typed so far)
+     * so abandoned checkouts show up in the admin "Incomplete Orders" tab.
+     */
+    public function saveProgress(Request $request)
+    {
+        $name = trim((string) $request->input('name'));
+        $phone = trim((string) $request->input('phone'));
+
+        // Don't bother persisting a row until there's something worth following up on.
+        if ($name === '' && $phone === '') {
+            return response()->json(['success' => true]);
+        }
+
+        $cartItems = \Cart::getContent();
+        $cartSnapshot = $cartItems->map(fn ($item) => [
+            'name' => $item->name,
+            'quantity' => $item->quantity,
+            'price' => (float) $item->price,
+        ])->values()->all();
+
+        IncompleteOrder::updateOrCreate(
+            ['session_id' => session()->getId()],
+            [
+                'user_id' => Auth::id(),
+                'name' => $name !== '' ? $name : null,
+                'phone' => $phone !== '' ? $phone : null,
+                'email' => $request->input('email') ?: null,
+                'address' => $request->input('address') ?: null,
+                'delivery_location' => $request->input('delivery_location') ?: null,
+                'cart_snapshot' => $cartSnapshot,
+                'subtotal' => $cartItems->sum(fn ($item) => $item->price * $item->quantity),
+                'ip_address' => $request->ip(),
+                'last_activity_at' => now(),
+            ]
+        );
+
+        return response()->json(['success' => true]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -420,6 +461,9 @@ class CheckoutController extends Controller
 
             // Clear cart
             \Cart::clear();
+
+            // This checkout completed, so it's no longer "incomplete"
+            IncompleteOrder::where('session_id', session()->getId())->delete();
 
             // Success message
             if ($accountCreated) {

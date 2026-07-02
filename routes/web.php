@@ -218,6 +218,7 @@ Route::post('/cart/clear', [\App\Http\Controllers\CartController::class, 'clear'
 Route::get('/checkout', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [\App\Http\Controllers\CheckoutController::class, 'store'])->name('checkout.store');
 Route::post('/checkout/validate-coupon', [\App\Http\Controllers\CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
+Route::post('/checkout/save-progress', [\App\Http\Controllers\CheckoutController::class, 'saveProgress'])->name('checkout.save-progress');
 Route::get('/checkout/success/{order}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
 
 Route::get('/dashboard', function () {
@@ -261,6 +262,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/orders/{order}', [\App\Http\Controllers\AdminController::class, 'deleteOrder'])->name('orders.delete');
     Route::post('/orders/{order}/restore', [\App\Http\Controllers\AdminController::class, 'restoreOrder'])->name('orders.restore');
     Route::post('/orders/{order}/convert-to-active', [\App\Http\Controllers\AdminController::class, 'convertPreorderToActive'])->name('orders.convert-to-active');
+    Route::get('/orders-incomplete', [\App\Http\Controllers\AdminController::class, 'incompleteOrders'])->name('orders.incomplete');
+    Route::delete('/orders-incomplete/{incompleteOrder}', [\App\Http\Controllers\AdminController::class, 'deleteIncompleteOrder'])->name('orders.incomplete.delete');
     Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users'])->name('users');
     
     // Products Management
