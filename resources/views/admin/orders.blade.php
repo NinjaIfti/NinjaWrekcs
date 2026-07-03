@@ -244,7 +244,15 @@
                                         <div class="space-y-2 text-sm">
                                             <p><span class="font-medium text-gray-700 dark:text-gray-300">Name:</span> <span class="text-gray-900 dark:text-white">{{ $order->name }}</span></p>
                                             <p><span class="font-medium text-gray-700 dark:text-gray-300">Email:</span> <span class="text-gray-900 dark:text-white">{{ $order->email }}</span></p>
-                                            <p><span class="font-medium text-gray-700 dark:text-gray-300">Phone:</span> <span class="text-gray-900 dark:text-white">{{ $order->phone }}</span></p>
+                                            <p class="flex items-center gap-2">
+                                                <span class="font-medium text-gray-700 dark:text-gray-300">Phone:</span>
+                                                <span class="text-gray-900 dark:text-white">{{ $order->phone }}</span>
+                                                @if($order->phone)
+                                                    <button type="button" onclick="CourierCheck.openModal('{{ $order->phone }}')" class="px-2 py-0.5 text-xs bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-600 dark:text-violet-400 rounded-full transition">
+                                                        Check Courier
+                                                    </button>
+                                                @endif
+                                            </p>
                                             <p><span class="font-medium text-gray-700 dark:text-gray-300">Address:</span> <span class="text-gray-900 dark:text-white">{{ $order->address }}</span></p>
                                             @if($order->user)
                                                 <p><span class="font-medium text-gray-700 dark:text-gray-300">User ID:</span> <span class="text-gray-900 dark:text-white">{{ $order->user->id }} ({{ $order->user->email }})</span></p>

@@ -81,8 +81,13 @@
 
                         <!-- Phone -->
                         <div>
-                            <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number *</label>
-                            <input type="tel" name="phone" id="phone" value="{{ old('phone', $order->phone) }}" required 
+                            <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                                <span>Phone Number *</span>
+                                <button type="button" onclick="CourierCheck.openModal(document.getElementById('phone').value)" class="px-2 py-0.5 text-xs font-normal bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-600 dark:text-violet-400 rounded-full transition">
+                                    Check Courier
+                                </button>
+                            </label>
+                            <input type="tel" name="phone" id="phone" value="{{ old('phone', $order->phone) }}" required
                                 class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             @error('phone')
                                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>

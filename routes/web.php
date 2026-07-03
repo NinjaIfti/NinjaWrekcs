@@ -264,6 +264,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/orders/{order}/convert-to-active', [\App\Http\Controllers\AdminController::class, 'convertPreorderToActive'])->name('orders.convert-to-active');
     Route::get('/orders-incomplete', [\App\Http\Controllers\AdminController::class, 'incompleteOrders'])->name('orders.incomplete');
     Route::delete('/orders-incomplete/{incompleteOrder}', [\App\Http\Controllers\AdminController::class, 'deleteIncompleteOrder'])->name('orders.incomplete.delete');
+    Route::get('/courier-check', [\App\Http\Controllers\AdminController::class, 'courierCheckPage'])->name('courier-check');
+    Route::post('/courier-check/lookup', [\App\Http\Controllers\AdminController::class, 'courierCheckLookup'])->name('courier-check.lookup');
     Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users'])->name('users');
     
     // Products Management

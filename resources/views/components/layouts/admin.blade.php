@@ -66,6 +66,9 @@
             </div>
         </div>
 
+        <!-- Shared Courier Check modal (available on every admin page) -->
+        <x-admin-courier-check-modal />
+
         <!-- Page Scripts -->
         @stack('scripts')
     </body>

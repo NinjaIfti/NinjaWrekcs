@@ -47,4 +47,9 @@ return [
         'campaign_id' => env('MIMSMS_CAMPAIGN_ID'),
     ],
 
+    'bdcourier' => [
+        'base_url' => env('BDCOURIER_BASE_URL', 'https://api.bdcourier.com'),
+        'api_key' => env('BDCOURIER_API_KEY'),
+    ],
+
 ];

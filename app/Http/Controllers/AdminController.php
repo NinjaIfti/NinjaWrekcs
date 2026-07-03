@@ -22,6 +22,7 @@ use App\Services\AnalyticsService;
 use App\Services\NotificationService;
 use App\Services\EmailService;
 use App\Services\MimsmsService;
+use App\Services\CourierCheckService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -2178,6 +2179,39 @@ class AdminController extends Controller
         $incompleteOrder->delete();
 
         return redirect()->back()->with('success', 'Incomplete checkout entry removed.');
+    }
+
+    /**
+     * Standalone "Courier Check" tool page - look up any phone number's
+     * courier delivery/fraud history on demand.
+     */
+    public function courierCheckPage(): View
+    {
+        return view('admin.courier-check', [
+            'isConfigured' => (new CourierCheckService())->isConfigured(),
+        ]);
+    }
+
+    /**
+     * AJAX lookup used by both the standalone tool and the inline
+     * "Check Courier" button on the orders pages. Cached briefly per
+     * phone number so repeated clicks don't hammer the upstream API.
+     */
+    public function courierCheckLookup(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string|max:20',
+        ]);
+
+        $phone = trim($request->input('phone'));
+
+        $result = \Illuminate\Support\Facades\Cache::remember(
+            'courier_check_' . preg_replace('/\D/', '', $phone),
+            now()->addMinutes(15),
+            fn () => (new CourierCheckService())->check($phone)
+        );
+
+        return response()->json($result, $result['success'] ? 200 : 422);
     }
 
     /**
