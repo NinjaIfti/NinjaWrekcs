@@ -2204,12 +2204,17 @@ class AdminController extends Controller
         ]);
 
         $phone = trim($request->input('phone'));
+        $cacheKey = 'courier_check_' . preg_replace('/\D/', '', $phone);
 
-        $result = \Illuminate\Support\Facades\Cache::remember(
-            'courier_check_' . preg_replace('/\D/', '', $phone),
-            now()->addMinutes(15),
-            fn () => (new CourierCheckService())->check($phone)
-        );
+        // Only cache successful lookups - a transient timeout/error must never
+        // get "stuck" and served back for the next 15 minutes.
+        $result = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        if (!$result) {
+            $result = (new CourierCheckService())->check($phone);
+            if ($result['success']) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(15));
+            }
+        }
 
         return response()->json($result, $result['success'] ? 200 : 422);
     }

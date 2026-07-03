@@ -31,7 +31,11 @@ class CourierCheckService
         }
 
         try {
-            $response = Http::timeout(15)
+            // The upstream API is occasionally slow/flaky, so retry transient
+            // connection failures (timeouts, DNS blips) a couple of times before giving up.
+            $response = Http::timeout(12)
+                ->connectTimeout(5)
+                ->retry(2, 500)
                 ->withToken($this->apiKey)
                 ->acceptJson()
                 ->post("{$this->baseUrl}/courier-check", [
