@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\SalesReportExport;
@@ -670,7 +671,7 @@ class AdminController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    public function updateOrderStatus(Request $request, Order $order): RedirectResponse
+    public function updateOrderStatus(Request $request, Order $order): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
@@ -701,12 +702,14 @@ class AdminController extends Controller
         
         $order->update($updateData);
 
+        $warningMessage = null;
+
         // Send email notification if status changed and order has email
         if ($oldStatus !== $validated['status'] && $order->email) {
             // Reload order with items relationship for email
             $order->refresh();
             $order->load('items');
-            
+
             $emailResult = \App\Services\EmailService::sendWithFallback(
                 new OrderStatusUpdated($order, $oldStatus),
                 $order->email,
@@ -718,9 +721,7 @@ class AdminController extends Controller
 
             // Show email status in admin notification
             if (!$emailResult['success']) {
-                return redirect()->route('admin.orders')
-                    ->with('success', 'Order status updated successfully!' . ($validated['status'] === 'cancelled' ? ' Stock has been restored.' : ''))
-                    ->with('warning', 'Status updated but email notification could not be sent to customer.');
+                $warningMessage = 'Status updated but email notification could not be sent to customer.';
             }
         }
 
@@ -733,7 +734,21 @@ class AdminController extends Controller
         \Illuminate\Support\Facades\Cache::forget('admin_dashboard_stats');
         \Illuminate\Support\Facades\Cache::forget('admin_financial_data');
 
-        return redirect()->route('admin.orders')->with('success', $successMessage);
+        // Background (AJAX) update from the orders list — respond without a redirect
+        // so the page, its scroll position and the active filter are all preserved.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'status' => $order->status,
+                'message' => $successMessage,
+                'warning' => $warningMessage,
+            ]);
+        }
+
+        // Non-JS fallback: return to the list the admin came from, keeping ?status= and ?view=
+        $redirect = redirect()->back(302, [], route('admin.orders'))->with('success', $successMessage);
+
+        return $warningMessage ? $redirect->with('warning', $warningMessage) : $redirect;
     }
 
     public function products(Request $request): View

@@ -127,7 +127,7 @@
             <div class="mb-6 flex flex-wrap gap-4 justify-between items-center">
                 <form method="GET" action="{{ route('admin.orders') }}" class="flex flex-wrap gap-4">
                     <input type="hidden" name="view" value="{{ $currentView }}">
-                    <select name="status" class="border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                    <select name="status" onchange="this.form.submit()" class="border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <option value="">All Status</option>
                         <option value="pending" {{ $selectedStatus === 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="confirmed" {{ $selectedStatus === 'confirmed' ? 'selected' : '' }}>Confirmed</option>
@@ -136,9 +136,12 @@
                         <option value="delivered" {{ $selectedStatus === 'delivered' ? 'selected' : '' }}>Delivered</option>
                         <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                     </select>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                        Filter
-                    </button>
+                    {{-- The dropdown auto-applies on change; this button only exists for non-JS browsers --}}
+                    <noscript>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            Filter
+                        </button>
+                    </noscript>
                     @if($selectedStatus)
                         <a href="{{ route('admin.orders', ['view' => $currentView]) }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
                             Clear Filter
@@ -216,7 +219,7 @@
                                             @csrf
                                             @method('PUT')
                                             <input type="hidden" name="tracking_link" class="tracking-link-input">
-                                            <select name="status" onchange="handleStatusChange(this, {{ $order->id }}, '{{ $order->email }}')" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm font-semibold
+                                            <select name="status" onchange="handleStatusChange(this)" data-original-status="{{ $order->status }}" class="order-status-select px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm font-semibold disabled:opacity-50 disabled:cursor-wait
                                                 {{ $order->status === 'pending' ? 'text-yellow-600' : '' }}
                                                 {{ $order->status === 'confirmed' ? 'text-blue-600' : '' }}
                                                 {{ $order->status === 'processing' ? 'text-purple-600' : '' }}
@@ -477,63 +480,146 @@
         </div>
     </div>
 
+    <!-- Toast container for background status updates -->
+    <div id="statusToastContainer" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-2 items-end pointer-events-none"></div>
+
     <script>
         let currentForm = null;
-        let originalStatus = null;
 
-        function handleStatusChange(selectElement, orderId, hasEmail) {
-            const newStatus = selectElement.value;
-            const form = selectElement.closest('form');
-            
-            // Store original status if not already stored
-            if (originalStatus === null) {
-                originalStatus = selectElement.querySelector('option[selected]')?.value || '';
+        const STATUS_TEXT_COLORS = {
+            pending: 'text-yellow-600',
+            confirmed: 'text-blue-600',
+            processing: 'text-purple-600',
+            shipped: 'text-indigo-600',
+            delivered: 'text-green-600',
+            cancelled: 'text-red-600',
+        };
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('statusToastContainer');
+            if (!container) return;
+
+            const styles = {
+                success: 'bg-green-600 text-white',
+                warning: 'bg-yellow-500 text-white',
+                error: 'bg-red-600 text-white',
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-3 rounded-lg shadow-lg text-sm font-medium max-w-sm transition-opacity duration-300 ${styles[type] || styles.success}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, type === 'error' ? 6000 : 3500);
+        }
+
+        function paintSelect(select, status) {
+            Object.values(STATUS_TEXT_COLORS).forEach(cls => select.classList.remove(cls));
+            if (STATUS_TEXT_COLORS[status]) {
+                select.classList.add(STATUS_TEXT_COLORS[status]);
             }
-            
-            // Only show modal for "shipped" status AND if order has email
-            if (newStatus === 'shipped' && hasEmail && hasEmail.trim() !== '') {
+        }
+
+        function handleStatusChange(selectElement) {
+            const form = selectElement.closest('form');
+            const hasEmail = form.dataset.hasEmail === '1';
+
+            // Only show the tracking modal for "shipped" AND if the order has an email
+            if (selectElement.value === 'shipped' && hasEmail) {
                 currentForm = form;
                 document.getElementById('trackingLinkModal').classList.remove('hidden');
                 document.getElementById('modalTrackingLink').value = '';
                 document.getElementById('modalTrackingLink').focus();
             } else {
-                // For all other statuses OR orders without email, submit form normally
-                form.submit();
+                submitStatus(form, '');
+            }
+        }
+
+        // Sends the status change in the background. The page is never reloaded, so the
+        // active filter, the selected view tab and the scroll position all stay put.
+        async function submitStatus(form, trackingLink) {
+            const select = form.querySelector('select[name="status"]');
+            const trackingInput = form.querySelector('.tracking-link-input');
+            const previousStatus = select.dataset.originalStatus;
+            const newStatus = select.value;
+
+            if (trackingInput) {
+                trackingInput.value = trackingLink || '';
+            }
+
+            select.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST', // Laravel method spoofing via the _method field
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                });
+
+                if (!response.ok) {
+                    if (response.status === 419) {
+                        throw new Error('Your session expired. Please refresh the page and try again.');
+                    }
+                    if (response.status === 422) {
+                        const data = await response.json().catch(() => ({}));
+                        throw new Error(data.message || 'That status is not valid.');
+                    }
+                    throw new Error(`Update failed (HTTP ${response.status}). Please try again.`);
+                }
+
+                const data = await response.json();
+
+                // Commit the new status as the baseline for the next change
+                select.dataset.originalStatus = data.status || newStatus;
+                select.value = data.status || newStatus;
+                paintSelect(select, select.value);
+
+                showToast(data.message || 'Order status updated successfully!', 'success');
+                if (data.warning) {
+                    showToast(data.warning, 'warning');
+                }
+            } catch (error) {
+                // Roll the dropdown back so it never shows a status the server didn't accept
+                select.value = previousStatus;
+                paintSelect(select, previousStatus);
+                showToast(error.message || 'Could not update the order status.', 'error');
+            } finally {
+                select.disabled = false;
             }
         }
 
         function closeTrackingModal() {
             document.getElementById('trackingLinkModal').classList.add('hidden');
-            
-            // Reset the select back to original status
-            if (currentForm && originalStatus !== null) {
+
+            // Reset the select back to the last status the server confirmed
+            if (currentForm) {
                 const select = currentForm.querySelector('select[name="status"]');
                 if (select) {
-                    select.value = originalStatus;
+                    select.value = select.dataset.originalStatus;
+                    paintSelect(select, select.value);
                 }
             }
-            
+
             currentForm = null;
-            originalStatus = null;
         }
 
         function submitWithTracking() {
             if (!currentForm) return;
-            
+
+            const form = currentForm;
             const trackingLink = document.getElementById('modalTrackingLink').value.trim();
-            const trackingInput = currentForm.querySelector('.tracking-link-input');
-            
-            if (trackingInput) {
-                trackingInput.value = trackingLink;
-            }
-            
-            // Close modal and submit form
+
             document.getElementById('trackingLinkModal').classList.add('hidden');
-            currentForm.submit();
-            
-            // Reset
             currentForm = null;
-            originalStatus = null;
+
+            submitStatus(form, trackingLink);
         }
 
         // Close modal when clicking outside
