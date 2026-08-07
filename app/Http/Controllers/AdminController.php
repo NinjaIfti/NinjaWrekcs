@@ -1124,7 +1124,17 @@ class AdminController extends Controller
         // Clear paginated shop products cache
         $this->clearShopProductsCache();
 
-        return redirect()->route('admin.products')->with('success', 'Product updated successfully!');
+        // Return to the same products-list tab the admin was on, anchored at the product
+        // they just edited, rather than dropping them at the top of "All Products".
+        $redirectParams = array_filter([
+            'category_id' => $request->input('return_category_id'),
+            'subcategory_id' => $request->input('return_subcategory_id'),
+        ], fn ($value) => $value !== null && $value !== '');
+
+        $redirectParams['highlight'] = $product->id;
+
+        return redirect()->route('admin.products', $redirectParams)
+            ->with('success', 'Product updated successfully!');
     }
 
     public function productDestroy(Product $product): RedirectResponse

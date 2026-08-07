@@ -16,6 +16,10 @@
                 @csrf
                 @method('PUT')
 
+                {{-- Which products-list tab the admin came from, so saving returns them there --}}
+                <input type="hidden" name="return_category_id" value="{{ request('category_id') }}">
+                <input type="hidden" name="return_subcategory_id" value="{{ request('subcategory_id') }}">
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Left Column -->
                     <div class="space-y-6">
@@ -296,7 +300,7 @@
 
                 <!-- Submit Button -->
                 <div class="mt-6 flex justify-end gap-4">
-                    <a href="{{ route('admin.products') }}" class="px-6 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <a href="{{ route('admin.products', array_merge(request()->only('category_id', 'subcategory_id'), ['highlight' => $product->id])) }}" class="px-6 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                         Cancel
                     </a>
                     <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">

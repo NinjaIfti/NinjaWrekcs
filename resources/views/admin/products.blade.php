@@ -76,7 +76,7 @@
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($products as $product)
-                        <tr>
+                        <tr id="product-row-{{ $product->id }}" class="transition-colors duration-1000 {{ (string) request('highlight') === (string) $product->id ? 'product-row-highlight' : '' }}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($product->image)
                                     <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="h-16 w-16 object-cover rounded">
@@ -108,7 +108,8 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <a href="{{ route('admin.products.edit', $product) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-3">Edit</a>
+                                {{-- Carry the active category tab through the edit page so saving returns here, not to "All Products" --}}
+                                <a href="{{ route('admin.products.edit', array_merge(['product' => $product], request()->only('category_id', 'subcategory_id'))) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-3">Edit</a>
                                 <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this product?');">
                                     @csrf
                                     @method('DELETE')
@@ -128,6 +129,41 @@
             </div>
         </div>
     </div>
+
+    <style>
+        /* Fades out on its own once the row-level transition kicks in */
+        .product-row-highlight {
+            background-color: rgb(254 249 195); /* amber-100 */
+            box-shadow: inset 4px 0 0 0 rgb(37 99 235); /* blue-600 edge marker */
+        }
+        @media (prefers-color-scheme: dark) {
+            .product-row-highlight {
+                background-color: rgb(69 26 3); /* amber-950 */
+            }
+        }
+    </style>
+
+    <script>
+        // After saving a product we come back here with ?highlight=<id>. Scroll that row
+        // into view instead of dumping the admin at the top of the list.
+        document.addEventListener('DOMContentLoaded', function () {
+            const highlightId = new URLSearchParams(window.location.search).get('highlight');
+            if (!highlightId) return;
+
+            const row = document.getElementById(`product-row-${highlightId}`);
+            if (!row) return;
+
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Let it sit long enough to be noticed, then fade the highlight away
+            setTimeout(() => row.classList.remove('product-row-highlight'), 2500);
+
+            // Drop ?highlight= from the URL so a refresh doesn't re-trigger the effect
+            const url = new URL(window.location.href);
+            url.searchParams.delete('highlight');
+            window.history.replaceState({}, '', url);
+        });
+    </script>
 </x-admin-layout>
 
 
