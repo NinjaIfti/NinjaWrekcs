@@ -550,6 +550,10 @@
                 trackingInput.value = trackingLink || '';
             }
 
+            // Snapshot the fields BEFORE disabling the select: disabled controls are
+            // excluded from FormData, which would drop `status` from the request.
+            const payload = new FormData(form);
+
             select.disabled = true;
 
             try {
@@ -559,7 +563,7 @@
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                     },
-                    body: new FormData(form),
+                    body: payload,
                     credentials: 'same-origin',
                 });
 
