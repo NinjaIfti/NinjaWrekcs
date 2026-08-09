@@ -25,5 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // A CSRF token can still go stale in ways no server config prevents — the
+        // customer leaves the tab open past the session lifetime, or signs out in
+        // another tab. Send them back to the form with a readable message instead
+        // of the raw "419 Page Expired" screen.
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Your session expired. Please refresh the page and try again.',
+                ], 419);
+            }
+
+            return redirect()
+                ->back(302, [], url('/'))
+                ->withInput($request->except('_token'))
+                ->with('error', 'Your session expired for security reasons. Please review your details and submit again.');
+        });
     })->create();
