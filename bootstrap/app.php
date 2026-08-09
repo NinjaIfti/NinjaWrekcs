@@ -29,7 +29,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // customer leaves the tab open past the session lifetime, or signs out in
         // another tab. Send them back to the form with a readable message instead
         // of the raw "419 Page Expired" screen.
-        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+        // NB: Handler::prepareException() rewrites TokenMismatchException into a plain
+        // HttpException(419) before render callbacks run, so this must match on the
+        // HttpException — a callback typed against TokenMismatchException never fires.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
+            $isCsrfFailure = $e->getStatusCode() === 419
+                && $e->getPrevious() instanceof \Illuminate\Session\TokenMismatchException;
+
+            if (! $isCsrfFailure) {
+                return null; // let Laravel render every other HTTP error as usual
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Your session expired. Please refresh the page and try again.',
