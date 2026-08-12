@@ -185,4 +185,34 @@ class Product extends Model
             })
             ->sum('quantity');
     }
+
+    /**
+     * Forget the cached shop listing pages.
+     *
+     * The shop orders in-stock products above sold-out ones, so a stock change
+     * reorders the listing. Without this the cached pages would serve a stale
+     * order (and a stale "In Stock" badge) for up to 30 minutes.
+     */
+    public static function clearShopListingCache(): void
+    {
+        foreach ([12, 24, 48] as $perPage) {
+            for ($page = 1; $page <= 10; $page++) {
+                \Illuminate\Support\Facades\Cache::forget("shop_products_page_{$perPage}_{$page}");
+            }
+        }
+    }
+
+    protected static function booted(): void
+    {
+        // Stock moves from many places - checkout, admin order create/edit/cancel,
+        // product edit - so hook the model rather than each call site.
+        static::updated(function (Product $product) {
+            if ($product->wasChanged(['quantity', 'is_active'])) {
+                static::clearShopListingCache();
+            }
+        });
+
+        static::created(fn () => static::clearShopListingCache());
+        static::deleted(fn () => static::clearShopListingCache());
+    }
 }

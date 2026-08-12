@@ -1174,10 +1174,9 @@ class AdminController extends Controller
      */
     private function clearShopProductsCache(): void
     {
-        // Clear first 10 pages of shop products cache
-        for ($page = 1; $page <= 10; $page++) {
-            \Illuminate\Support\Facades\Cache::forget('shop_products_page_12_' . $page);
-        }
+        // Single implementation lives on the model, which also clears it automatically
+        // whenever stock changes (see Product::booted).
+        Product::clearShopListingCache();
     }
 
     public function categories(): View

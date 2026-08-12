@@ -75,6 +75,7 @@ class ShopController extends Controller
             $products = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1800, function () use ($perPage) {
                 return Product::with('images', 'category', 'variants')
                     ->where('is_active', true)
+                    ->orderByRaw('(quantity <= 0) asc') // in-stock first, sold-out sink to the bottom
                     ->latest()
                     ->paginate($perPage);
             });
@@ -139,6 +140,11 @@ class ShopController extends Controller
                 $query->where('quantity', '>', 0);
             }
             
+            // Stock availability is the primary sort in every mode: in-stock products stay
+            // at the top and sold-out ones sink to the bottom, with the chosen sort applied
+            // within each group. Matches the card badge, which is also driven by quantity > 0.
+            $query->orderByRaw('(quantity <= 0) asc');
+
             // Sorting
             switch ($sort) {
                 case 'price_asc':
