@@ -25,8 +25,8 @@
           bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500
           text-black text-xs sm:text-sm font-bold tracking-wide
           hover:brightness-110 transition-all overflow-hidden whitespace-nowrap">
-    <span class="giveaway-blink">🎉</span>
+    {{-- leading-none keeps the emoji's descent from being clipped by the 32px strip --}}
+    <span class="giveaway-blink leading-none shrink-0">🎉</span>
     <span class="truncate">GIVEAWAY GOING ON — Win a Xiaomi RC Drift Car!</span>
-    <span class="hidden sm:inline underline underline-offset-2">See details</span>
-    <span class="giveaway-blink">🏎️</span>
+    <span class="hidden sm:inline underline underline-offset-2 shrink-0">See details</span>
 </a>
