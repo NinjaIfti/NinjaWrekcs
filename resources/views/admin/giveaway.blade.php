@@ -48,6 +48,14 @@
             <div class="mb-6 flex flex-wrap gap-3 items-center justify-between">
                 <div class="text-sm text-gray-600 dark:text-gray-300">
                     Total entries: <span class="font-bold text-gray-900 dark:text-white">{{ $entries->count() }}</span>
+                    <span class="text-gray-500 dark:text-gray-400">
+                        ({{ $autoCount }} automatic, {{ $manualCount }} manual)
+                    </span>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Delivered orders of ৳{{ number_format($minTotal) }}+ placed from
+                        {{ $startsAt->format('j F Y') }} are entered automatically. An entry disappears
+                        by itself if the order is cancelled, moved off delivered, or hidden.
+                    </p>
                 </div>
                 <div class="flex gap-3">
                     <button id="randomizeButton" type="button" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
@@ -71,6 +79,7 @@
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">#</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Phone</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Invoice</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Source</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Order Date</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Entered At</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Action</th>
@@ -81,17 +90,34 @@
                                 <tr>
                                     <td class="px-4 py-3 text-sm text-gray-900 dark:text-white row-index">{{ $index + 1 }}</td>
                                     <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white phone-cell">{{ $entry->phone }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $entry->invoice_number ?? ('INV-' . $entry->order_id) }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                                        {{ $entry->invoice_number }}
+                                        @if($entry->order_total !== null)
+                                            <span class="block text-xs text-gray-500 dark:text-gray-400">৳{{ number_format((float) $entry->order_total) }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">
+                                        @if($entry->source === 'auto')
+                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">Automatic</span>
+                                        @else
+                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">Manual</span>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ optional($entry->order_date)->format('d M Y h:i A') ?? '-' }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ $entry->created_at->format('d M Y h:i A') }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ optional($entry->entered_at)->format('d M Y h:i A') ?? '-' }}</td>
                                     <td class="px-4 py-3 text-right">
-                                        <form action="{{ route('admin.giveaway.destroy', $entry) }}" method="POST" onsubmit="return confirm('Delete this giveaway entry?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-md hover:bg-red-700 transition">
-                                                Delete
-                                            </button>
-                                        </form>
+                                        @if($entry->source === 'manual')
+                                            <form action="{{ route('admin.giveaway.destroy', $entry->entry_id) }}" method="POST" onsubmit="return confirm('Delete this manual entry?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        @else
+                                            {{-- Automatic entries follow the order; remove one by changing the order's status --}}
+                                            <span class="text-xs text-gray-400 dark:text-gray-500">follows order status</span>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

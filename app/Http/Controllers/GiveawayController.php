@@ -35,9 +35,11 @@ class GiveawayController extends Controller
             })
             ->values();
 
-        $enteredOrderIds = GiveawayEntry::query()
-            ->whereIn('order_id', $orders->pluck('id'))
-            ->pluck('order_id')
+        // Entry is automatic now, so "entered" means the order meets the published
+        // rules rather than that someone clicked a button.
+        $enteredOrderIds = $orders
+            ->filter(fn (Order $order) => GiveawayEntry::orderQualifies($order))
+            ->pluck('id')
             ->all();
 
         return view('agent-code', [
@@ -59,29 +61,57 @@ class GiveawayController extends Controller
             ->where('status', 'delivered')
             ->firstOrFail();
 
-        $existing = GiveawayEntry::query()->where('order_id', $order->id)->first();
-        if ($existing) {
-            return back()->with('warning', 'This order is already entered in giveaway.');
+        // Qualifying orders are entered automatically, so there is nothing to create
+        // here — report the order's standing against the published rules instead.
+        if (GiveawayEntry::orderQualifies($order)) {
+            return back()->with('success', 'This order is already entered in the giveaway automatically.');
         }
 
-        GiveawayEntry::create([
-            'order_id' => $order->id,
-            'phone' => $order->phone,
-            'invoice_number' => 'INV-' . $order->id,
-            'order_date' => $order->created_at,
-        ]);
+        if ($order->created_at < \Carbon\Carbon::parse(GiveawayEntry::STARTS_AT)) {
+            return back()->with('warning', 'Only orders placed from 1 August are eligible for this giveaway.');
+        }
 
-        return back()->with('success', 'Entry added successfully.');
+        return back()->with('warning', 'Orders must be at least ৳' . number_format(GiveawayEntry::MIN_ORDER_TOTAL) . ' to qualify for this giveaway.');
     }
 
     public function adminIndex(): View
     {
-        $entries = GiveawayEntry::query()
+        // Automatic entries, derived live from orders. Nothing is stored, so an order
+        // that gets cancelled or un-delivered simply stops appearing here.
+        $auto = GiveawayEntry::qualifyingOrders()
             ->latest()
-            ->get();
+            ->get()
+            ->map(fn (Order $order) => (object) [
+                'source' => 'auto',
+                'entry_id' => null,
+                'phone' => $order->phone,
+                'invoice_number' => 'INV-' . $order->id,
+                'order_date' => $order->created_at,
+                'entered_at' => $order->updated_at,
+                'order_total' => $order->total,
+            ]);
+
+        // Manually added phone numbers still live in the table.
+        $manual = GiveawayEntry::query()
+            ->whereNull('order_id')
+            ->latest()
+            ->get()
+            ->map(fn (GiveawayEntry $entry) => (object) [
+                'source' => 'manual',
+                'entry_id' => $entry->id,
+                'phone' => $entry->phone,
+                'invoice_number' => $entry->invoice_number,
+                'order_date' => $entry->order_date,
+                'entered_at' => $entry->created_at,
+                'order_total' => null,
+            ]);
 
         return view('admin.giveaway', [
-            'entries' => $entries,
+            'entries' => $auto->concat($manual)->values(),
+            'autoCount' => $auto->count(),
+            'manualCount' => $manual->count(),
+            'startsAt' => \Carbon\Carbon::parse(GiveawayEntry::STARTS_AT),
+            'minTotal' => GiveawayEntry::MIN_ORDER_TOTAL,
         ]);
     }
 
