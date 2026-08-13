@@ -28,6 +28,9 @@
             <a href="{{ route('about') }}" class="block px-4 py-3 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
                 About
             </a>
+            <a href="{{ route('giveaway') }}" class="giveaway-blink block px-4 py-3 rounded-lg font-bold text-black bg-gradient-to-r from-yellow-400 to-amber-500 border border-yellow-300 shadow-lg shadow-yellow-500/30 transition-colors">
+                🎉 Giveaway
+            </a>
         </nav>
 
         <!-- Action Buttons -->
@@ -130,6 +133,9 @@
             </a>
             <a href="{{ route('about') }}" class="block px-4 py-3 text-gray-300 hover:bg-violet-500/10 hover:text-violet-400 rounded-lg transition-colors">
                 About
+            </a>
+            <a href="{{ route('giveaway') }}" class="giveaway-blink block px-4 py-3 rounded-lg font-bold text-black bg-gradient-to-r from-yellow-400 to-amber-500 border border-yellow-300 shadow-lg shadow-yellow-500/30 transition-colors">
+                🎉 Giveaway
             </a>
         </nav>
 

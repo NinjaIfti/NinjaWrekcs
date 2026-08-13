@@ -48,6 +48,9 @@ Route::get('/about', function () {
     return view('about');
 })->name('about');
 
+// Public giveaway landing page (the admin entry tracker lives at admin/giveaway)
+Route::view('/giveaway', 'giveaway.index')->name('giveaway');
+
 Route::get('/contact', function () {
     return view('contact');
 })->name('contact');

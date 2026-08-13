@@ -1,3 +1,5 @@
+@include('home.components.giveaway-banner')
+
 <!-- Desktop Navigation (Top Navbar) -->
 <nav class="hidden md:block fixed w-full bg-black/95 backdrop-blur-xl shadow-lg z-50 border-b border-violet-500/30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,3 +25,6 @@
 
 <!-- Mobile Navigation (Top Logo + Bottom Nav) -->
 @include('home.components.navigation.mobile')
+
+{{-- Site-wide giveaway poster popup (suppressed for 3 min once seen) --}}
+@includeUnless(request()->routeIs('giveaway'), 'home.components.giveaway-popup')
