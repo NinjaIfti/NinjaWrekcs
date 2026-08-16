@@ -81,6 +81,7 @@ class AdminController extends Controller
     {
         $status = $request->query('status', '');
         $view = $request->query('view', 'active'); // 'active', 'preorder', or 'hidden'
+        $search = trim((string) $request->query('search', ''));
 
         $query = Order::with(['user', 'items.product']);
 
@@ -100,12 +101,39 @@ class AdminController extends Controller
             $query->where('status', $status);
         }
 
+        // Search across order number, customer name, phone and product ID.
+        if ($search !== '') {
+            // Tolerate the way order numbers are displayed: "#350" and "INV-350" both mean 350
+            $numeric = preg_replace('/^(#|INV-)/i', '', $search);
+            // Phones are stored inconsistently (01712..., +88017122...), so match on digits only
+            $digits = preg_replace('/\D/', '', $search);
+
+            $query->where(function ($q) use ($search, $numeric, $digits) {
+                $q->where('name', 'like', "%{$search}%");
+
+                if (is_numeric($numeric)) {
+                    $q->orWhere('id', (int) $numeric)
+                      // Orders containing this product
+                      ->orWhereHas('items', function ($items) use ($numeric) {
+                          $items->where('product_id', (int) $numeric);
+                      });
+                }
+
+                if ($digits !== '') {
+                    $q->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, '+', ''), '-', ''), ' ', '') LIKE ?", ["%{$digits}%"]);
+                } else {
+                    $q->orWhere('phone', 'like', "%{$search}%");
+                }
+            });
+        }
+
         $orders = $query->latest()->get();
 
         return view('admin.orders', [
             'orders' => $orders,
             'selectedStatus' => $status,
             'currentView' => $view,
+            'search' => $search,
             'incompleteOrdersCount' => \App\Models\IncompleteOrder::count(),
         ]);
     }

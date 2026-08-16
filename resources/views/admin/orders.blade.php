@@ -80,7 +80,7 @@
             <!-- View Toggle -->
             <div class="mb-6 flex flex-wrap gap-3 items-center">
                 <div class="inline-flex rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-1">
-                    <a href="{{ route('admin.orders', ['view' => 'active', 'status' => $selectedStatus]) }}" 
+                    <a href="{{ route('admin.orders', ['view' => 'active', 'status' => $selectedStatus, 'search' => $search]) }}" 
                        class="px-4 py-2 rounded-md text-sm font-medium transition {{ $currentView === 'active' ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
                         <span class="flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +90,7 @@
                             Active Orders
                         </span>
                     </a>
-                    <a href="{{ route('admin.orders', ['view' => 'preorder', 'status' => $selectedStatus]) }}" 
+                    <a href="{{ route('admin.orders', ['view' => 'preorder', 'status' => $selectedStatus, 'search' => $search]) }}" 
                        class="px-4 py-2 rounded-md text-sm font-medium transition {{ $currentView === 'preorder' ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
                         <span class="flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +99,7 @@
                             Pre-Order
                         </span>
                     </a>
-                    <a href="{{ route('admin.orders', ['view' => 'hidden', 'status' => $selectedStatus]) }}"
+                    <a href="{{ route('admin.orders', ['view' => 'hidden', 'status' => $selectedStatus, 'search' => $search]) }}"
                        class="px-4 py-2 rounded-md text-sm font-medium transition {{ $currentView === 'hidden' ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
                         <span class="flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,6 +127,19 @@
             <div class="mb-6 flex flex-wrap gap-4 justify-between items-center">
                 <form method="GET" action="{{ route('admin.orders') }}" class="flex flex-wrap gap-4">
                     <input type="hidden" name="view" value="{{ $currentView }}">
+
+                    <div class="relative">
+                        <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
+                        </svg>
+                        <input type="search" name="search" value="{{ $search }}"
+                               placeholder="Order #, name, phone or product ID"
+                               class="w-72 max-w-full border border-gray-300 dark:border-gray-700 rounded-lg pl-10 pr-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400">
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        Search
+                    </button>
+
                     <select name="status" onchange="this.form.submit()" class="border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <option value="">All Status</option>
                         <option value="pending" {{ $selectedStatus === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -136,20 +149,14 @@
                         <option value="delivered" {{ $selectedStatus === 'delivered' ? 'selected' : '' }}>Delivered</option>
                         <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                     </select>
-                    {{-- The dropdown auto-applies on change; this button only exists for non-JS browsers --}}
-                    <noscript>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                            Filter
-                        </button>
-                    </noscript>
-                    @if($selectedStatus)
+                    @if($selectedStatus || $search !== '')
                         <a href="{{ route('admin.orders', ['view' => $currentView]) }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
-                            Clear Filter
+                            Clear
                         </a>
                     @endif
                 </form>
-                
-                <a href="{{ route('admin.orders.export', ['status' => $selectedStatus]) }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+
+                <a href="{{ route('admin.orders.export', ['status' => $selectedStatus, 'search' => $search]) }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
@@ -164,7 +171,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                     </svg>
                     <p class="text-gray-500 dark:text-gray-400 text-lg">
-                        @if($currentView === 'hidden')
+                        @if($search !== '')
+                            No orders match “{{ $search }}”@if($selectedStatus) with status “{{ $selectedStatus }}”@endif.
+                        @elseif($currentView === 'hidden')
                             No hidden orders found.
                         @elseif($currentView === 'preorder')
                             No pre-order bookings found.
@@ -172,6 +181,14 @@
                             No orders found.
                         @endif
                     </p>
+                    @if($search !== '')
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            Searches order number, customer name, phone and product ID.
+                            This tab only shows
+                            {{ $currentView === 'hidden' ? 'hidden' : ($currentView === 'preorder' ? 'pre-order' : 'active') }}
+                            orders — try the other tabs.
+                        </p>
+                    @endif
                     @if($currentView === 'hidden')
                         <a href="{{ route('admin.orders', ['view' => 'active']) }}" class="mt-4 inline-block text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
                             View Active Orders →
