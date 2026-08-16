@@ -83,48 +83,58 @@ class AdminController extends Controller
         $view = $request->query('view', 'active'); // 'active', 'preorder', or 'hidden'
         $search = trim((string) $request->query('search', ''));
 
+        $searchBy = $request->query('search_by', 'order_id');
+        if (! in_array($searchBy, ['order_id', 'customer', 'product_id'], true)) {
+            $searchBy = 'order_id';
+        }
+
+        $isSearching = $search !== '';
         $query = Order::with(['user', 'items.product']);
 
-        // Filter by view type
-        if ($view === 'hidden') {
-            // Show deleted orders (regardless of preorder status)
-            $query->where('is_deleted', true);
-        } elseif ($view === 'preorder') {
-            // Show non-deleted pre-order bookings only
-            $query->notDeleted()->where('is_preorder_booking', true);
-        } else {
-            // Show non-deleted, non-preorder orders (regular active orders)
-            $query->notDeleted()->where('is_preorder_booking', false);
-        }
+        if ($isSearching) {
+            // A search looks everywhere: every status, plus hidden and pre-order
+            // bookings. Scoping it to the current tab hides the order you are
+            // hunting for, which defeats the point of searching.
+            $status = '';
 
-        if ($status && in_array($status, ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])) {
-            $query->where('status', $status);
-        }
-
-        // Search across order number, customer name, phone and product ID.
-        if ($search !== '') {
-            // Tolerate the way order numbers are displayed: "#350" and "INV-350" both mean 350
+            // Order numbers are shown as "#350" / "INV-350"; accept either form
             $numeric = preg_replace('/^(#|INV-)/i', '', $search);
-            // Phones are stored inconsistently (01712..., +88017122...), so match on digits only
+            // Phones are stored inconsistently ("01712...", "+880 1712-345678"),
+            // so compare digits only on both sides
             $digits = preg_replace('/\D/', '', $search);
 
-            $query->where(function ($q) use ($search, $numeric, $digits) {
-                $q->where('name', 'like', "%{$search}%");
+            if ($searchBy === 'order_id') {
+                $query->where('id', is_numeric($numeric) ? (int) $numeric : -1);
+            } elseif ($searchBy === 'product_id') {
+                $productId = is_numeric($numeric) ? (int) $numeric : -1;
+                $query->whereHas('items', fn ($items) => $items->where('product_id', $productId));
+            } else { // customer: name or phone
+                $query->where(function ($q) use ($search, $digits) {
+                    $q->where('name', 'like', "%{$search}%");
 
-                if (is_numeric($numeric)) {
-                    $q->orWhere('id', (int) $numeric)
-                      // Orders containing this product
-                      ->orWhereHas('items', function ($items) use ($numeric) {
-                          $items->where('product_id', (int) $numeric);
-                      });
-                }
+                    if ($digits !== '') {
+                        $q->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, '+', ''), '-', ''), ' ', '') LIKE ?", ["%{$digits}%"]);
+                    } else {
+                        $q->orWhere('phone', 'like', "%{$search}%");
+                    }
+                });
+            }
+        } else {
+            // Filter by view type
+            if ($view === 'hidden') {
+                // Show deleted orders (regardless of preorder status)
+                $query->where('is_deleted', true);
+            } elseif ($view === 'preorder') {
+                // Show non-deleted pre-order bookings only
+                $query->notDeleted()->where('is_preorder_booking', true);
+            } else {
+                // Show non-deleted, non-preorder orders (regular active orders)
+                $query->notDeleted()->where('is_preorder_booking', false);
+            }
 
-                if ($digits !== '') {
-                    $q->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, '+', ''), '-', ''), ' ', '') LIKE ?", ["%{$digits}%"]);
-                } else {
-                    $q->orWhere('phone', 'like', "%{$search}%");
-                }
-            });
+            if ($status && in_array($status, ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])) {
+                $query->where('status', $status);
+            }
         }
 
         $orders = $query->latest()->get();
@@ -134,6 +144,8 @@ class AdminController extends Controller
             'selectedStatus' => $status,
             'currentView' => $view,
             'search' => $search,
+            'searchBy' => $searchBy,
+            'isSearching' => $isSearching,
             'incompleteOrdersCount' => \App\Models\IncompleteOrder::count(),
         ]);
     }

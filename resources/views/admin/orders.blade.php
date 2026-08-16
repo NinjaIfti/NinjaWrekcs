@@ -80,7 +80,7 @@
             <!-- View Toggle -->
             <div class="mb-6 flex flex-wrap gap-3 items-center">
                 <div class="inline-flex rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-1">
-                    <a href="{{ route('admin.orders', ['view' => 'active', 'status' => $selectedStatus, 'search' => $search]) }}" 
+                    <a href="{{ route('admin.orders', ['view' => 'active', 'status' => $selectedStatus]) }}" 
                        class="px-4 py-2 rounded-md text-sm font-medium transition {{ $currentView === 'active' ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
                         <span class="flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +90,7 @@
                             Active Orders
                         </span>
                     </a>
-                    <a href="{{ route('admin.orders', ['view' => 'preorder', 'status' => $selectedStatus, 'search' => $search]) }}" 
+                    <a href="{{ route('admin.orders', ['view' => 'preorder', 'status' => $selectedStatus]) }}" 
                        class="px-4 py-2 rounded-md text-sm font-medium transition {{ $currentView === 'preorder' ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
                         <span class="flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,7 +99,7 @@
                             Pre-Order
                         </span>
                     </a>
-                    <a href="{{ route('admin.orders', ['view' => 'hidden', 'status' => $selectedStatus, 'search' => $search]) }}"
+                    <a href="{{ route('admin.orders', ['view' => 'hidden', 'status' => $selectedStatus]) }}"
                        class="px-4 py-2 rounded-md text-sm font-medium transition {{ $currentView === 'hidden' ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200' }}">
                         <span class="flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,41 +128,73 @@
                 <form method="GET" action="{{ route('admin.orders') }}" class="flex flex-wrap gap-4">
                     <input type="hidden" name="view" value="{{ $currentView }}">
 
+                    <select name="search_by" id="searchBySelect"
+                            class="border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                        <option value="order_id"   {{ $searchBy === 'order_id' ? 'selected' : '' }}>Order ID</option>
+                        <option value="customer"   {{ $searchBy === 'customer' ? 'selected' : '' }}>Name or Phone</option>
+                        <option value="product_id" {{ $searchBy === 'product_id' ? 'selected' : '' }}>Product ID</option>
+                    </select>
+
                     <div class="relative">
                         <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
                         </svg>
-                        <input type="search" name="search" value="{{ $search }}"
-                               placeholder="Order #, name, phone or product ID"
+                        <input type="search" name="search" id="orderSearchInput" value="{{ $search }}"
                                class="w-72 max-w-full border border-gray-300 dark:border-gray-700 rounded-lg pl-10 pr-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400">
                     </div>
                     <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         Search
                     </button>
 
-                    <select name="status" onchange="this.form.submit()" class="border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        <option value="">All Status</option>
-                        <option value="pending" {{ $selectedStatus === 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="confirmed" {{ $selectedStatus === 'confirmed' ? 'selected' : '' }}>Confirmed</option>
-                        <option value="processing" {{ $selectedStatus === 'processing' ? 'selected' : '' }}>Processing</option>
-                        <option value="shipped" {{ $selectedStatus === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                        <option value="delivered" {{ $selectedStatus === 'delivered' ? 'selected' : '' }}>Delivered</option>
-                        <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                    </select>
-                    @if($selectedStatus || $search !== '')
+                    {{-- Status narrows browsing only. A search deliberately spans every
+                         status, so showing this while searching would imply it still applies. --}}
+                    @unless($isSearching)
+                        <select name="status" onchange="this.form.submit()" class="border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                            <option value="">All Status</option>
+                            <option value="pending" {{ $selectedStatus === 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="confirmed" {{ $selectedStatus === 'confirmed' ? 'selected' : '' }}>Confirmed</option>
+                            <option value="processing" {{ $selectedStatus === 'processing' ? 'selected' : '' }}>Processing</option>
+                            <option value="shipped" {{ $selectedStatus === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                            <option value="delivered" {{ $selectedStatus === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                            <option value="cancelled" {{ $selectedStatus === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                        </select>
+                    @endunless
+                    @if($selectedStatus || $isSearching)
                         <a href="{{ route('admin.orders', ['view' => $currentView]) }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
                             Clear
                         </a>
                     @endif
                 </form>
 
-                <a href="{{ route('admin.orders.export', ['status' => $selectedStatus, 'search' => $search]) }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+                <a href="{{ route('admin.orders.export', ['status' => $selectedStatus]) }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     Download Excel
                 </a>
             </div>
+
+            @if($isSearching)
+                <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-3">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
+                    </svg>
+                    <div>
+                        <p class="text-blue-800 dark:text-blue-200 font-medium">
+                            {{ $orders->count() }} {{ Str::plural('result', $orders->count()) }} for
+                            @if($searchBy === 'order_id') order ID
+                            @elseif($searchBy === 'product_id') product ID
+                            @else name or phone
+                            @endif
+                            “{{ $search }}”
+                        </p>
+                        <p class="text-blue-700 dark:text-blue-300 text-sm mt-1">
+                            Searching every order — all statuses, including hidden orders and pre-order bookings.
+                            The tabs and status filter above do not narrow a search.
+                        </p>
+                    </div>
+                </div>
+            @endif
 
             <!-- Orders List -->
             @if($orders->isEmpty())
@@ -171,8 +203,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                     </svg>
                     <p class="text-gray-500 dark:text-gray-400 text-lg">
-                        @if($search !== '')
-                            No orders match “{{ $search }}”@if($selectedStatus) with status “{{ $selectedStatus }}”@endif.
+                        @if($isSearching)
+                            No orders match “{{ $search }}”.
                         @elseif($currentView === 'hidden')
                             No hidden orders found.
                         @elseif($currentView === 'preorder')
@@ -181,12 +213,16 @@
                             No orders found.
                         @endif
                     </p>
-                    @if($search !== '')
+                    @if($isSearching)
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                            Searches order number, customer name, phone and product ID.
-                            This tab only shows
-                            {{ $currentView === 'hidden' ? 'hidden' : ($currentView === 'preorder' ? 'pre-order' : 'active') }}
-                            orders — try the other tabs.
+                            Every order was checked — all statuses, hidden and pre-orders included.
+                            @if($searchBy === 'order_id')
+                                Searching by <strong>Order ID</strong>: enter a number such as 350, #350 or INV-350.
+                            @elseif($searchBy === 'product_id')
+                                Searching by <strong>Product ID</strong>: enter the numeric product ID.
+                            @else
+                                Searching by <strong>Name or Phone</strong>: try fewer characters, or a different spelling.
+                            @endif
                         </p>
                     @endif
                     @if($currentView === 'hidden')
@@ -211,19 +247,21 @@
                                             <h3 class="text-lg font-bold text-gray-900 dark:text-white">
                                                 Order #{{ $order->id }}
                                             </h3>
-                                            @if($currentView === 'hidden')
+                                            {{-- Driven by the order's own flags, not the tab: search results
+                                                 mix active, hidden and pre-order rows together. --}}
+                                            @if($order->is_deleted)
                                                 <span class="px-2 py-1 text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 rounded-full border border-yellow-300 dark:border-yellow-700">
                                                     Hidden
                                                 </span>
                                             @endif
-                                            @if($order->is_preorder_booking && $currentView !== 'preorder')
+                                            @if($order->is_preorder_booking)
                                                 <span class="px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 rounded-full border border-purple-300 dark:border-purple-700">
                                                     📦 Pre-order Booking
                                                 </span>
                                             @endif
-                                            @if($currentView === 'preorder')
-                                                <span class="px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 rounded-full border border-purple-300 dark:border-purple-700">
-                                                    📦 Pre-order Booking
+                                            @if($isSearching)
+                                                <span class="px-2 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full border border-gray-300 dark:border-gray-600 capitalize">
+                                                    {{ $order->status }}
                                                 </span>
                                             @endif
                                         </div>
@@ -501,6 +539,30 @@
     <div id="statusToastContainer" class="fixed bottom-6 right-6 z-[60] flex flex-col gap-2 items-end pointer-events-none"></div>
 
     <script>
+        // Placeholder follows the chosen search mode so the expected input is obvious
+        (function () {
+            const select = document.getElementById('searchBySelect');
+            const input = document.getElementById('orderSearchInput');
+            if (!select || !input) return;
+
+            const PLACEHOLDERS = {
+                order_id: 'e.g. 350, #350 or INV-350',
+                customer: 'Customer name or phone number',
+                product_id: 'e.g. 84',
+            };
+
+            function sync() {
+                input.placeholder = PLACEHOLDERS[select.value] || '';
+                input.setAttribute('inputmode', select.value === 'customer' ? 'text' : 'numeric');
+            }
+
+            sync();
+            select.addEventListener('change', function () {
+                sync();
+                input.focus();
+            });
+        })();
+
         let currentForm = null;
 
         const STATUS_TEXT_COLORS = {
