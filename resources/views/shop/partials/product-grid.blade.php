@@ -69,7 +69,7 @@
             
             <!-- Add to Cart Button (Shows on Hover) -->
             @php $hasVariants = $product->variants->isNotEmpty(); @endphp
-            @if($product->quantity > 0)
+            @if($product->availableStock() > 0)
             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" onclick="event.stopPropagation();">
                 @if($product->isKeychain() || $hasVariants)
                 {{-- Keychains and multi-variant products need the PDP to pick options --}}
@@ -122,8 +122,20 @@
         @endif
         
         <!-- Price with Discount -->
+        @php
+            // A variant product has no meaningful price of its own - show the range
+            // its active variants actually sell at.
+            $cardVariants = $product->variants->where('is_active', true);
+            $cardVariantPrices = $cardVariants->map(fn ($v) => (float) ($v->sale_price && $v->sale_price < $v->price ? $v->sale_price : $v->price));
+        @endphp
         <div class="flex items-center gap-2">
-            @if($product->price_tba || $product->price == 0 || !$product->display_price)
+            @if($cardVariants->isNotEmpty())
+                @if($cardVariantPrices->min() < $cardVariantPrices->max())
+                    <p class="text-lg font-bold text-violet-400"><span class="text-xs text-gray-400 font-normal">From</span> ৳{{ number_format($cardVariantPrices->min(), 2) }}</p>
+                @else
+                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($cardVariantPrices->min(), 2) }}</p>
+                @endif
+            @elseif($product->price_tba || $product->price == 0 || !$product->display_price)
                 <p class="text-sm font-semibold text-yellow-400">⏳ Price to be announced</p>
             @elseif($product->display_price)
                 @if($product->has_discount)
@@ -154,7 +166,7 @@
         @endif
         
         <!-- Stock Status with Urgency -->
-        @if($product->quantity > 0)
+        @if($product->availableStock() > 0)
             @if($product->is_low_stock)
                 <div class="flex items-center gap-2">
                     <span class="relative flex h-3 w-3">
