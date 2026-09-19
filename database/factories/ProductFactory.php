@@ -39,4 +39,13 @@ class ProductFactory extends Factory
             'is_bookable' => false,
         ];
     }
+
+    public function withCategory(?string $slug = null): static
+    {
+        return $this->state(fn () => [
+            'category_id' => \App\Models\Category::factory()->create(
+                $slug ? ['name' => $slug, 'slug' => $slug] : []
+            )->id,
+        ]);
+    }
 }
