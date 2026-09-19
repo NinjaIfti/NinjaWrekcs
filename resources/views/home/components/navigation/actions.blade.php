@@ -16,7 +16,6 @@
         // outright on composite cart ids like "12_3".
         $miniCart = app(\App\Services\CartService::class);
         $miniLines = $miniCart->lines();
-        $miniSummary = $miniCart->summary();
     @endphp
     <div class="relative group/cart">
         <a href="{{ route('cart.index') }}" class="p-2 text-gray-300 hover:text-violet-400 transition-colors relative">
@@ -24,7 +23,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
             @if($miniLines->count() > 0)
-                <span class="absolute -top-1 -right-1 bg-violet-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center glitch-pulse">{{ $miniSummary->itemCount }}</span>
+                <span class="absolute -top-1 -right-1 bg-violet-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center glitch-pulse">{{ $miniLines->count() }}</span>
             @endif
         </a>
         
@@ -34,7 +33,7 @@
             <div class="p-4">
                 <div class="flex justify-between items-center mb-4 pb-4 border-b border-violet-500/20">
                     <h3 class="text-lg font-bold text-white">Shopping Cart</h3>
-                    <span class="text-sm text-gray-400">{{ $miniSummary->itemCount }} item(s)</span>
+                    <span class="text-sm text-gray-400">{{ $miniLines->count() }} item(s)</span>
                 </div>
                 
                 <!-- Cart Items (Max 3) -->
