@@ -18,7 +18,7 @@ class ProductFactory extends Factory
             'notes' => null,
             'quantity' => fake()->numberBetween(0, 100),
             'price' => fake()->randomFloat(2, 100, 5000),
-            'cost_price' => null,
+            'cost_price' => 0,
             'sale_price' => null,
             'offer_price' => null,
             'offer_starts_at' => null,
