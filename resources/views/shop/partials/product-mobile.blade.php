@@ -71,8 +71,20 @@
         </a>
         
         <!-- Price -->
+        @php
+            // A variant product has no meaningful price of its own - show the range
+            // its active variants actually sell at.
+            $cardVariants = $product->variants->where('is_active', true);
+            $cardVariantPrices = $cardVariants->map(fn ($v) => (float) ($v->sale_price && $v->sale_price < $v->price ? $v->sale_price : $v->price));
+        @endphp
         <div class="flex items-center gap-2">
-            @if($product->price_tba || $product->price == 0 || !$product->display_price)
+            @if($cardVariants->isNotEmpty())
+                @if($cardVariantPrices->min() < $cardVariantPrices->max())
+                    <p class="text-sm font-bold text-white"><span class="text-[10px] text-gray-400 font-normal">From</span> ৳{{ number_format($cardVariantPrices->min(), 2) }}</p>
+                @else
+                    <p class="text-sm font-bold text-white">৳{{ number_format($cardVariantPrices->min(), 2) }}</p>
+                @endif
+            @elseif($product->price_tba || $product->price == 0 || !$product->display_price)
                 <p class="text-[10px] font-medium text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20">
                     ⏳ Price TBA
                 </p>
@@ -90,7 +102,7 @@
         <div class="flex items-center justify-between pt-1.5 border-t border-gray-700/50">
             <!-- Stock Status -->
             <div class="flex items-center gap-1.5">
-                @if($product->quantity > 0)
+                @if($product->availableStock() > 0)
                     @if($product->is_low_stock)
                         <span class="relative flex h-2.5 w-2.5">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75"></span>
@@ -107,7 +119,7 @@
             
             <!-- Add Button -->
             @php $hasVariants = $product->variants->isNotEmpty(); @endphp
-            @if($product->quantity > 0)
+            @if($product->availableStock() > 0)
                 @if($product->isKeychain() || $hasVariants)
                 {{-- Keychains and multi-variant products need the PDP to pick options --}}
                 <a href="{{ route('shop.show', $product) }}" onclick="event.stopPropagation();" class="ml-auto px-4 py-1.5 text-xs font-semibold bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-full hover:from-violet-500 hover:to-pink-500 hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all shadow-md inline-block text-center">

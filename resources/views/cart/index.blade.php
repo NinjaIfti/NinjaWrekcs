@@ -36,8 +36,8 @@
                 </div>
             @endif
 
-            @if($cartItems->count() > 0)
-                @if($hasBookableItems)
+            @if(! $summary->isEmpty())
+                @if($summary->hasBookingItems)
                     <div class="mb-4 md:mb-6 p-3 md:p-4 bg-purple-500/20 border border-purple-500/50 rounded-lg">
                         <div class="flex items-start gap-3">
                             <svg class="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,15 +54,14 @@
                 <div class="grid lg:grid-cols-3 gap-6 md:gap-8">
                     <!-- Cart Items -->
                     <div class="lg:col-span-2 space-y-4 md:space-y-6 order-2 lg:order-1">
-                        @foreach($cartItems as $item)
+                        @foreach($lines as $line)
                             <div class="bg-black/50 backdrop-blur-xl rounded-xl md:rounded-2xl border border-violet-500/30 p-4 md:p-6">
                                 <div class="flex gap-4 md:gap-6">
                                     <!-- Product Image -->
                                     <div class="flex-shrink-0">
-                                        @php $cartProductId = $item->attributes->product_id ?? $item->id; @endphp
-                                        <a href="{{ route('shop.show', $cartProductId) }}">
-                                            <img src="{{ $item->attributes->image ? asset('storage/' . $item->attributes->image) : '/img/placeholder.jpg' }}" 
-                                                 alt="{{ $item->name }}" 
+                                        <a href="{{ route('shop.show', $line->product->id) }}">
+                                            <img src="{{ $line->image ? asset('storage/' . $line->image) : '/img/placeholder.jpg' }}"
+                                                 alt="{{ $line->name }}"
                                                  class="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg border border-violet-500/30">
                                         </a>
                                     </div>
@@ -71,12 +70,20 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex justify-between items-start mb-3 md:mb-4 gap-2">
                                             <div class="flex-1 min-w-0">
-                                                <a href="{{ route('shop.show', $cartProductId) }}" class="text-lg md:text-xl font-bold text-white hover:text-violet-400 transition-colors line-clamp-2">
-                                                    {{ $item->name }}
+                                                <a href="{{ route('shop.show', $line->product->id) }}" class="text-lg md:text-xl font-bold text-white hover:text-violet-400 transition-colors line-clamp-2">
+                                                    {{ $line->name }}
                                                 </a>
-                                                <p class="text-xs md:text-sm text-gray-400 mt-1">{{ $item->attributes->category }}</p>
+                                                @if($line->variant)
+                                                    <p class="text-sm text-violet-300">{{ $line->variant->name }}</p>
+                                                @endif
+                                                <p class="text-xs md:text-sm text-gray-400 mt-1">{{ $line->product->category_name }}</p>
+                                                @if($line->requiresBooking())
+                                                    <p class="text-xs text-amber-400 mt-1">
+                                                        + ৳{{ number_format($line->bookingFeePerUnit, 2) }} booking fee per unit
+                                                    </p>
+                                                @endif
                                             </div>
-                                            <form action="{{ route('cart.remove', $item->id) }}" method="POST" class="flex-shrink-0">
+                                            <form action="{{ route('cart.remove', $line->id) }}" method="POST" class="flex-shrink-0">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-400 hover:text-red-300 transition-colors p-2 -mr-2 -mt-2">
@@ -92,13 +99,14 @@
                                             <!-- Quantity Update -->
                                             <div class="flex items-center gap-3">
                                                 <span class="text-sm md:text-base text-gray-400 whitespace-nowrap">Quantity:</span>
-                                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="flex items-center gap-2">
+                                                <form action="{{ route('cart.update', $line->id) }}" method="POST" class="flex items-center gap-2">
                                                     @csrf
                                                     @method('PUT')
-                                                    <input type="number" 
-                                                           name="quantity" 
-                                                           value="{{ $item->quantity }}" 
-                                                           min="1" 
+                                                    <input type="number"
+                                                           name="quantity"
+                                                           value="{{ $line->quantity }}"
+                                                           min="1"
+                                                           max="{{ $line->availableStock() }}"
                                                            class="w-16 md:w-20 px-2 md:px-3 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white text-sm md:text-base focus:border-violet-500 focus:ring-violet-500/50">
                                                     <button type="submit" class="px-3 md:px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors text-sm md:text-base font-medium">
                                                         Update
@@ -107,38 +115,15 @@
                                             </div>
 
                                             <!-- Price -->
-                                            @php
-                                                // Check if item is bookable from attributes or database
-                                                $isBookable = false;
-                                                if (isset($item->attributes->is_bookable)) {
-                                                    $isBookable = (bool) $item->attributes->is_bookable;
-                                                }
-                                                
-                                                // If not set in attributes, check database
-                                                if (!$isBookable) {
-                                                    $productCheck = \App\Models\Product::find($cartProductId);
-                                                    $isBookable = $productCheck && (bool) $productCheck->is_bookable;
-                                                }
-                                                if ($isBookable) {
-                                                    $product = \App\Models\Product::find($cartProductId);
-                                                    if ($product) {
-                                                        // Always use the product's display_price or price (original, not reduced)
-                                                        $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
-                                                    } else {
-                                                        // Fallback: use original_price from attributes if product not found
-                                                        $displayPrice = (float) ($item->attributes->original_price ?? $item->price);
-                                                    }
-                                                } else {
-                                                    // Regular items: use cart price as-is
-                                                    $displayPrice = (float) $item->price;
-                                                }
-                                            @endphp
                                             <div class="text-left md:text-right">
                                                 <p class="text-xl md:text-2xl font-bold text-violet-400">
-                                                    ৳{{ number_format($displayPrice * $item->quantity, 2) }}
+                                                    ৳{{ number_format($line->lineTotal(), 2) }}
                                                 </p>
                                                 <p class="text-xs md:text-sm text-gray-400">
-                                                    ৳{{ number_format($displayPrice, 2) }} each
+                                                    ৳{{ number_format($line->unitPrice, 2) }} each
+                                                    @if($line->compareAtPrice)
+                                                        <span class="line-through text-gray-600">৳{{ number_format($line->compareAtPrice, 2) }}</span>
+                                                    @endif
                                                 </p>
                                             </div>
                                         </div>
@@ -155,17 +140,21 @@
                             
                             <div class="space-y-3 md:space-y-4 mb-4 md:mb-6">
                                 <div class="flex justify-between text-sm md:text-base text-gray-300">
-                                    <span>Subtotal</span>
-                                    <span>৳{{ number_format($cartSubTotal, 2) }}</span>
+                                    <span>Subtotal ({{ $summary->itemCount }} items)</span>
+                                    <span>৳{{ number_format($summary->subtotal, 2) }}</span>
                                 </div>
-                                <div class="flex justify-between text-sm md:text-base text-gray-300">
-                                    <span>Items</span>
-                                    <span>{{ $cartItems->count() }}</span>
-                                </div>
+
+                                @if($summary->hasBookingItems)
+                                    <div class="flex justify-between text-sm md:text-base text-amber-400">
+                                        <span>Booking due now</span>
+                                        <span>৳{{ number_format($summary->bookingTotal, 2) }}</span>
+                                    </div>
+                                @endif
+
                                 <div class="border-t border-violet-500/20 pt-3 md:pt-4">
                                     <div class="flex justify-between text-lg md:text-xl font-bold">
                                         <span>Total</span>
-                                        <span class="text-violet-400">৳{{ number_format($cartSubTotal, 2) }}</span>
+                                        <span class="text-violet-400">৳{{ number_format($summary->subtotal, 2) }}</span>
                                     </div>
                                 </div>
                             </div>

@@ -23,6 +23,7 @@ return new class extends Migration
                 $table->integer('rating')->default(0);
                 $table->integer('reviews')->default(0);
                 $table->boolean('is_active')->default(true);
+                $table->boolean('is_featured')->default(false);
                 $table->timestamps();
             });
         }

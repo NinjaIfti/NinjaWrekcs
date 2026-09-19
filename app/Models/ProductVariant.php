@@ -14,13 +14,44 @@ class ProductVariant extends Model
     protected $fillable = [
         'product_id',
         'name',
+        'sku',
         'price',
+        'sale_price',
+        'quantity',
         'sort_order',
+        'is_active',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'sale_price' => 'decimal:2',
+        'quantity' => 'integer',
+        'is_active' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        // Variant stock and price drive the shop card's From-price and its
+        // sold-out badge, so a variant write has to invalidate the same cached
+        // listing pages a product write does.
+        static::saved(function (ProductVariant $variant) {
+            if ($variant->wasRecentlyCreated || $variant->wasChanged(['quantity', 'price', 'sale_price', 'is_active'])) {
+                Product::clearShopListingCache();
+            }
+        });
+
+        static::deleted(fn () => Product::clearShopListingCache());
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function isInStock(): bool
+    {
+        return $this->is_active && $this->quantity > 0;
+    }
 
     public function product(): BelongsTo
     {

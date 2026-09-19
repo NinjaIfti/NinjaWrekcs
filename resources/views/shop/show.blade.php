@@ -130,17 +130,49 @@
                         {{ $product->name }}
                     </h1>
 
+                    @php
+                        $activeVariants = $product->variants->where('is_active', true);
+                        // Never preselect a sold-out option.
+                        $defaultVariant = $activeVariants->firstWhere('quantity', '>', 0);
+                    @endphp
+
                     @if($hasVariants)
-                    <!-- Keychain variant selector -->
-                    <div class="space-y-2">
-                        <label for="variant_id" class="block text-sm font-medium text-gray-400">Choose variant</label>
-                        <select id="variant_id" name="variant_id" class="w-full max-w-md px-4 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">
-                            @foreach($product->variants as $v)
-                            <option value="{{ $v->id }}" data-price="{{ $v->price }}" data-images="{{ $v->images->map(fn($i) => asset('storage/'.$i->path))->values()->toJson() }}" data-cover="{{ $product->cover_photo ? asset('storage/'.$product->cover_photo) : '' }}">
-                                {{ $v->name }} — ৳{{ number_format($v->price, 2) }}
-                            </option>
+                    <!-- Variant swatches -->
+                    <div class="space-y-3">
+                        <label class="block text-sm font-medium text-gray-400">Choose an option</label>
+
+                        <div class="flex flex-wrap gap-3" id="variant-swatches">
+                            @foreach($activeVariants as $v)
+                                @php
+                                    $inStock = $v->quantity > 0;
+                                    $vPrice = $v->sale_price && $v->sale_price < $v->price ? $v->sale_price : $v->price;
+                                @endphp
+                                <button type="button"
+                                        class="variant-swatch relative px-3 py-3 rounded-lg border-2 text-center transition
+                                               {{ $inStock ? 'border-violet-500/30 hover:border-violet-500 cursor-pointer' : 'border-gray-700 opacity-40 cursor-not-allowed' }}
+                                               {{ $defaultVariant && $defaultVariant->id === $v->id ? 'border-violet-500 bg-violet-500/10' : '' }}"
+                                        data-variant-id="{{ $v->id }}"
+                                        data-price="{{ $vPrice }}"
+                                        data-in-stock="{{ $inStock ? 1 : 0 }}"
+                                        data-stock="{{ $v->quantity }}"
+                                        data-images="{{ $v->images->map(fn($i) => asset('storage/'.$i->path))->values()->toJson() }}"
+                                        @disabled(! $inStock)>
+                                    @if($v->images->isNotEmpty())
+                                        <img src="{{ asset('storage/' . $v->images->first()->path) }}" alt="{{ $v->name }}"
+                                             class="w-14 h-14 object-cover rounded mb-1 mx-auto">
+                                    @endif
+                                    <span class="block text-sm {{ $inStock ? 'text-white' : 'text-gray-500 line-through' }}">{{ $v->name }}</span>
+                                    <span class="block text-xs text-violet-300">৳{{ number_format($vPrice, 2) }}</span>
+                                    @unless($inStock)
+                                        <span class="block text-[10px] text-red-400 uppercase tracking-wide">Sold out</span>
+                                    @endunless
+                                </button>
                             @endforeach
-                        </select>
+                        </div>
+
+                        @unless($defaultVariant)
+                            <p class="text-sm text-red-400">Every option is currently sold out.</p>
+                        @endunless
                     </div>
                     @endif
 
@@ -164,7 +196,7 @@
                     <div class="space-y-3" id="price-block">
                         <div class="flex items-center gap-3">
                             @if($hasVariants)
-                                <div class="text-3xl font-bold text-violet-400" id="variant-price">৳{{ number_format($product->variants->first()->price ?? 0, 2) }}</div>
+                                <div class="text-3xl font-bold text-violet-400" id="variant-price">৳{{ number_format($defaultVariant ? ($defaultVariant->sale_price && $defaultVariant->sale_price < $defaultVariant->price ? $defaultVariant->sale_price : $defaultVariant->price) : ($activeVariants->first()->price ?? 0), 2) }}</div>
                             @elseif($product->has_discount)
                                 <div class="text-3xl font-bold text-violet-400">
                                     ৳{{ number_format($product->display_price, 2) }}
@@ -235,7 +267,7 @@
                             <form action="{{ route('cart.add', $product) }}" method="POST" class="space-y-4" id="add-to-cart-form">
                                 @csrf
                                 @if($hasVariants)
-                                    <input type="hidden" name="variant_id" id="form_variant_id" value="{{ $product->variants->first()->id }}">
+                                    <input type="hidden" name="variant_id" id="form_variant_id" value="{{ $defaultVariant?->id }}">
                                 @endif
                                 <div class="flex items-center space-x-4">
                                     <label for="quantity" class="text-gray-300">Quantity:</label>
@@ -247,7 +279,7 @@
                                            max="{{ $product->quantity }}"
                                            class="w-24 px-3 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">
                                 </div>
-                                <button type="submit" class="w-full px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all relative overflow-hidden group">
+                                <button type="submit" id="add-to-cart-btn" @disabled($hasVariants && ! $defaultVariant) class="w-full px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all relative overflow-hidden group disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100">
                                     <span class="relative z-10 flex items-center justify-center">
                                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -346,21 +378,38 @@
                 if (prev) prev.addEventListener('click', () => showSlide((current - 1 + slides.length) % slides.length));
             };
 
-            if (variantSelect) {
-                variantSelect.addEventListener('change', function() {
-                    const opt = this.options[this.selectedIndex];
-                    const price = opt.getAttribute('data-price');
-                    const imagesJson = opt.getAttribute('data-images');
-                    const cover = opt.getAttribute('data-cover') || '';
-                    if (formVariantInput) formVariantInput.value = this.value;
-                    if (variantPriceEl && price) variantPriceEl.textContent = '৳' + parseFloat(price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const swatches = document.querySelectorAll('.variant-swatch');
+            const addToCartBtn = document.getElementById('add-to-cart-btn');
+            const qtyInput = document.querySelector('input[name="quantity"]');
+
+            swatches.forEach((swatch) => {
+                swatch.addEventListener('click', function () {
+                    if (this.dataset.inStock !== '1') return;
+
+                    swatches.forEach((s) => s.classList.remove('border-violet-500', 'bg-violet-500/10'));
+                    this.classList.add('border-violet-500', 'bg-violet-500/10');
+
+                    if (formVariantInput) formVariantInput.value = this.dataset.variantId;
+                    if (variantPriceEl && this.dataset.price) {
+                        variantPriceEl.textContent = '৳' + parseFloat(this.dataset.price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    }
+                    if (addToCartBtn) addToCartBtn.disabled = false;
+
+                    // Never let the quantity box exceed this variant's stock.
+                    if (qtyInput) {
+                        qtyInput.max = this.dataset.stock;
+                        if (parseInt(qtyInput.value, 10) > parseInt(this.dataset.stock, 10)) {
+                            qtyInput.value = this.dataset.stock;
+                        }
+                    }
+
+                    const imagesJson = this.dataset.images;
                     if (imagesJson) {
-                        let urls = JSON.parse(imagesJson);
-                        if (cover) urls = [cover].concat(urls);
-                        rebuildSlideshow(urls);
+                        const urls = JSON.parse(imagesJson);
+                        if (urls.length) rebuildSlideshow(urls);
                     }
                 });
-            }
+            });
 
             initSlideshow();
         });

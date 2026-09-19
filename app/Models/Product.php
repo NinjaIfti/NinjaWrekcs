@@ -12,6 +12,10 @@ class Product extends Model
 {
     use HasFactory;
 
+    public const AVAILABILITY_IN_STOCK = 'in_stock';
+    public const AVAILABILITY_PREORDER = 'preorder';
+    public const AVAILABILITY_UPCOMING = 'upcoming';
+
     protected $fillable = [
         'name',
         'description',
@@ -38,6 +42,8 @@ class Product extends Model
         'is_upcoming',
         'price_tba',
         'is_bookable',
+        'availability',
+        'booking_fee',
     ];
 
     protected $casts = [
@@ -50,6 +56,7 @@ class Product extends Model
         'is_upcoming' => 'boolean',
         'price_tba' => 'boolean',
         'is_bookable' => 'boolean',
+        'booking_fee' => 'decimal:2',
         'cost_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'offer_price' => 'decimal:2',
@@ -80,6 +87,48 @@ class Product extends Model
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class)->orderBy('sort_order');
+    }
+
+    public function activeVariants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)->where('is_active', true)->orderBy('sort_order');
+    }
+
+    public function hasVariants(): bool
+    {
+        return $this->relationLoaded('variants')
+            ? $this->getRelation('variants')->isNotEmpty()
+            : $this->variants()->exists();
+    }
+
+    /**
+     * Stock for a specific variant, or the product's own sellable stock.
+     *
+     * A product with variants has no stock of its own - its quantity column is
+     * legacy and is ignored in favour of the sum of its active variants, so the
+     * sold-out badge stays correct without a denormalised counter.
+     */
+    public function availableStock(?ProductVariant $variant = null): int
+    {
+        if ($variant !== null) {
+            return $variant->is_active ? (int) $variant->quantity : 0;
+        }
+
+        if ($this->hasVariants()) {
+            return (int) $this->variants()->where('is_active', true)->sum('quantity');
+        }
+
+        return (int) $this->quantity;
+    }
+
+    public function requiresBooking(): bool
+    {
+        return $this->booking_fee !== null && (float) $this->booking_fee > 0;
+    }
+
+    public function isPurchasable(): bool
+    {
+        return $this->is_active && $this->availability !== self::AVAILABILITY_UPCOMING;
     }
 
     public function isKeychain(): bool
@@ -200,6 +249,10 @@ class Product extends Model
                 \Illuminate\Support\Facades\Cache::forget("shop_products_page_{$perPage}_{$page}");
             }
         }
+
+        // These are cached for an hour and go stale on the same writes.
+        \Illuminate\Support\Facades\Cache::forget('shop_category_counts');
+        \Illuminate\Support\Facades\Cache::forget('shop_price_range');
     }
 
     protected static function booted(): void

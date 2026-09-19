@@ -9,66 +9,46 @@
     </button>
 
     <!-- Cart Dropdown -->
+    @php
+        // One resolved source of truth for the mini-cart: the same CartService the
+        // cart page, checkout and order creation use. Replaces the per-item
+        // Product::find() loop that ran DB queries inside this template and broke
+        // outright on composite cart ids like "12_3".
+        $miniCart = app(\App\Services\CartService::class);
+        $miniLines = $miniCart->lines();
+    @endphp
     <div class="relative group/cart">
         <a href="{{ route('cart.index') }}" class="p-2 text-gray-300 hover:text-violet-400 transition-colors relative">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
-            @if(\Cart::getContent()->count() > 0)
-                <span class="absolute -top-1 -right-1 bg-violet-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center glitch-pulse">{{ \Cart::getContent()->count() }}</span>
+            @if($miniLines->count() > 0)
+                <span class="absolute -top-1 -right-1 bg-violet-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center glitch-pulse">{{ $miniLines->count() }}</span>
             @endif
         </a>
         
         <!-- Cart Dropdown Menu -->
-        @if(\Cart::getContent()->count() > 0)
+        @if($miniLines->count() > 0)
         <div class="absolute right-0 top-full mt-2 w-80 bg-black/95 backdrop-blur-xl rounded-2xl border border-violet-500/30 shadow-2xl opacity-0 invisible group-hover/cart:opacity-100 group-hover/cart:visible transition-all duration-300 z-50 cart-dropdown">
             <div class="p-4">
                 <div class="flex justify-between items-center mb-4 pb-4 border-b border-violet-500/20">
                     <h3 class="text-lg font-bold text-white">Shopping Cart</h3>
-                    <span class="text-sm text-gray-400">{{ \Cart::getContent()->count() }} item(s)</span>
+                    <span class="text-sm text-gray-400">{{ $miniLines->count() }} item(s)</span>
                 </div>
                 
                 <!-- Cart Items (Max 3) -->
                 <div class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
-                    @foreach(\Cart::getContent()->take(3) as $item)
-                        @php
-                            // Check if item is bookable from attributes or database
-                            $isBookable = false;
-                            if (isset($item->attributes->is_bookable)) {
-                                $isBookable = (bool) $item->attributes->is_bookable;
-                            }
-                            
-                            // If not set in attributes, check database
-                            if (!$isBookable) {
-                                $productCheck = \App\Models\Product::find($item->id);
-                                $isBookable = $productCheck && (bool) $productCheck->is_bookable;
-                            }
-                            
-                            // For pre-order items, ALWAYS fetch original price from database
-                            if ($isBookable) {
-                                $product = \App\Models\Product::find($item->id);
-                                if ($product) {
-                                    // Always use the product's display_price or price (original, not reduced)
-                                    $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
-                                } else {
-                                    // Fallback: use original_price from attributes if product not found
-                                    $displayPrice = (float) ($item->attributes->original_price ?? $item->price);
-                                }
-                            } else {
-                                // Regular items: use cart price as-is
-                                $displayPrice = (float) $item->price;
-                            }
-                        @endphp
+                    @foreach($miniLines->take(3) as $line)
                         <a href="{{ route('cart.index') }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-violet-500/10 transition-colors group/item">
                             <div class="flex-shrink-0">
-                                <img src="{{ $item->attributes->image ? asset('storage/' . $item->attributes->image) : '/img/placeholder.jpg' }}" 
-                                     alt="{{ $item->name }}" 
+                                <img src="{{ $line->image ? asset('storage/' . $line->image) : '/img/placeholder.jpg' }}"
+                                     alt="{{ $line->name }}"
                                      class="w-16 h-16 object-cover rounded-lg border border-violet-500/30">
                             </div>
                             <div class="flex-1 min-w-0">
-                                <h4 class="text-sm font-semibold text-white group-hover/item:text-violet-400 transition-colors truncate">{{ $item->name }}</h4>
-                                <p class="text-xs text-gray-400">Qty: {{ $item->quantity }}</p>
-                                <p class="text-sm font-bold text-violet-400">৳{{ number_format($displayPrice * $item->quantity, 2) }}</p>
+                                <h4 class="text-sm font-semibold text-white group-hover/item:text-violet-400 transition-colors truncate">{{ $line->name }}</h4>
+                                <p class="text-xs text-gray-400">Qty: {{ $line->quantity }}</p>
+                                <p class="text-sm font-bold text-violet-400">৳{{ number_format($line->lineTotal(), 2) }}</p>
                             </div>
                         </a>
                     @endforeach
@@ -76,36 +56,7 @@
                 
                 <!-- View Full Cart Button -->
                 <div class="mt-4 pt-4 border-t border-violet-500/20">
-                    @php
-                        // Calculate total using original prices for pre-order items
-                        $cartTotalForDisplay = 0;
-                        foreach (\Cart::getContent() as $cartItem) {
-                            $isBookableItem = false;
-                            if (isset($cartItem->attributes->is_bookable)) {
-                                $isBookableItem = (bool) $cartItem->attributes->is_bookable;
-                            } else {
-                                $productCheck = \App\Models\Product::find($cartItem->id);
-                                $isBookableItem = $productCheck && (bool) $productCheck->is_bookable;
-                            }
-                            
-                            if ($isBookableItem) {
-                                $product = \App\Models\Product::find($cartItem->id);
-                                if ($product) {
-                                    $originalPrice = (float) ($product->display_price ?? $product->price ?? 0);
-                                    $cartTotalForDisplay += $originalPrice * $cartItem->quantity;
-                                } else {
-                                    $originalPrice = (float) ($cartItem->attributes->original_price ?? $cartItem->price);
-                                    $cartTotalForDisplay += $originalPrice * $cartItem->quantity;
-                                }
-                            } else {
-                                $cartTotalForDisplay += $cartItem->price * $cartItem->quantity;
-                            }
-                        }
-                    @endphp
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-gray-300 font-semibold">Total:</span>
-                        <span class="text-xl font-bold text-violet-400">৳{{ number_format($cartTotalForDisplay, 2) }}</span>
-                    </div>
+                    <x-cart-summary />
                     <a href="{{ route('cart.index') }}" class="block w-full px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition-all text-center">
                         View Full Cart
                     </a>
