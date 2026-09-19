@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 #
-# Fold the colour-split Valorant families - RGX, Kuronami, Reaver - into one
-# product each, with the colours as variants. Wraps products:merge-variants,
-# which does the real work: stock is verified inside a transaction and rolled
-# back on mismatch, and source products are deactivated rather than deleted so
-# order history lives.
+# Batch 2: fold the remaining colour-split families into one product each.
+# Wraps products:merge-variants, which does the real work: stock is verified
+# inside a transaction and rolled back on mismatch, and source products are
+# deactivated rather than deleted so order history lives.
 #
 # Dry run by default - it prints every plan and changes nothing:
 #
@@ -15,13 +14,16 @@
 #     bash deploy/merge-colour-variants.sh --commit
 #
 # This is a ONE-TIME catalogue operation, not a migration. Running it twice
-# creates a second set of merged products; the sources are already inactive by
-# then, so re-running is visible but not destructive. To reverse one family:
+# creates a second set of merged products. To reverse one family:
 #
 #     php artisan products:unmerge-variants <merged-id> --ids=<source ids> --commit
 #
-# Ids are from the 2026-09-19 catalogue. Expected total stock carried: 16 units
-# across 19 source products, becoming 7 products.
+# Batch 1 (already merged 2026-09-19, do NOT re-run): RGX Butterfly 143,
+# RGX Dagger 144, RGX Butterfly and Blade 145, Kuronami 7cm 146,
+# Kuronami 22cm 147, Reaver Krambit 17cm 148, Reaver Vandal 149.
+#
+# Ids are from the 2026-09-19 catalogue. Expected total stock carried in this
+# batch: 20 units across 24 source products, becoming 4 products.
 
 set -euo pipefail
 
@@ -48,25 +50,27 @@ merge() {
     php artisan products:merge-variants "$name" --ids="$ids" --names="$names" $COMMIT
 }
 
-#     merged product name          source ids     variant names          stock
-merge "RGX Butterfly"              "2,4,5"        "Red,Green,Blue"       #  0
-merge "RGX Dagger"                 "12,13,14"     "Red,Blue,Green"       #  0
-merge "RGX Butterfly and Blade"    "120,121"      "Red,Blue"             #  5
-merge "Kuronami 7cm"               "15,16,43"     "Red,Purple,Grey"      #  8
-merge "Kuronami 22cm"              "93,96"        "White,Black"          #  0
-merge "Reaver Krambit 17cm"        "70,71,72,73"  "Purple,Blood Red,Silver Shadow,Green Shadow"  # 1
-merge "Reaver Vandal"              "118,119"      "Purple,White"         #  2
+# The Butterfly series (1,500), the Gamma Doppler (1,300) and the whole Finish
+# series (950) are one knife - each variant keeps its own price. Source 101
+# leads so the merged product takes its category, description and images.
+# NOTE: ids 81 and 88 are both "CSGO Gradient Finish", so two swatches will
+# read the same. Deactivate one variant in admin afterwards.
+merge "CSGO Butterfly" \
+      "101,102,103,104,135,81,82,83,84,85,86,87,88,89,90,91,92" \
+      "Blue Shadow,Red Doppler,Red Shadow,Green Shadow,Gamma Doppler,Gradient Finish,Black Claw,White Chromium,Rainbow Chromium,Black Knife with Hole,Old School Finish,Celestial Finish,Gradient Finish,Simov Finish,Shark Finish,Sakura Finish,Blue Thunder Finish"
 
-# Deferred, not merged here:
-#   CSGO Butterfly      101,102,103,104  - waiting on whether the CSGO "Finish"
-#                                          series (81-92, 135) is the same knife
-#   Singularity 22cm    122,123
-#   Recon Butterfly     76,134
+# Trainers are a separate product from the real knife.
+merge "CSGO Butterfly Trainer" "136,137,138" "Blue Wave,Majesty Forest,Tanto"   # 2 units
+
+merge "Singularity 22cm"       "122,123"     "Yellow,Brown"                     # 4 units
+
+merge "Recon Butterfly"        "76,134"      "Green,Red"                        # 0 units
 
 echo ""
 if [[ -n "$COMMIT" ]]; then
     echo "Done. Check the storefront - the merged products should show a colour"
     echo "picker, and the old per-colour listings should be gone from the shop."
+    echo "Remember to deactivate one of the two 'Gradient Finish' variants."
 else
     echo "Dry run complete. Nothing changed."
 fi
