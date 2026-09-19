@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Coupon;
 use App\Models\IncompleteOrder;
 use App\Mail\OrderConfirmation;
 use App\Mail\AdminOrderNotification;
+use App\Services\CartService;
 use App\Services\EmailService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Mail;
@@ -21,58 +23,22 @@ use Illuminate\Http\RedirectResponse;
 
 class CheckoutController extends Controller
 {
+    public function __construct(private readonly CartService $cart)
+    {
+    }
+
     public function index(): View|RedirectResponse
     {
-        $cartItems = \Cart::getContent();
-        
-        if ($cartItems->isEmpty()) {
+        $lines = $this->cart->lines();
+
+        if ($lines->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
-        // Calculate subtotal using original prices for all items
-        $cartSubTotal = 0;
-        $hasBookableItems = false;
-        $totalBookingAmount = 0;
-        
-        foreach ($cartItems as $item) {
-            // Check cart item attributes first (more reliable)
-            $isBookable = false;
-            if (isset($item->attributes->is_bookable)) {
-                // Convert to boolean (handles string "1"/"0" or boolean true/false)
-                $isBookable = (bool) $item->attributes->is_bookable;
-            }
-            
-            if (!$isBookable) {
-                $productId = is_string($item->id) && str_contains($item->id, '_') ? (int) explode('_', $item->id)[0] : $item->id;
-                $product = Product::find($productId);
-                $isBookable = $product && (bool) $product->is_bookable;
-            }
-            if ($isBookable) {
-                $productId = is_string($item->id) && str_contains($item->id, '_') ? (int) explode('_', $item->id)[0] : $item->id;
-                $product = Product::find($productId);
-                if ($product) {
-                    $originalPrice = (float) ($product->display_price ?? $product->price ?? 0);
-                    $cartSubTotal += $originalPrice * $item->quantity;
-                } else {
-                    // Fallback: use original_price from attributes if product not found
-                    $originalPrice = (float) ($item->attributes->original_price ?? $item->price);
-                    $cartSubTotal += $originalPrice * $item->quantity;
-                }
-                $hasBookableItems = true;
-                // Each bookable item has 200 booking fee
-                $totalBookingAmount += 200 * $item->quantity;
-            } else {
-                $cartSubTotal += $item->price * $item->quantity;
-            }
-        }
-        
-        $cartTotal = \Cart::getTotal();
-        
-        // No automatic discounts - only coupon discounts apply
-        $totalDiscount = 0;
-        $finalTotal = $cartSubTotal;
-
-        return view('checkout.index', compact('cartItems', 'cartTotal', 'cartSubTotal', 'totalDiscount', 'finalTotal', 'hasBookableItems', 'totalBookingAmount'));
+        return view('checkout.index', [
+            'lines' => $lines,
+            'summary' => $this->cart->summary(),
+        ]);
     }
 
     public function validateCoupon(Request $request)
@@ -130,11 +96,12 @@ class CheckoutController extends Controller
             return response()->json(['success' => true]);
         }
 
-        $cartItems = \Cart::getContent();
-        $cartSnapshot = $cartItems->map(fn ($item) => [
-            'name' => $item->name,
-            'quantity' => $item->quantity,
-            'price' => (float) $item->price,
+        $lines = $this->cart->lines();
+
+        $cartSnapshot = $lines->map(fn ($line) => [
+            'name' => $line->name,
+            'quantity' => $line->quantity,
+            'price' => $line->unitPrice,
         ])->values()->all();
 
         IncompleteOrder::updateOrCreate(
@@ -147,7 +114,7 @@ class CheckoutController extends Controller
                 'address' => $request->input('address') ?: null,
                 'delivery_location' => $request->input('delivery_location') ?: null,
                 'cart_snapshot' => $cartSnapshot,
-                'subtotal' => $cartItems->sum(fn ($item) => $item->price * $item->quantity),
+                'subtotal' => $this->cart->summary()->subtotal,
                 'ip_address' => $request->ip(),
                 'last_activity_at' => now(),
             ]
@@ -158,12 +125,13 @@ class CheckoutController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $cartItems = \Cart::getContent();
-        
-        if ($cartItems->isEmpty()) {
+        $lines = $this->cart->lines();
+
+        if ($lines->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
+        $summary = $this->cart->summary();
         $isLoggedIn = Auth::check();
 
         // Validation rules
@@ -179,31 +147,6 @@ class CheckoutController extends Controller
             'coupon_code' => 'nullable|string|exists:coupons,code',
         ];
 
-        // Check if cart has bookable items - if so, COD is not allowed
-        // Use cart item attributes first, then fallback to database check
-        $hasBookableItems = false;
-        $totalBookingAmount = 0;
-        foreach ($cartItems as $item) {
-            // Check cart item attributes first (more reliable)
-            $isBookable = false;
-            if (isset($item->attributes->is_bookable)) {
-                // Convert to boolean (handles string "1"/"0" or boolean true/false)
-                $isBookable = (bool) $item->attributes->is_bookable;
-            }
-            
-            // If not in attributes or not bookable, check database
-            if (!$isBookable) {
-                $product = Product::find($item->id);
-                $isBookable = $product && (bool) $product->is_bookable;
-            }
-            
-            // Only mark as bookable if explicitly true
-            if ($isBookable === true) {
-                $hasBookableItems = true;
-                $totalBookingAmount += 200 * $item->quantity;
-            }
-        }
-
         if (!$isLoggedIn) {
             if ($request->boolean('create_account')) {
                 $rules['email'] = 'required|email|max:255';
@@ -216,7 +159,7 @@ class CheckoutController extends Controller
         $validated = $request->validate($rules);
 
         // If bookable items exist, COD is not allowed
-        if ($hasBookableItems && $validated['payment_method'] === 'cod') {
+        if ($summary->hasBookingItems && $validated['payment_method'] === 'cod') {
             return redirect()->back()->with('error', 'Cash on Delivery is not available for pre-order bookings. Please use Mobile Banking (bKash/Nagad).')->withInput();
         }
 
@@ -283,79 +226,23 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Calculate subtotal using original prices for all items
-            $cartSubTotal = 0;
-            $totalDiscount = 0;
-            
-            // Check for bookable items and calculate booking amount
-            // Use cart item attributes first, then fallback to database check
-            $hasBookableItems = false;
-            $totalBookingAmount = 0;
-            foreach ($cartItems as $item) {
-                // Check cart item attributes first (more reliable)
-                $isBookable = false;
-                if (isset($item->attributes->is_bookable)) {
-                    // Convert to boolean (handles string "1"/"0" or boolean true/false)
-                    $isBookable = (bool) $item->attributes->is_bookable;
-                }
-                
-                // If not in attributes or not bookable, check database
-                if (!$isBookable) {
-                    $product = Product::find($item->id);
-                    $isBookable = $product && (bool) $product->is_bookable;
-                }
-                
-                // Use original price for pre-order items, display_price (deal price) for regular items
-                if ($isBookable) {
-                    // Always fetch original price from database for pre-order items
-                    $product = Product::find($item->id);
-                    if ($product) {
-                        $originalPrice = (float) ($product->price ?? 0);
-                        if ($originalPrice == 0) {
-                            $originalPrice = (float) ($product->display_price ?? 0);
-                        }
-                        $cartSubTotal += $originalPrice * $item->quantity;
-                    } else {
-                        // Fallback: use original_price from attributes if product not found
-                        $originalPrice = (float) ($item->attributes->original_price ?? $item->price);
-                        $cartSubTotal += $originalPrice * $item->quantity;
-                    }
-                    $hasBookableItems = true;
-                    // Each bookable item has 200 booking fee
-                    $totalBookingAmount += 200 * $item->quantity;
-                } else {
-                    // Regular items: use display_price (includes deals) from database
-                    $product = Product::find($item->id);
-                    if ($product) {
-                        $displayPrice = (float) ($product->display_price ?? $product->price ?? 0);
-                        $cartSubTotal += $displayPrice * $item->quantity;
-                    } else {
-                        // Fallback: use cart price if product not found
-                        $cartSubTotal += $item->price * $item->quantity;
-                    }
-                }
-            }
-            
             // Calculate delivery charge
             $deliveryCharge = $validated['delivery_location'] === 'inside_dhaka' ? 80 : 120;
-            
-            // Apply coupon if provided
+
             $coupon = null;
             $couponDiscount = 0;
-            if (!empty($validated['coupon_code'])) {
+
+            if (! empty($validated['coupon_code'])) {
                 $coupon = Coupon::where('code', strtoupper($validated['coupon_code']))->first();
+
                 if ($coupon && $coupon->isValid()) {
-                    $couponDiscount = $coupon->calculateDiscount($cartSubTotal);
-                    $totalDiscount = $couponDiscount;
+                    $couponDiscount = $coupon->calculateDiscount($summary->subtotal);
                 }
             }
-            
-            $finalTotal = max(0, $cartSubTotal + $deliveryCharge - $totalDiscount);
 
-            $orderEmail = $user?->email;
-            if (!$orderEmail && !empty($validated['email'] ?? null)) {
-                $orderEmail = $validated['email'];
-            }
+            $finalTotal = max(0, $summary->subtotal + $deliveryCharge - $couponDiscount);
+
+            $orderEmail = $user?->email ?: ($validated['email'] ?? null);
 
             // Create order
             $order = Order::create([
@@ -369,8 +256,8 @@ class CheckoutController extends Controller
                 'delivery_location' => $validated['delivery_location'],
                 'delivery_charge' => $deliveryCharge,
                 'email' => $orderEmail,
-                'subtotal' => $cartSubTotal,
-                'discount' => $totalDiscount,
+                'subtotal' => $summary->subtotal,
+                'discount' => $couponDiscount,
                 'total' => $finalTotal,
                 'payment_method' => $validated['payment_method'],
                 'transaction_number' => $validated['transaction_number'] ?? null,
@@ -379,51 +266,48 @@ class CheckoutController extends Controller
                 'save_info' => $request->has('save_info'),
                 'terms_accepted' => true,
                 'notes' => $request->input('notes'),
-                'is_preorder_booking' => $hasBookableItems,
-                'booking_amount' => $hasBookableItems ? $totalBookingAmount : null,
+                'is_preorder_booking' => $summary->hasBookingItems,
+                'booking_amount' => $summary->hasBookingItems ? $summary->bookingTotal : null,
             ]);
-            
+
             // Increment coupon usage
             if ($coupon) {
                 $coupon->incrementUsage();
             }
 
-            // Create order items
-            foreach ($cartItems as $item) {
-                $productId = is_string($item->id) && str_contains($item->id, '_')
-                    ? (int) explode('_', $item->id)[0]
-                    : $item->id;
-                $product = Product::find($productId);
-
-                if (!$product) {
-                    throw new \Exception("Product with ID {$productId} not found.");
-                }
-                if ($product->quantity < $item->quantity) {
-                    throw new \Exception("Insufficient stock for {$product->name}. Only {$product->quantity} available, but {$item->quantity} requested.");
-                }
-
-                $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
-                $variantId = $item->attributes->variant_id ?? null;
-
-                if ($isBookable) {
-                    $itemPrice = (float) ($product->price ?? $product->display_price ?? 0);
-                } elseif ($variantId) {
-                    $itemPrice = (float) $item->price;
+            foreach ($lines as $line) {
+                // Lock the row that actually holds the stock before checking it, so
+                // two simultaneous buyers of the last unit cannot both succeed.
+                // Stock and variant validity are re-validated here rather than
+                // trusted from add-to-cart time, since a variant can sell out or
+                // be deactivated while sitting in the cart.
+                if ($line->variant !== null) {
+                    $locked = ProductVariant::whereKey($line->variant->id)->lockForUpdate()->first();
+                    $available = $locked?->is_active ? (int) $locked->quantity : 0;
                 } else {
-                    $itemPrice = (float) ($product->display_price ?? $product->price ?? 0);
+                    $locked = Product::whereKey($line->product->id)->lockForUpdate()->first();
+                    $available = $locked ? (int) $locked->quantity : 0;
+                }
+
+                if ($locked === null) {
+                    throw new \Exception("{$line->name} is no longer available.");
+                }
+
+                if ($available < $line->quantity) {
+                    throw new \Exception("Insufficient stock for {$line->name}. Only {$available} available.");
                 }
 
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'product_variant_id' => $variantId,
-                    'product_name' => $item->name,
-                    'price' => $itemPrice,
-                    'quantity' => $item->quantity,
-                    'subtotal' => $itemPrice * $item->quantity,
+                    'product_id' => $line->product->id,
+                    'product_variant_id' => $line->variant?->id,
+                    'product_name' => $line->name,
+                    'price' => $line->unitPrice,
+                    'quantity' => $line->quantity,
+                    'subtotal' => $line->lineTotal(),
                 ]);
 
-                $product->decrement('quantity', $item->quantity);
+                $locked->decrement('quantity', $line->quantity);
             }
 
             DB::commit();
@@ -460,7 +344,7 @@ class CheckoutController extends Controller
             NotificationService::orderPlaced($order);
 
             // Clear cart
-            \Cart::clear();
+            $this->cart->clear();
 
             // This checkout completed, so it's no longer "incomplete"
             IncompleteOrder::where('session_id', session()->getId())->delete();
@@ -495,7 +379,11 @@ class CheckoutController extends Controller
             \Log::error('Order placement failed: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'user_id' => Auth::id(),
-                'cart_items' => $cartItems->toArray(),
+                'cart_items' => $lines->map(fn ($line) => [
+                    'id' => $line->id,
+                    'name' => $line->name,
+                    'quantity' => $line->quantity,
+                ])->all(),
             ]);
             
             $errorMessage = 'Failed to place order: ';

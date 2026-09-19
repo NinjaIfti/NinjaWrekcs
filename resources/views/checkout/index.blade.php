@@ -25,8 +25,30 @@
 <body class="antialiased bg-black text-white">
     @include('components.analytics-noscript')
 
-    @if($cartItems->count() > 0)
-        <x-data-layer :payload="\App\Support\DataLayerHelper::beginCheckoutPayload($cartItems, (float) $cartSubTotal, $hasBookableItems, (float) $totalBookingAmount)" />
+    @php
+        // DataLayerHelper::beginCheckoutPayload() and the checkout-data-layer-scripts
+        // component (both out of scope for this task) expect the legacy
+        // \Cart::getContent() item shape (id/name/price/attributes), not CartLine.
+        // Rebuild that shape here from $lines/$summary purely for those two call
+        // sites so the analytics payload stays correct without modifying them.
+        $legacyCartItems = $lines->map(fn ($line) => (object) [
+            'id' => $line->id,
+            'name' => $line->name,
+            'price' => $line->unitPrice,
+            'quantity' => $line->quantity,
+            'attributes' => (object) [
+                'product_id' => $line->product->id,
+                'variant_id' => $line->variant?->id,
+                'image' => $line->image,
+                'category' => $line->product->category_name,
+                'is_bookable' => $line->requiresBooking(),
+                'original_price' => $line->unitPrice,
+            ],
+        ]);
+    @endphp
+
+    @if($legacyCartItems->count() > 0)
+        <x-data-layer :payload="\App\Support\DataLayerHelper::beginCheckoutPayload($legacyCartItems, (float) $summary->subtotal, $summary->hasBookingItems, (float) $summary->bookingTotal)" />
     @endif
 
     @include('home.components.navigation')
@@ -210,12 +232,12 @@
                                     </label>
 
                                     <!-- Cash on Delivery Option -->
-                                    <label class="flex items-start space-x-3 p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg transition payment-method-option {{ $hasBookableItems ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-violet-500/60' }}">
-                                        <input type="radio" name="payment_method" value="cod" onchange="togglePaymentFields()" class="mt-1 text-violet-600 focus:ring-violet-500" {{ $hasBookableItems ? 'disabled' : '' }}>
+                                    <label class="flex items-start space-x-3 p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg transition payment-method-option {{ $summary->hasBookingItems ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-violet-500/60' }}">
+                                        <input type="radio" name="payment_method" value="cod" onchange="togglePaymentFields()" class="mt-1 text-violet-600 focus:ring-violet-500" {{ $summary->hasBookingItems ? 'disabled' : '' }}>
                                         <div class="flex-1">
                                             <span class="text-white font-semibold">Cash on Delivery</span>
                                             <p class="text-gray-400 text-sm mt-1">
-                                                @if($hasBookableItems)
+                                                @if($summary->hasBookingItems)
                                                     Not available for pre-order bookings
                                                 @else
                                                     Pay when you receive your order
@@ -226,7 +248,7 @@
                                 </div>
                             </div>
 
-                            @if($hasBookableItems)
+                            @if($summary->hasBookingItems)
                             <!-- Pre-order Booking Information -->
                             <div class="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
                                 <div class="flex items-start space-x-3">
@@ -236,7 +258,7 @@
                                     <div>
                                         <p class="text-purple-300 font-semibold mb-1">Pre-order Booking</p>
                                         <p class="text-gray-300 text-sm">
-                                            You are booking pre-order products. You will pay ৳{{ number_format($totalBookingAmount, 2) }} as booking fee now.
+                                            You are booking pre-order products. You will pay ৳{{ number_format($summary->bookingTotal, 2) }} as booking fee now.
                                             The remaining DUE amount will be collected via Cash on Delivery when the product is ready.
                                         </p>
                                     </div>
@@ -288,7 +310,7 @@
                                 </div>
                             </div>
 
-                            @if($hasBookableItems)
+                            @if($summary->hasBookingItems)
                             <!-- DUE Amount Information for Pre-orders -->
                             <div class="mt-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
                                 <div class="flex items-start space-x-3">
@@ -298,7 +320,7 @@
                                     <div>
                                         <p class="text-purple-300 font-semibold mb-1">DUE Amount</p>
                                         <p class="text-gray-300 text-sm">
-                                            The remaining DUE amount of <span class="text-purple-400 font-bold" id="due-amount-display">৳{{ number_format(($cartSubTotal + 80) - $totalBookingAmount, 2) }}</span> will be collected via Cash on Delivery when the product is ready.
+                                            The remaining DUE amount of <span class="text-purple-400 font-bold" id="due-amount-display">৳{{ number_format(($summary->subtotal + 80) - $summary->bookingTotal, 2) }}</span> will be collected via Cash on Delivery when the product is ready.
                                         </p>
                                     </div>
                                 </div>
@@ -317,7 +339,7 @@
                             </label>
                             @endauth
 
-                            @if(!$hasBookableItems)
+                            @if(!$summary->hasBookingItems)
                             <label class="flex items-start space-x-3 cursor-pointer">
                                 <input type="checkbox" name="terms_accepted" value="1" required class="mt-1 rounded border-violet-500/50 bg-black/50 text-violet-600">
                                 <span class="text-gray-300">I accept that the order will take <span class="text-violet-400 font-semibold">1-2 days</span> to arrive *</span>
@@ -347,44 +369,15 @@
                         <div class="space-y-4 mb-6">
                             <!-- Cart Items -->
                             <div class="space-y-3 max-h-64 overflow-y-auto">
-                                @foreach($cartItems as $item)
-                                    @php
-                                        // Check if item is bookable from attributes first
-                                        $isBookable = isset($item->attributes->is_bookable) && (bool) $item->attributes->is_bookable;
-                                        
-                                        // Fetch product from database (we'll use it for both checking and getting price)
-                                        $product = \App\Models\Product::find($item->id);
-                                        
-                                        // If not bookable from attributes, check database
-                                        if (!$isBookable && $product) {
-                                            $isBookable = (bool) $product->is_bookable;
-                                        }
-                                        
-                                        // For pre-order items, ALWAYS use original price from database
-                                        if ($isBookable && $product) {
-                                            // Always use the product's price directly (original, not reduced)
-                                            // display_price might have discounts, so use price field directly
-                                            $displayPrice = (float) ($product->price ?? 0);
-                                            // If price is 0 or null, try display_price as fallback
-                                            if ($displayPrice == 0) {
-                                                $displayPrice = (float) ($product->display_price ?? 0);
-                                            }
-                                        } elseif ($isBookable) {
-                                            // Product not found but marked as bookable - use original_price from attributes
-                                            $displayPrice = (float) ($item->attributes->original_price ?? $item->price);
-                                        } else {
-                                            // Regular items: use cart price as-is
-                                            $displayPrice = (float) $item->price;
-                                        }
-                                    @endphp
+                                @foreach($lines as $line)
                                     <div class="flex items-center gap-3">
-                                        <img src="{{ $item->attributes->image ? asset('storage/' . $item->attributes->image) : '/img/placeholder.jpg' }}" 
-                                             alt="{{ $item->name }}" 
+                                        <img src="{{ $line->image ? asset('storage/' . $line->image) : '/img/placeholder.jpg' }}"
+                                             alt="{{ $line->name }}"
                                              class="w-16 h-16 object-cover rounded-lg border border-violet-500/30">
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-semibold text-white truncate">{{ $item->name }}</p>
-                                            <p class="text-xs text-gray-400">Qty: {{ $item->quantity }}</p>
-                                            <p class="text-sm font-bold text-violet-400">৳{{ number_format($displayPrice * $item->quantity, 2) }}</p>
+                                            <p class="text-sm font-semibold text-white truncate">{{ $line->name }}</p>
+                                            <p class="text-xs text-gray-400">Qty: {{ $line->quantity }}</p>
+                                            <p class="text-sm font-bold text-violet-400">৳{{ number_format($line->lineTotal(), 2) }}</p>
                                         </div>
                                     </div>
                                 @endforeach
@@ -412,7 +405,7 @@
                             <div class="border-t border-violet-500/20 pt-4 space-y-2">
                                 <div class="flex justify-between text-gray-300">
                                     <span>Subtotal</span>
-                                    <span id="subtotal_display">৳{{ number_format($cartSubTotal, 2) }}</span>
+                                    <span id="subtotal_display">৳{{ number_format($summary->subtotal, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between text-gray-300">
                                     <span>Delivery Charge</span>
@@ -422,22 +415,22 @@
                                     <span>Coupon Discount</span>
                                     <span id="coupon_discount_display">-৳0.00</span>
                                 </div>
-                                @if($hasBookableItems)
+                                @if($summary->hasBookingItems)
                                 <div class="border-t border-violet-500/20 pt-2 pb-2">
                                     <div class="flex justify-between text-lg font-semibold">
                                         <span>Total</span>
-                                        <span class="text-violet-400" id="total_before_booking">৳{{ number_format($cartSubTotal + 80, 2) }}</span>
+                                        <span class="text-violet-400" id="total_before_booking">৳{{ number_format($summary->subtotal + 80, 2) }}</span>
                                     </div>
                                 </div>
                                 <div class="border-t border-purple-500/20 pt-2 space-y-2">
                                     <div class="flex justify-between text-purple-300">
                                         <span>Booking Fee</span>
-                                        <span class="font-semibold">৳{{ number_format($totalBookingAmount, 2) }}</span>
+                                        <span class="font-semibold">৳{{ number_format($summary->bookingTotal, 2) }}</span>
                                     </div>
                                     <div class="border-t border-purple-500/20 pt-2">
                                         <div class="flex justify-between text-xl font-bold text-purple-300">
                                             <span>DUE</span>
-                                            <span id="total_display">৳{{ number_format(($cartSubTotal + 80) - $totalBookingAmount, 2) }}</span>
+                                            <span id="total_display">৳{{ number_format(($summary->subtotal + 80) - $summary->bookingTotal, 2) }}</span>
                                         </div>
                                         <p class="text-xs text-purple-400 mt-1 italic">
                                             Remaining DUE will collected on Cash On Delivery
@@ -448,7 +441,7 @@
                                 <div class="border-t border-violet-500/20 pt-2">
                                     <div class="flex justify-between text-xl font-bold">
                                         <span>Total</span>
-                                        <span class="text-violet-400" id="total_display">৳{{ number_format($cartSubTotal + 80, 2) }}</span>
+                                        <span class="text-violet-400" id="total_display">৳{{ number_format($summary->subtotal + 80, 2) }}</span>
                                     </div>
                                 </div>
                                 @endif
@@ -478,7 +471,7 @@
 
     <script>
         let deliveryCharge = 80; // Default: Inside Dhaka
-        const baseSubtotal = {{ $cartSubTotal }}; // This is already calculated with original prices for pre-order items
+        const baseSubtotal = {{ $summary->subtotal }}; // This is already calculated with original prices for pre-order items
         let currentDiscount = 0;
 
         // Update delivery charge
@@ -502,14 +495,14 @@
 
         // Update total calculation
         function updateTotal() {
-            const bookingAmount = {{ $hasBookableItems ? $totalBookingAmount : 0 }};
+            const bookingAmount = {{ $summary->hasBookingItems ? $summary->bookingTotal : 0 }};
             const total = baseSubtotal + deliveryCharge - currentDiscount;
             const discountField = document.getElementById('checkout_discount_value');
             if (discountField) {
                 discountField.value = currentDiscount;
             }
             
-            @if($hasBookableItems)
+            @if($summary->hasBookingItems)
             // For pre-order items: Total = Subtotal + DC, DUE = Total - Booking Fee
             const totalBeforeBookingEl = document.getElementById('total_before_booking');
             if (totalBeforeBookingEl) {
@@ -542,7 +535,7 @@
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
             if (!paymentMethod) return;
             
-            const hasBookableItems = {{ $hasBookableItems ? 'true' : 'false' }};
+            const hasBookableItems = {{ $summary->hasBookingItems ? 'true' : 'false' }};
             
             // If bookable items, ensure COD cannot be selected
             if (hasBookableItems && paymentMethod.value === 'cod') {
@@ -767,8 +760,13 @@
         })();
     </script>
 
-    @if($cartItems->count() > 0)
-        @include('components.checkout-data-layer-scripts')
+    @if($legacyCartItems->count() > 0)
+        @include('components.checkout-data-layer-scripts', [
+            'cartItems' => $legacyCartItems,
+            'cartSubTotal' => $summary->subtotal,
+            'hasBookableItems' => $summary->hasBookingItems,
+            'totalBookingAmount' => $summary->bookingTotal,
+        ])
     @endif
 </body>
 </html>
