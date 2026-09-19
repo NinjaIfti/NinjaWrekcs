@@ -249,6 +249,10 @@ class Product extends Model
                 \Illuminate\Support\Facades\Cache::forget("shop_products_page_{$perPage}_{$page}");
             }
         }
+
+        // These are cached for an hour and go stale on the same writes.
+        \Illuminate\Support\Facades\Cache::forget('shop_category_counts');
+        \Illuminate\Support\Facades\Cache::forget('shop_price_range');
     }
 
     protected static function booted(): void

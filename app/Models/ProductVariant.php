@@ -29,6 +29,20 @@ class ProductVariant extends Model
         'is_active' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        // Variant stock and price drive the shop card's From-price and its
+        // sold-out badge, so a variant write has to invalidate the same cached
+        // listing pages a product write does.
+        static::saved(function (ProductVariant $variant) {
+            if ($variant->wasRecentlyCreated || $variant->wasChanged(['quantity', 'price', 'sale_price', 'is_active'])) {
+                Product::clearShopListingCache();
+            }
+        });
+
+        static::deleted(fn () => Product::clearShopListingCache());
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
