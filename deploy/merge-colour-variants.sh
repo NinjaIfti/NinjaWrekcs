@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Batch 2: fold the remaining colour-split families into one product each.
+# Batch 3: the Lego sets, the RGB lamps, and a redo of Singularity 22cm.
 # Wraps products:merge-variants, which does the real work: stock is verified
 # inside a transaction and rolled back on mismatch, and source products are
 # deactivated rather than deleted so order history lives.
@@ -18,12 +18,13 @@
 #
 #     php artisan products:unmerge-variants <merged-id> --ids=<source ids> --commit
 #
-# Batch 1 (already merged 2026-09-19, do NOT re-run): RGX Butterfly 143,
-# RGX Dagger 144, RGX Butterfly and Blade 145, Kuronami 7cm 146,
-# Kuronami 22cm 147, Reaver Krambit 17cm 148, Reaver Vandal 149.
+# Already merged, do NOT re-run: RGX Butterfly 143, RGX Dagger 144,
+# RGX Butterfly and Blade 145, Kuronami 7cm 146, Kuronami 22cm 147,
+# Reaver Krambit 17cm 148, Reaver Vandal 149, CSGO Butterfly 150,
+# CSGO Butterfly Trainer 151, Recon Butterfly 153.
 #
 # Ids are from the 2026-09-19 catalogue. Expected total stock carried in this
-# batch: 20 units across 24 source products, becoming 4 products.
+# batch: 10 units across 15 source products, becoming 3 products.
 
 set -euo pipefail
 
@@ -32,7 +33,8 @@ cd "$(dirname "$0")/.."
 COMMIT=""
 if [[ "${1:-}" == "--commit" ]]; then
     COMMIT="--commit"
-    echo "APPLYING the merges. Take a database backup first if you have not:"
+    echo "APPLYING. This one also UNDOES a previous merge - see the Singularity"
+    echo "note below. Take a database backup first if you have not:"
     echo "  mysqldump --no-tablespaces -u laravel_user laravel_db > ~/backup-\$(date +%F).sql"
     echo ""
     read -rp "Continue? [y/N] " reply
@@ -50,27 +52,35 @@ merge() {
     php artisan products:merge-variants "$name" --ids="$ids" --names="$names" $COMMIT
 }
 
-# The Butterfly series (1,500), the Gamma Doppler (1,300) and the whole Finish
-# series (950) are one knife - each variant keeps its own price. Source 101
-# leads so the merged product takes its category, description and images.
-# NOTE: ids 81 and 88 are both "CSGO Gradient Finish", so two swatches will
-# read the same. Deactivate one variant in admin afterwards.
-merge "CSGO Butterfly" \
-      "101,102,103,104,135,81,82,83,84,85,86,87,88,89,90,91,92" \
-      "Blue Shadow,Red Doppler,Red Shadow,Green Shadow,Gamma Doppler,Gradient Finish,Black Claw,White Chromium,Rainbow Chromium,Black Knife with Hole,Old School Finish,Celestial Finish,Gradient Finish,Simov Finish,Shark Finish,Sakura Finish,Blue Thunder Finish"
+# Singularity 22cm was merged in batch 2 from Yellow and Brown only. Blue (78)
+# and Pink (79) are the same knife at the same 1,200, so product 152 is undone
+# and rebuilt from all four. Nothing has been ordered from 152, so the undo
+# deletes it rather than leaving a deactivated stray behind.
+echo ""
+echo "=============================================================="
+echo " Undo batch 2's Singularity 22cm (product 152)"
+echo "=============================================================="
+php artisan products:unmerge-variants 152 --ids=122,123 $COMMIT
 
-# Trainers are a separate product from the real knife.
-merge "CSGO Butterfly Trainer" "136,137,138" "Blue Wave,Majesty Forest,Tanto"   # 2 units
+merge "Singularity 22cm" "122,123,78,79" "Yellow,Brown,Blue,Pink"   # 5 units
 
-merge "Singularity 22cm"       "122,123"     "Yellow,Brown"                     # 4 units
+# Agent names rather than colours, so the variant names are the agents. The
+# three already-deactivated sets (21 Reyna, 25 Raze, 31 KillJoy) are folded in
+# as INACTIVE variants: hidden from the shop, but Raze's unit is preserved and
+# any of them can be switched back on from admin. Active sets lead so they
+# sort first.
+merge "Valorant Agent Lego Set" \
+      "23,24,28,29,30,21,25,31" \
+      "Viper,Youru,Omen,Chamber,Sova,Reyna,Raze,KillJoy"            # 4 units
 
-merge "Recon Butterfly"        "76,134"      "Green,Red"                        # 0 units
+# Reyna is 1,200 against the other two at 1,000 - each variant keeps its own
+# price, so the card will show a From-price.
+merge "Valorant Agent RGB Lamp" "33,34,35" "Viper,Sova,Reyna"       # 1 unit
 
 echo ""
 if [[ -n "$COMMIT" ]]; then
-    echo "Done. Check the storefront - the merged products should show a colour"
-    echo "picker, and the old per-colour listings should be gone from the shop."
-    echo "Remember to deactivate one of the two 'Gradient Finish' variants."
+    echo "Done. Check the storefront - the merged products should show a picker,"
+    echo "and the old per-agent listings should be gone from the shop."
 else
     echo "Dry run complete. Nothing changed."
 fi
