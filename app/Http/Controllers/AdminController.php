@@ -891,7 +891,11 @@ class AdminController extends Controller
             'cover_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
             'new_variants' => 'nullable|array',
             'new_variants.*.name' => 'nullable|string|max:255',
+            'new_variants.*.sku' => 'nullable|string|max:100',
             'new_variants.*.price' => 'nullable|numeric|min:0',
+            'new_variants.*.sale_price' => 'nullable|numeric|min:0',
+            'new_variants.*.quantity' => 'nullable|integer|min:0',
+            'new_variants.*.is_active' => 'nullable|boolean',
             'new_variants.*.images' => 'nullable|array',
             'new_variants.*.images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
@@ -935,7 +939,10 @@ class AdminController extends Controller
             }
         }
 
-        if ($request->category_id == $keychainsCategoryId && is_array($request->new_variants)) {
+        // Variants are available to every category, not just keychains - a knife
+        // like "RGX Butterfly" has colour variants the same way a keychain product
+        // holds many designs.
+        if (is_array($request->new_variants)) {
             $sortOrder = 0;
             foreach ($request->new_variants as $idx => $v) {
                 if (empty($v['name']) || !isset($v['price'])) {
@@ -943,7 +950,11 @@ class AdminController extends Controller
                 }
                 $variant = $product->variants()->create([
                     'name' => $v['name'],
+                    'sku' => $v['sku'] ?? null,
                     'price' => (float) $v['price'],
+                    'sale_price' => isset($v['sale_price']) && $v['sale_price'] !== '' ? (float) $v['sale_price'] : null,
+                    'quantity' => (int) ($v['quantity'] ?? 0),
+                    'is_active' => (bool) ($v['is_active'] ?? true),
                     'sort_order' => $sortOrder++,
                 ]);
                 $variantImages = $request->file("new_variants.{$idx}.images");
@@ -1015,7 +1026,11 @@ class AdminController extends Controller
             'delete_cover_photo' => 'nullable|boolean',
             'variants' => 'nullable|array',
             'variants.*.name' => 'nullable|string|max:255',
+            'variants.*.sku' => 'nullable|string|max:100',
             'variants.*.price' => 'nullable|numeric|min:0',
+            'variants.*.sale_price' => 'nullable|numeric|min:0',
+            'variants.*.quantity' => 'nullable|integer|min:0',
+            'variants.*.is_active' => 'nullable|boolean',
             'variants.*.delete_images' => 'nullable|array',
             'variants.*.delete_images.*' => 'integer',
             'variants.*.images' => 'nullable|array',
@@ -1024,13 +1039,19 @@ class AdminController extends Controller
             'delete_variants.*' => 'integer',
             'new_variants' => 'nullable|array',
             'new_variants.*.name' => 'nullable|string|max:255',
+            'new_variants.*.sku' => 'nullable|string|max:100',
             'new_variants.*.price' => 'nullable|numeric|min:0',
+            'new_variants.*.sale_price' => 'nullable|numeric|min:0',
+            'new_variants.*.quantity' => 'nullable|integer|min:0',
+            'new_variants.*.is_active' => 'nullable|boolean',
             'new_variants.*.images' => 'nullable|array',
             'new_variants.*.images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
-        $keychainsCategoryId = Category::where('slug', 'valorant-keychains-stickers')->value('id');
-        if ($product->category_id == $keychainsCategoryId) {
+        // Cover photo and variants are available to every category, not just
+        // keychains - a knife like "RGX Butterfly" has colour variants the same
+        // way a keychain product holds many designs.
+        {
             if ($request->has('delete_cover_photo') && $product->cover_photo) {
                 Storage::disk('public')->delete($product->cover_photo);
                 $validated['cover_photo'] = null;
@@ -1057,7 +1078,11 @@ class AdminController extends Controller
                 }
                 $variant->update([
                     'name' => $v['name'] ?? $variant->name,
+                    'sku' => $v['sku'] ?? $variant->sku,
                     'price' => isset($v['price']) ? (float) $v['price'] : $variant->price,
+                    'sale_price' => isset($v['sale_price']) && $v['sale_price'] !== '' ? (float) $v['sale_price'] : null,
+                    'quantity' => isset($v['quantity']) ? (int) $v['quantity'] : $variant->quantity,
+                    'is_active' => (bool) ($v['is_active'] ?? false),
                 ]);
                 $deleteImgIds = $v['delete_images'] ?? [];
                 if (!empty($deleteImgIds)) {
@@ -1088,7 +1113,11 @@ class AdminController extends Controller
                     $sortOrder++;
                     $variant = $product->variants()->create([
                         'name' => $v['name'],
+                        'sku' => $v['sku'] ?? null,
                         'price' => (float) $v['price'],
+                        'sale_price' => isset($v['sale_price']) && $v['sale_price'] !== '' ? (float) $v['sale_price'] : null,
+                        'quantity' => (int) ($v['quantity'] ?? 0),
+                        'is_active' => (bool) ($v['is_active'] ?? true),
                         'sort_order' => $sortOrder,
                     ]);
                     $variantImages = $request->file("new_variants.{$nIdx}.images");

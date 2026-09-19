@@ -178,13 +178,13 @@
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Upload one or more images. Max size: 10MB each. Formats: JPEG, PNG, JPG, GIF</p>
                         </div>
 
-                        <!-- Keychain-only: Cover photo & Variants (show when category = Keychains & Stickers) -->
-                        <div id="keychain-section" class="border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-lg p-4 bg-amber-50 dark:bg-amber-900/20 space-y-6" style="display: none;">
+                        <!-- Product variants: available to every category -->
+                        <div id="keychain-section" class="border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-lg p-4 bg-amber-50 dark:bg-amber-900/20 space-y-6" >
                             <h3 class="text-sm font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                                <span>🔑</span> Keychain options (variants, pricing, pictures) — Valorant Keychains & Stickers only
+                                <span>🎨</span> Product variants (colours / designs) — optional, works for any category
                             </h3>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cover photo (keychain product)</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cover photo</label>
                                 <input type="file" name="cover_photo" accept="image/*" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
                             </div>
                             <div>
@@ -267,13 +267,10 @@
             const keychainSection = document.getElementById('keychain-section');
             const categorySelect = document.getElementById('category_id');
             const keychainsCategoryId = form && form.dataset.keychainsCategoryId ? String(form.dataset.keychainsCategoryId) : '';
-            function toggleKeychainSection() {
-                if (!keychainSection || !categorySelect) return;
-                keychainSection.style.display = categorySelect.value === keychainsCategoryId ? 'block' : 'none';
-            }
-            if (categorySelect) {
-                categorySelect.addEventListener('change', toggleKeychainSection);
-                toggleKeychainSection();
+            // Variants are available to every category now, so this section is
+            // always visible rather than gated on the keychains category.
+            if (keychainSection) {
+                keychainSection.style.display = 'block';
             }
 
             let newVariantIndexCreate = 0;
@@ -286,7 +283,12 @@
                     block.innerHTML = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">' +
                         '<input type="text" name="new_variants[' + newVariantIndexCreate + '][name]" placeholder="Variant name" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">' +
                         '<input type="number" name="new_variants[' + newVariantIndexCreate + '][price]" step="0.01" min="0" placeholder="Price ৳" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">' +
+                        '<input type="number" name="new_variants[' + newVariantIndexCreate + '][quantity]" min="0" value="0" placeholder="Stock" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">' +
+                        '<input type="text" name="new_variants[' + newVariantIndexCreate + '][sku]" placeholder="SKU (optional)" class="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm">' +
                         '</div>' +
+                        '<label class="flex items-center gap-2 mb-2 text-sm text-gray-700 dark:text-gray-300">' +
+                        '<input type="hidden" name="new_variants[' + newVariantIndexCreate + '][is_active]" value="0">' +
+                        '<input type="checkbox" name="new_variants[' + newVariantIndexCreate + '][is_active]" value="1" checked> Active</label>' +
                         '<input type="file" name="new_variants[' + newVariantIndexCreate + '][images][]" accept="image/*" multiple class="w-full text-sm border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">';
                     newVariantsContainerCreate.appendChild(block);
                     newVariantIndexCreate++;
