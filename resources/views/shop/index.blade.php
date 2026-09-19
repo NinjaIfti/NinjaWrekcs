@@ -682,7 +682,7 @@
             const price = parseFloat(product.price) || 0;
             const displayPrice = product.display_price ? parseFloat(product.display_price) : null;
             
-            if (product.price_tba || price === 0 || !displayPrice) {
+            if (!displayPrice) {
                 priceHTML = `
                     <p class="text-2xl font-bold text-yellow-400 mb-2">⏳ Price to be announced</p>
                     <p class="text-sm text-gray-400">We're finalizing the pricing for this product. Please check back soon!</p>
@@ -747,7 +747,7 @@
                 addLink.classList.add('hidden');
                 form.classList.remove('hidden');
                 form.action = product.add_to_cart_url;
-                const canAddToCart = product.quantity > 0 && !product.price_tba && price > 0 && displayPrice;
+                const canAddToCart = product.quantity > 0 && displayPrice;
                 if (canAddToCart) {
                     addButton.disabled = false;
                     addButton.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -762,7 +762,7 @@
                     addButton.classList.add('opacity-50', 'cursor-not-allowed');
                     if (product.quantity <= 0) {
                         addButton.innerHTML = 'Out of Stock';
-                    } else if (product.price_tba || price === 0 || !displayPrice) {
+                    } else if (!displayPrice) {
                         addButton.innerHTML = 'Price to be announced';
                     } else {
                         addButton.innerHTML = 'Unavailable';

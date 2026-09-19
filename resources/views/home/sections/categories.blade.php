@@ -66,9 +66,7 @@
                             {{ $product->name }}
                         </h4>
                         
-                        @if($product->price_tba)
-                            <p class="text-yellow-400 text-sm font-semibold">⏳ Price will be announced soon</p>
-                        @elseif($product->display_price)
+                        @if($product->display_price)
                             <div class="flex items-center gap-2">
                                 @if($product->has_discount)
                                     <span class="text-gray-500 text-sm line-through">৳{{ number_format($product->price, 2) }}</span>

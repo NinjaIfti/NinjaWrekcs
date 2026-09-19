@@ -125,16 +125,16 @@ class PricingServiceTest extends TestCase
         $this->assertSame(450.0, $this->pricing->priceFor($product, $variant));
     }
 
-    public function test_a_tba_product_has_no_announced_price(): void
+    public function test_a_product_with_no_price_of_its_own_has_no_announced_price(): void
     {
-        $product = Product::factory()->withCategory()->create(['price_tba' => true, 'price' => 0]);
+        $product = Product::factory()->withCategory()->create(['price' => 0]);
 
         $this->assertFalse($this->pricing->hasAnnouncedPrice($product));
     }
 
-    public function test_a_variant_gives_a_tba_product_an_announced_price(): void
+    public function test_a_variant_announces_a_price_for_a_product_that_has_none(): void
     {
-        $product = Product::factory()->withCategory()->create(['price_tba' => true, 'price' => 0]);
+        $product = Product::factory()->withCategory()->create(['price' => 0]);
         $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'price' => 450]);
 
         $this->assertTrue($this->pricing->hasAnnouncedPrice($product, $variant));

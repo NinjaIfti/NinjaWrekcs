@@ -44,7 +44,6 @@
                             'price' => $product->price,
                             'sale_price' => $product->sale_price,
                             'display_price' => $product->display_price,
-                            'price_tba' => $product->price_tba,
                             'has_discount' => $product->has_discount,
                             'has_active_offer' => $product->has_active_offer,
                             'offer_ends_at' => $product->has_active_offer ? $product->offer_ends_at->timestamp : null,
@@ -81,7 +80,7 @@
                         {{ $hasVariants ? 'Choose Options' : 'Add to Cart' }}
                     </span>
                 </a>
-                @elseif(!$product->price_tba && $product->price > 0 && $product->display_price)
+                @elseif($product->display_price)
                 <form action="{{ route('cart.add', $product) }}" method="POST" class="w-full px-4">
                     @csrf
                     <button type="submit" class="w-full px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all relative overflow-hidden group/btn">
@@ -135,7 +134,7 @@
                 @else
                     <p class="text-lg font-bold text-violet-400">৳{{ number_format($cardVariantPrices->min(), 2) }}</p>
                 @endif
-            @elseif($product->price_tba || $product->price == 0 || !$product->display_price)
+            @elseif(!$product->display_price)
                 <p class="text-sm font-semibold text-yellow-400">⏳ Price to be announced</p>
             @elseif($product->display_price)
                 @if($product->has_discount)

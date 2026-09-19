@@ -77,8 +77,9 @@ class PricingService
     }
 
     /**
-     * A price_tba product has no announced price of its own, but selecting a
-     * variant does announce one.
+     * Whether there is a price to charge. A variant product's own price column
+     * is 0 by design - its price lives on the variants - so selecting a variant
+     * is what announces one.
      */
     public function hasAnnouncedPrice(Product $product, ?ProductVariant $variant = null): bool
     {
@@ -86,7 +87,7 @@ class PricingService
             return (float) $variant->price > 0;
         }
 
-        return ! $product->price_tba && (float) $product->price > 0;
+        return (float) $product->price > 0;
     }
 
     private function offerIsOpen(Product $product): bool

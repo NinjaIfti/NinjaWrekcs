@@ -50,7 +50,7 @@
             {{ $product->name }}
         </h4>
         
-        @if($product->price_tba || $product->price == 0 || !$product->display_price)
+        @if(!$product->display_price)
             <div class="py-2">
                 <p class="text-yellow-400 text-sm font-semibold">⏳ Price to be announced</p>
             </div>

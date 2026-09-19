@@ -38,7 +38,6 @@
                 'price' => $product->price,
                 'sale_price' => $product->sale_price,
                 'display_price' => $product->display_price,
-                'price_tba' => $product->price_tba,
                 'has_discount' => $product->has_discount,
                 'has_active_offer' => $product->has_active_offer,
                 'offer_ends_at' => $product->has_active_offer ? $product->offer_ends_at->timestamp : null,
@@ -84,7 +83,7 @@
                 @else
                     <p class="text-sm font-bold text-white">৳{{ number_format($cardVariantPrices->min(), 2) }}</p>
                 @endif
-            @elseif($product->price_tba || $product->price == 0 || !$product->display_price)
+            @elseif(!$product->display_price)
                 <p class="text-[10px] font-medium text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20">
                     ⏳ Price TBA
                 </p>
@@ -125,7 +124,7 @@
                 <a href="{{ route('shop.show', $product) }}" onclick="event.stopPropagation();" class="ml-auto px-4 py-1.5 text-xs font-semibold bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-full hover:from-violet-500 hover:to-pink-500 hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all shadow-md inline-block text-center">
                     {{ $hasVariants ? 'OPTIONS' : 'ADD' }}
                 </a>
-                @elseif(!$product->price_tba && $product->price > 0 && $product->display_price)
+                @elseif($product->display_price)
                 <form action="{{ route('cart.add', $product) }}" method="POST" onclick="event.stopPropagation();" class="ml-auto">
                     @csrf
                     <button type="submit" class="px-4 py-1.5 text-xs font-semibold bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-full hover:from-violet-500 hover:to-pink-500 hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all shadow-md">

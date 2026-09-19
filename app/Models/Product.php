@@ -40,7 +40,6 @@ class Product extends Model
         'is_limited_edition',
         'is_preorder',
         'is_upcoming',
-        'price_tba',
         'is_bookable',
         'availability',
         'booking_fee',
@@ -54,7 +53,6 @@ class Product extends Model
         'is_limited_edition' => 'boolean',
         'is_preorder' => 'boolean',
         'is_upcoming' => 'boolean',
-        'price_tba' => 'boolean',
         'is_bookable' => 'boolean',
         'booking_fee' => 'decimal:2',
         'cost_price' => 'decimal:2',
@@ -177,7 +175,7 @@ class Product extends Model
     // Get the final display price (offer price if active, then sale price, otherwise regular price)
     public function getDisplayPriceAttribute()
     {
-        if ($this->price_tba || $this->price == 0) {
+        if ($this->price == 0) {
             return null;
         }
         

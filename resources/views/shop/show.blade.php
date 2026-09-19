@@ -177,22 +177,10 @@
                     @endif
 
                     <!-- Price -->
-                    @if($product->price_tba)
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3">
-                            <div class="text-2xl font-bold text-yellow-400">
-                                ⏳ Price will be announced soon
-                            </div>
-                        </div>
-                    </div>
-                    @elseif($product->price_tba || $product->price == 0 || (!$product->display_price && !$hasVariants))
-                        <div class="text-center py-8">
-                            <div class="text-2xl font-bold text-yellow-400 mb-2">
-                                ⏳ Price to be announced
-                            </div>
-                            <p class="text-gray-400">We're finalizing the pricing for this product. Please check back soon!</p>
-                        </div>
-                    @elseif($hasVariants || $product->display_price)
+                    {{-- A variant product's price lives on its variants, so its own
+                         price column is 0 by design - $hasVariants, not the column,
+                         decides whether there is a price to show. --}}
+                    @if($hasVariants || $product->display_price)
                     <div class="space-y-3" id="price-block">
                         <div class="flex items-center gap-3">
                             @if($hasVariants)
@@ -236,9 +224,13 @@
                     @endif
 
                     <!-- Stock Status -->
-                    <div>
-                        @if($product->quantity > 0)
-                            <p class="text-lg text-violet-400 font-semibold">✓ In Stock ({{ $product->quantity }} available)</p>
+                    {{-- A variant product holds no stock of its own - its quantity
+                         column is 0 by design, so read the selected variant. The
+                         swatch JS rewrites this block when another colour is picked. --}}
+                    @php $stockOnShow = $hasVariants ? $product->availableStock($defaultVariant) : $product->availableStock(); @endphp
+                    <div id="stock-status">
+                        @if($stockOnShow > 0)
+                            <p class="text-lg text-violet-400 font-semibold">✓ In Stock ({{ $stockOnShow }} available)</p>
                         @else
                             <p class="text-lg text-red-400 font-semibold">✗ Out of Stock</p>
                         @endif
@@ -262,7 +254,7 @@
 
                     <!-- Action Buttons -->
                     <div class="border-t border-violet-500/20 pt-6 space-y-4">
-                        @php $canAddToCart = $product->quantity > 0 && !$product->price_tba && !$product->is_upcoming && ($hasVariants || ($product->price > 0 && $product->display_price)); @endphp
+                        @php $canAddToCart = $stockOnShow > 0 && !$product->is_upcoming && ($hasVariants || ($product->price > 0 && $product->display_price)); @endphp
                         @if($canAddToCart)
                             <form action="{{ route('cart.add', $product) }}" method="POST" class="space-y-4" id="add-to-cart-form">
                                 @csrf
@@ -276,7 +268,7 @@
                                            name="quantity" 
                                            value="1" 
                                            min="1" 
-                                           max="{{ $product->quantity }}"
+                                           max="{{ $stockOnShow }}"
                                            class="w-24 px-3 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50">
                                 </div>
                                 <button type="submit" id="add-to-cart-btn" @disabled($hasVariants && ! $defaultVariant) class="w-full px-8 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all relative overflow-hidden group disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100">
@@ -291,9 +283,7 @@
                             </form>
                         @else
                             <button disabled class="w-full px-8 py-4 bg-gray-600 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
-                                @if($product->price_tba || $product->price == 0 || (!$product->display_price && !$hasVariants))
-                                    Price to be announced
-                                @elseif($product->quantity <= 0)
+                                @if($stockOnShow <= 0)
                                     Out of Stock
                                 @else
                                     Not Available
@@ -381,6 +371,7 @@
             const swatches = document.querySelectorAll('.variant-swatch');
             const addToCartBtn = document.getElementById('add-to-cart-btn');
             const qtyInput = document.querySelector('input[name="quantity"]');
+            const stockStatusEl = document.getElementById('stock-status');
 
             swatches.forEach((swatch) => {
                 swatch.addEventListener('click', function () {
@@ -394,6 +385,14 @@
                         variantPriceEl.textContent = '৳' + parseFloat(this.dataset.price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                     }
                     if (addToCartBtn) addToCartBtn.disabled = false;
+
+                    // The stock line belongs to the selected colour, not the product.
+                    if (stockStatusEl) {
+                        const stock = parseInt(this.dataset.stock, 10) || 0;
+                        stockStatusEl.innerHTML = stock > 0
+                            ? '<p class="text-lg text-violet-400 font-semibold">✓ In Stock (' + stock + ' available)</p>'
+                            : '<p class="text-lg text-red-400 font-semibold">✗ Out of Stock</p>';
+                    }
 
                     // Never let the quantity box exceed this variant's stock.
                     if (qtyInput) {

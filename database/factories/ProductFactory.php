@@ -35,7 +35,6 @@ class ProductFactory extends Factory
             'is_limited_edition' => false,
             'is_preorder' => false,
             'is_upcoming' => false,
-            'price_tba' => false,
             'is_bookable' => false,
             'availability' => Product::AVAILABILITY_IN_STOCK,
             'booking_fee' => null,

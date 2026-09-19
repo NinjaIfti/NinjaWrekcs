@@ -878,7 +878,6 @@ class AdminController extends Controller
             'category' => 'nullable|in:figures,knives,stickers',
             'is_preorder' => 'boolean',
             'is_upcoming' => 'boolean',
-            'price_tba' => 'boolean',
             'is_bookable' => 'boolean',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
@@ -921,7 +920,6 @@ class AdminController extends Controller
         $validated['is_limited_edition'] = $request->has('is_limited_edition');
         $validated['is_preorder'] = $request->has('is_preorder');
         $validated['is_upcoming'] = $request->has('is_upcoming');
-        $validated['price_tba'] = $request->has('price_tba');
         $validated['is_bookable'] = $request->has('is_bookable');
         $validated['rating'] = $validated['rating'] ?? 0;
         $validated['reviews'] = $validated['reviews'] ?? 0;
@@ -1009,7 +1007,6 @@ class AdminController extends Controller
             'category' => 'nullable|in:figures,knives,stickers',
             'is_preorder' => 'boolean',
             'is_upcoming' => 'boolean',
-            'price_tba' => 'boolean',
             'is_bookable' => 'boolean',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
@@ -1167,7 +1164,6 @@ class AdminController extends Controller
         $validated['is_limited_edition'] = $request->has('is_limited_edition');
         $validated['is_preorder'] = $request->has('is_preorder');
         $validated['is_upcoming'] = $request->has('is_upcoming');
-        $validated['price_tba'] = $request->has('price_tba');
         $validated['is_bookable'] = $request->has('is_bookable');
 
         $product->update($validated);
