@@ -12,6 +12,10 @@ class Product extends Model
 {
     use HasFactory;
 
+    public const AVAILABILITY_IN_STOCK = 'in_stock';
+    public const AVAILABILITY_PREORDER = 'preorder';
+    public const AVAILABILITY_UPCOMING = 'upcoming';
+
     protected $fillable = [
         'name',
         'description',
@@ -38,6 +42,8 @@ class Product extends Model
         'is_upcoming',
         'price_tba',
         'is_bookable',
+        'availability',
+        'booking_fee',
     ];
 
     protected $casts = [
@@ -50,6 +56,7 @@ class Product extends Model
         'is_upcoming' => 'boolean',
         'price_tba' => 'boolean',
         'is_bookable' => 'boolean',
+        'booking_fee' => 'decimal:2',
         'cost_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'offer_price' => 'decimal:2',
@@ -112,6 +119,16 @@ class Product extends Model
         }
 
         return (int) $this->quantity;
+    }
+
+    public function requiresBooking(): bool
+    {
+        return $this->booking_fee !== null && (float) $this->booking_fee > 0;
+    }
+
+    public function isPurchasable(): bool
+    {
+        return $this->is_active && $this->availability !== self::AVAILABILITY_UPCOMING;
     }
 
     public function isKeychain(): bool
