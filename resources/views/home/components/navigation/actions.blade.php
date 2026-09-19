@@ -76,36 +76,7 @@
                 
                 <!-- View Full Cart Button -->
                 <div class="mt-4 pt-4 border-t border-violet-500/20">
-                    @php
-                        // Calculate total using original prices for pre-order items
-                        $cartTotalForDisplay = 0;
-                        foreach (\Cart::getContent() as $cartItem) {
-                            $isBookableItem = false;
-                            if (isset($cartItem->attributes->is_bookable)) {
-                                $isBookableItem = (bool) $cartItem->attributes->is_bookable;
-                            } else {
-                                $productCheck = \App\Models\Product::find($cartItem->id);
-                                $isBookableItem = $productCheck && (bool) $productCheck->is_bookable;
-                            }
-                            
-                            if ($isBookableItem) {
-                                $product = \App\Models\Product::find($cartItem->id);
-                                if ($product) {
-                                    $originalPrice = (float) ($product->display_price ?? $product->price ?? 0);
-                                    $cartTotalForDisplay += $originalPrice * $cartItem->quantity;
-                                } else {
-                                    $originalPrice = (float) ($cartItem->attributes->original_price ?? $cartItem->price);
-                                    $cartTotalForDisplay += $originalPrice * $cartItem->quantity;
-                                }
-                            } else {
-                                $cartTotalForDisplay += $cartItem->price * $cartItem->quantity;
-                            }
-                        }
-                    @endphp
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-gray-300 font-semibold">Total:</span>
-                        <span class="text-xl font-bold text-violet-400">৳{{ number_format($cartTotalForDisplay, 2) }}</span>
-                    </div>
+                    <x-cart-summary />
                     <a href="{{ route('cart.index') }}" class="block w-full px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 transition-all text-center">
                         View Full Cart
                     </a>
