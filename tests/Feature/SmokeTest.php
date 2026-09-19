@@ -13,7 +13,13 @@ class SmokeTest extends TestCase
     {
         $this->assertTrue(\Schema::hasTable('products'));
         $this->assertTrue(\Schema::hasTable('product_variants'));
-        $this->assertTrue(\Schema::hasTable('giveaway_entries'));
+        $this->assertTrue(\Schema::hasTable('orders'));
+
+        // This used to assert giveaway_entries existed, as proof that the
+        // MySQL-only ALTER in its migration had been guarded for SQLite. The
+        // giveaway feature is gone and that table is now dropped by a later
+        // migration, so the whole chain running clean is the proof instead.
+        $this->assertFalse(\Schema::hasTable('giveaway_entries'));
     }
 
     public function test_factories_build_a_product_with_variants(): void

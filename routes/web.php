@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\GiveawayController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StockNotificationController;
 use Illuminate\Support\Facades\Auth;
@@ -48,8 +47,6 @@ Route::get('/about', function () {
     return view('about');
 })->name('about');
 
-// Public giveaway landing page (the admin entry tracker lives at admin/giveaway)
-Route::view('/giveaway', 'giveaway.index')->name('giveaway');
 
 Route::get('/contact', function () {
     return view('contact');
@@ -75,9 +72,6 @@ Route::get('/terms', function () {
     return view('terms');
 })->name('terms');
 
-Route::get('/agent-code', [GiveawayController::class, 'page'])->name('agent-code');
-Route::match(['get', 'post'], '/agent-code/search', [GiveawayController::class, 'search'])->name('agent-code.search');
-Route::post('/agent-code/enter', [GiveawayController::class, 'enter'])->name('agent-code.enter');
 
 // Sitemap
 Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
@@ -336,9 +330,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     
     Route::get('/visitors', [\App\Http\Controllers\AdminController::class, 'visitors'])->name('visitors');
     Route::get('/financial', [\App\Http\Controllers\AdminController::class, 'financial'])->name('financial');
-    Route::get('/giveaway', [GiveawayController::class, 'adminIndex'])->name('giveaway');
-    Route::post('/giveaway/manual', [GiveawayController::class, 'manualStore'])->name('giveaway.manual-store');
-    Route::delete('/giveaway/{entry}', [GiveawayController::class, 'destroy'])->name('giveaway.destroy');
 });
 
 require __DIR__.'/auth.php';

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm install)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(ssh root@159.89.193.93:*)",
+      "Bash(scp:*)"
     ],
     "deny": [],
     "ask": []
