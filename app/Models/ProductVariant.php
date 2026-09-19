@@ -14,13 +14,30 @@ class ProductVariant extends Model
     protected $fillable = [
         'product_id',
         'name',
+        'sku',
         'price',
+        'sale_price',
+        'quantity',
         'sort_order',
+        'is_active',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'sale_price' => 'decimal:2',
+        'quantity' => 'integer',
+        'is_active' => 'boolean',
     ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function isInStock(): bool
+    {
+        return $this->is_active && $this->quantity > 0;
+    }
 
     public function product(): BelongsTo
     {

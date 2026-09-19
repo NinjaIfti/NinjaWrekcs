@@ -82,6 +82,38 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class)->orderBy('sort_order');
     }
 
+    public function activeVariants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)->where('is_active', true)->orderBy('sort_order');
+    }
+
+    public function hasVariants(): bool
+    {
+        return $this->relationLoaded('variants')
+            ? $this->getRelation('variants')->isNotEmpty()
+            : $this->variants()->exists();
+    }
+
+    /**
+     * Stock for a specific variant, or the product's own sellable stock.
+     *
+     * A product with variants has no stock of its own - its quantity column is
+     * legacy and is ignored in favour of the sum of its active variants, so the
+     * sold-out badge stays correct without a denormalised counter.
+     */
+    public function availableStock(?ProductVariant $variant = null): int
+    {
+        if ($variant !== null) {
+            return $variant->is_active ? (int) $variant->quantity : 0;
+        }
+
+        if ($this->hasVariants()) {
+            return (int) $this->variants()->where('is_active', true)->sum('quantity');
+        }
+
+        return (int) $this->quantity;
+    }
+
     public function isKeychain(): bool
     {
         $category = $this->relationLoaded('category')
