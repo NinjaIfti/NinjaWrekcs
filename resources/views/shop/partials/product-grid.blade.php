@@ -6,18 +6,29 @@
 @endphp
 @foreach($products as $product)
 <div class="product-item group">
-    <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}" class="block">
-        <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20 product-card-zoom">
+    {{-- The card used to be one big <a> wrapping everything, including the
+         "Choose Options" link and the add-to-cart form. An <a> cannot contain
+         another <a>: the parser closes the outer one early and the resulting
+         DOM is not what the markup says, which stopped the product name below
+         from responding to taps. The image is covered by its own transparent
+         link layer instead, and every interactive control is a sibling of it
+         rather than a child. --}}
+    <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20 product-card-zoom">
             @php
                 $cover = $product->primaryImagePath();
             @endphp
-            <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" 
-                 alt="{{ $product->name }}" 
+            <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}"
+                 alt="{{ $product->name }}"
                  class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500 product-image-zoom">
             <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            
+
+            {{-- Sits under every control, so buttons keep their own taps. --}}
+            <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}"
+               class="absolute inset-0 z-10"
+               aria-label="{{ $product->name }}"></a>
+
             <!-- Product Badges -->
-            <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+            <div class="absolute top-4 left-4 z-20 flex flex-col gap-2">
                 @if($product->has_discount)
                     <span class="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
                         -{{ $product->discount_percentage }}% OFF
@@ -41,7 +52,7 @@
             </div>
             
             <!-- Quick View Button -->
-            <div class="absolute top-4 right-4 z-10">
+            <div class="absolute top-4 right-4 z-30">
                 <button class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30 quick-view-btn" 
                         onclick="event.preventDefault(); openQuickView({{ json_encode([
                             'id' => $product->id,
@@ -75,7 +86,7 @@
             <!-- Add to Cart Button (Shows on Hover) -->
             @php $hasVariants = $product->variants->isNotEmpty(); @endphp
             @if($product->availableStock() > 0)
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" onclick="event.stopPropagation();">
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-30" onclick="event.stopPropagation();">
                 @if($product->isKeychain() || $hasVariants)
                 {{-- Keychains and multi-variant products need the PDP to pick options --}}
                 <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}" class="w-full px-4">
@@ -102,7 +113,7 @@
                 @endif
             </div>
             @elseif(!$product->isKeychain())
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300 z-30">
                 <div class="w-full px-4">
                     <button onclick="event.preventDefault(); event.stopPropagation(); openNotifyModal({{ $product->id }}, {{ json_encode($product->name) }});" 
                             class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105 transition-all">
@@ -117,9 +128,8 @@
             </div>
             @endif
         </div>
-    </a>
     <div class="space-y-2">
-        <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}">
+        <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}" class="block">
             <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
         </a>
         @if($product->description)
