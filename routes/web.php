@@ -12,15 +12,17 @@ Route::get('/', function () {
     $cacheKey = 'homepage_data';
     
     $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1800, function () {
-        $products = \App\Models\Product::with('images')
+        // variants.images because a merged product's photo and price come off
+        // its variants, and the featured card reads both.
+        $products = \App\Models\Product::with('images', 'variants.images')
             ->where('is_active', true)
             ->where('is_featured', true)
             ->latest()
             ->get();
-        
+
         // If no featured products, fallback to latest active products
         if ($products->count() === 0) {
-            $products = \App\Models\Product::with('images')
+            $products = \App\Models\Product::with('images', 'variants.images')
                 ->where('is_active', true)
                 ->latest()
                 ->take(4)
@@ -28,8 +30,10 @@ Route::get('/', function () {
         }
         
         // Get categories with products for showcase
+        // variants.images is loaded because a merged product's photo, price and
+        // stock all come off its variants, and the card reads all three.
         $categories = \App\Models\Category::with(['children', 'products' => function($query) {
-            $query->where('is_active', true)->with('images')->latest()->take(4);
+            $query->where('is_active', true)->with('images', 'variants.images')->latest()->take(4);
         }])
         ->whereNull('parent_id')
         ->whereIn('slug', ['valorant', 'csgo', 'pre-order-upcoming'])

@@ -240,7 +240,42 @@ class Product extends Model
     // Check if stock is low
     public function getIsLowStockAttribute()
     {
-        return $this->quantity > 0 && $this->quantity < 5;
+        $stock = $this->availableStock();
+
+        return $stock > 0 && $stock < 5;
+    }
+
+    /**
+     * The photo to show for this product, as a storage-relative path.
+     *
+     * Merging a family moved each source's photos onto its variant, so a merged
+     * product has no product_images rows of its own - reading only those showed
+     * "No Image" for every one of them. Precedence: the product's own gallery,
+     * then an explicitly chosen cover, then the first active variant's photo,
+     * then the legacy single-image column.
+     */
+    public function primaryImagePath(): ?string
+    {
+        if ($this->images && $this->images->isNotEmpty()) {
+            return $this->images->first()->path;
+        }
+
+        if ($this->cover_photo) {
+            return $this->cover_photo;
+        }
+
+        if ($this->hasVariants()) {
+            $variantImage = $this->variants
+                ->where('is_active', true)
+                ->flatMap(fn (ProductVariant $variant) => $variant->images)
+                ->first();
+
+            if ($variantImage) {
+                return $variantImage->path;
+            }
+        }
+
+        return $this->image ?: null;
     }
 
     // Get recent sales count in last 24 hours

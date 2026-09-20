@@ -29,7 +29,7 @@
                                             <a href="{{ route('shop.show', $product) }}" class="group block">
                                                 <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20">
                                                     @php
-                                                        $coverImage = $product->images->first()->path ?? $product->image;
+                                                        $coverImage = $product->primaryImagePath();
                                                     @endphp
                                                     <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                                     <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -51,8 +51,9 @@
                                                         <span class="text-sm text-gray-400">({{ $product->reviews }})</span>
                                                     </div>
                                                     <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
-                                                    @if($product->price)
-                                                        <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                                                    @php $fromPrice = $product->displayPriceFrom(); @endphp
+@if($fromPrice !== null)
+                                                        <p class="text-lg font-bold text-violet-400">@if($product->hasVariants())<span class="text-xs text-gray-400 font-normal">From</span> @endif৳{{ number_format($fromPrice, 2) }}</p>
                                                     @endif
                                                 </div>
                                             </a>
@@ -70,7 +71,7 @@
                                 <a href="{{ route('shop.show', $product) }}" class="group block">
                                     <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20">
                                         @php
-                                            $coverImage = $product->images->first()->path ?? $product->image;
+                                            $coverImage = $product->primaryImagePath();
                                         @endphp
                                         <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                         <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -92,8 +93,9 @@
                                             <span class="text-sm text-gray-400">({{ $product->reviews }})</span>
                                         </div>
                                         <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
-                                        @if($product->price)
-                                            <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                                        @php $fromPrice = $product->displayPriceFrom(); @endphp
+@if($fromPrice !== null)
+                                            <p class="text-lg font-bold text-violet-400">@if($product->hasVariants())<span class="text-xs text-gray-400 font-normal">From</span> @endif৳{{ number_format($fromPrice, 2) }}</p>
                                         @endif
                                     </div>
                                 </a>
@@ -134,7 +136,7 @@
                         <a href="{{ route('shop.show', $product) }}" class="group block">
                             <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20">
                                 @php
-                                    $coverImage = $product->images->first()->path ?? $product->image;
+                                    $coverImage = $product->primaryImagePath();
                                 @endphp
                                 <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                 <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -156,8 +158,9 @@
                                     <span class="text-sm text-gray-400">({{ $product->reviews }})</span>
                                 </div>
                                 <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
-                                @if($product->price)
-                                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                                @php $fromPrice = $product->displayPriceFrom(); @endphp
+@if($fromPrice !== null)
+                                    <p class="text-lg font-bold text-violet-400">@if($product->hasVariants())<span class="text-xs text-gray-400 font-normal">From</span> @endif৳{{ number_format($fromPrice, 2) }}</p>
                                 @endif
                             </div>
                         </a>
@@ -171,7 +174,7 @@
                             <a href="{{ route('shop.show', $product) }}" class="group block">
                                 <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20">
                                     @php
-                                        $coverImage = $product->images->first()->path ?? $product->image;
+                                        $coverImage = $product->primaryImagePath();
                                     @endphp
                                     <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                     <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -193,12 +196,11 @@
                                         <span class="text-sm text-gray-400">({{ $product->reviews }})</span>
                                     </div>
                                     <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
-                                    @if(!$product->display_price)
-                                        <p class="text-sm font-semibold text-yellow-400">⏳ Price to be announced</p>
-                                    @elseif($product->display_price)
-                                        <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->display_price, 2) }}</p>
-                                    @elseif($product->price)
-                                        <p class="text-lg font-bold text-violet-400">৳{{ number_format($product->price, 2) }}</p>
+                                    {{-- A merged product is priced by its variants, so ask
+                                         for the "from" price rather than its own column. --}}
+                                    @php $fromPrice = $product->displayPriceFrom(); @endphp
+                                    @if($fromPrice !== null)
+                                        <p class="text-lg font-bold text-violet-400">@if($product->hasVariants())<span class="text-xs text-gray-400 font-normal">From</span> @endif৳{{ number_format($fromPrice, 2) }}</p>
                                     @endif
                                 </div>
                             </a>

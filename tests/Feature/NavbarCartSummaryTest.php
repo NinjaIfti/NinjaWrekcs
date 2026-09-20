@@ -57,7 +57,10 @@ class NavbarCartSummaryTest extends TestCase
         $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'price' => 450, 'quantity' => 5]);
 
         $cart = app(CartService::class);
-        $cart->add($product, $variant, 2);
+        // Quantity 3, not 2: at 2 the stale total (450 x 2) equals the variant's
+        // new unit price, which the home page now legitimately prints as a
+        // "From" price - so the assertion below could not tell them apart.
+        $cart->add($product, $variant, 3);
 
         // Price changes after the item is already in the cart (e.g. an admin
         // edit). The old navbar's item-listing loop rendered the composite
@@ -69,8 +72,8 @@ class NavbarCartSummaryTest extends TestCase
         // also do to stay correct.
         $variant->update(['price' => 900]);
 
-        $freshLineTotal = number_format($cart->lines()->first()->lineTotal(), 2); // 1800.00
-        $staleLineTotal = number_format(450 * 2, 2); // 900.00 - what the old loop would still show
+        $freshLineTotal = number_format($cart->lines()->first()->lineTotal(), 2); // 2700.00
+        $staleLineTotal = number_format(450 * 3, 2); // 1350.00 - what the old loop would still show
 
         $this->get(route('cart.index'))->assertSee('৳' . $freshLineTotal, escape: false);
 

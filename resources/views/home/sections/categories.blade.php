@@ -35,9 +35,12 @@
                    class="group relative bg-gray-900/50 border border-violet-500/20 rounded-xl overflow-hidden hover:border-violet-500/50 hover:shadow-lg hover:shadow-violet-500/30 transition-all duration-300">
                     <!-- Product Image -->
                     <div class="relative aspect-square overflow-hidden bg-black/50">
-                        @if($product->images && $product->images->first())
-                            <img src="{{ Storage::url($product->images->first()->path) }}" 
-                                 alt="{{ $product->name }}" 
+                        {{-- A merged product keeps its photos on its variants, so ask
+                             the model rather than reading product_images directly. --}}
+                        @php $imagePath = $product->primaryImagePath(); @endphp
+                        @if($imagePath)
+                            <img src="{{ Storage::url($imagePath) }}"
+                                 alt="{{ $product->name }}"
                                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                         @else
                             <div class="w-full h-full flex items-center justify-center text-gray-500">
@@ -66,24 +69,30 @@
                             {{ $product->name }}
                         </h4>
                         
-                        @if($product->display_price)
+                        {{-- A merged product is priced by its variants; its own price
+                             column is 0, which used to read as "to be announced". --}}
+                        @php
+                            $fromPrice = $product->displayPriceFrom();
+                            $stock = $product->availableStock();
+                        @endphp
+                        @if($fromPrice !== null)
                             <div class="flex items-center gap-2">
-                                @if($product->has_discount)
+                                @if($product->hasVariants())
+                                    <span class="text-violet-400 font-bold"><span class="text-xs text-gray-400 font-normal">From</span> ৳{{ number_format($fromPrice, 2) }}</span>
+                                @elseif($product->has_discount)
                                     <span class="text-gray-500 text-sm line-through">৳{{ number_format($product->price, 2) }}</span>
-                                    <span class="text-violet-400 font-bold">৳{{ number_format($product->display_price, 2) }}</span>
+                                    <span class="text-violet-400 font-bold">৳{{ number_format($fromPrice, 2) }}</span>
                                 @else
-                                    <span class="text-violet-400 font-bold">৳{{ number_format($product->price, 2) }}</span>
+                                    <span class="text-violet-400 font-bold">৳{{ number_format($fromPrice, 2) }}</span>
                                 @endif
                             </div>
-                        @else
-                            <p class="text-yellow-400 text-sm font-semibold">⏳ Price will be announced soon</p>
                         @endif
-                        
+
                         <!-- Stock Status -->
                         <div class="mt-2">
-                            @if($product->quantity > 0)
+                            @if($stock > 0)
                                 @if($product->is_low_stock)
-                                    <span class="text-xs text-orange-400">Only {{ $product->quantity }} left</span>
+                                    <span class="text-xs text-orange-400">Only {{ $stock }} left</span>
                                 @else
                                     <span class="text-xs text-green-400">In Stock</span>
                                 @endif
