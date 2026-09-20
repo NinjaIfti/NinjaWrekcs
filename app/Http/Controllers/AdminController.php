@@ -649,12 +649,17 @@ class AdminController extends Controller
 
     public function featuredProducts(): View
     {
-        $featuredProducts = Product::where('is_featured', true)
+        // Both lists draw a thumbnail via primaryImagePath(), which reads the
+        // gallery and the variants' photos - eager-load them or each row pays
+        // for its own queries.
+        $featuredProducts = Product::with('images', 'variants.images')
+            ->where('is_featured', true)
             ->where('is_active', true)
             ->latest()
             ->get();
-        
-        $allProducts = Product::where('is_active', true)
+
+        $allProducts = Product::with('images', 'variants.images')
+            ->where('is_active', true)
             ->latest()
             ->get();
 
@@ -890,7 +895,9 @@ class AdminController extends Controller
         $showInactive = $request->boolean('show_inactive');
 
         // variants is eager-loaded for the stock column, which sums them.
-        $query = Product::with('category', 'images', 'variants');
+        // variants.images too: the list thumbnail falls through to a variant's
+        // photo, so without it every variant row costs its own query.
+        $query = Product::with('category', 'images', 'variants.images');
 
         if (! $showInactive) {
             $query->where('is_active', true);

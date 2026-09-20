@@ -32,8 +32,9 @@
                                        class="mt-1 rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500">
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center space-x-2">
-                                        @if($product->image)
-                                            <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-12 h-12 object-cover rounded">
+                                        @php $thumbnail = $product->primaryImagePath(); @endphp
+                                        @if($thumbnail)
+                                            <img src="{{ asset('storage/' . $thumbnail) }}" alt="{{ $product->name }}" loading="lazy" class="w-12 h-12 object-cover rounded">
                                         @endif
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $product->name }}</p>
@@ -66,8 +67,9 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         @foreach($featuredProducts as $product)
                             <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                                @if($product->image)
-                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-full h-32 object-cover rounded mb-2">
+                                @php $thumbnail = $product->primaryImagePath(); @endphp
+                                @if($thumbnail)
+                                    <img src="{{ asset('storage/' . $thumbnail) }}" alt="{{ $product->name }}" loading="lazy" class="w-full h-32 object-cover rounded mb-2">
                                 @endif
                                 <h4 class="font-semibold text-gray-900 dark:text-white text-sm">{{ $product->name }}</h4>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $product->hasVariants() ? "from " : "" }}৳{{ number_format($product->displayPriceFrom() ?? 0, 2) }}</p>

@@ -103,8 +103,14 @@
                         @forelse($products as $product)
                         <tr id="product-row-{{ $product->id }}" class="transition-colors duration-1000 {{ (string) request('highlight') === (string) $product->id ? 'product-row-highlight' : '' }}">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($product->image)
-                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="h-16 w-16 object-cover rounded">
+                                {{-- The legacy `image` column is null on every product whose
+                                     photo is a cover or lives on its variants, so reading it
+                                     directly showed "No Image" for products that plainly had
+                                     one - and a broken thumbnail where the column named a
+                                     file that had been deleted. --}}
+                                @php $thumbnail = $product->primaryImagePath(); @endphp
+                                @if($thumbnail)
+                                    <img src="{{ asset('storage/' . $thumbnail) }}" alt="{{ $product->name }}" loading="lazy" class="h-16 w-16 object-cover rounded">
                                 @else
                                     <div class="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center">
                                         <span class="text-gray-400 text-xs">No Image</span>
