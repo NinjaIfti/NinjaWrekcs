@@ -186,11 +186,18 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {{ $product->category_name }}
                                         </td>
+                                        {{-- A variant product's price and stock live on its
+                                             variants; its own columns are 0 by design. --}}
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            ৳{{ number_format($product->price, 2) }}
+                                            @php $fromPrice = $product->displayPriceFrom(); @endphp
+                                            @if($fromPrice === null)
+                                                &mdash;
+                                            @else
+                                                {{ $product->hasVariants() ? 'from ' : '' }}৳{{ number_format($fromPrice, 2) }}
+                                            @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {{ $product->quantity }}
+                                            {{ $product->availableStock() }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <a href="{{ route('admin.products.edit', $product) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">Edit</a>

@@ -70,7 +70,12 @@
         <p>{{ Str::limit($product->description, 200) }}</p>
         @endif
         
-        <p><strong>Price:</strong> ৳{{ number_format($product->display_price ?? $product->price, 2) }}</p>
+        {{-- A variant product is priced by its variants, so show the cheapest
+             rather than the product's own column, which is 0 by design. --}}
+        @php $fromPrice = $product->displayPriceFrom(); @endphp
+        @if($fromPrice !== null)
+            <p><strong>Price:</strong> {{ $product->hasVariants() ? 'from ' : '' }}৳{{ number_format($fromPrice, 2) }}</p>
+        @endif
         
         <div style="text-align: center;">
             <a href="{{ route('shop.show', $product) }}" class="button">View Product</a>

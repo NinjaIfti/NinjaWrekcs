@@ -238,7 +238,9 @@
                             <p class="text-sm text-gray-400">{{ $product->category }}</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-red-400 font-bold text-lg">{{ $product->quantity }}</p>
+                            {{-- Variant products hold their stock on the variants, so
+                                 the quantity column would report every one as empty. --}}
+                            <p class="text-red-400 font-bold text-lg">{{ $product->availableStock() }}</p>
                             <p class="text-xs text-gray-400">units left</p>
                         </div>
                     </div>

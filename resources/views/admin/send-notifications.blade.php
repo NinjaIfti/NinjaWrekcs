@@ -218,7 +218,7 @@
                         <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
                             <div class="flex-1 mr-4">
                                 <h4 class="font-semibold text-gray-900 dark:text-white">{{ $product->name }}</h4>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">৳{{ number_format($product->price, 2) }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $product->hasVariants() ? 'from ' : '' }}৳{{ number_format($product->displayPriceFrom() ?? 0, 2) }}</p>
                             </div>
                             <form action="{{ route('admin.send-new-product', $product) }}" method="POST">
                                 @csrf
@@ -266,7 +266,9 @@
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-2">
                                         <h4 class="font-semibold text-gray-900 dark:text-white">{{ $product->name }}</h4>
-                                        @if($product->quantity == 0)
+                                        {{-- availableStock(), not the quantity column, which is
+                                             0 on every variant product by design. --}}
+                                        @if($product->availableStock() == 0)
                                             <span class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded text-xs font-semibold">Out of Stock</span>
                                         @else
                                             <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-xs font-semibold">✓ In Stock</span>

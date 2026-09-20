@@ -68,9 +68,14 @@
         
         <p>The product is back in stock and ready to order!</p>
         
+        {{-- A variant product's price and stock live on its variants, so both
+             read 0 straight off the product. --}}
+        @php $fromPrice = $product->displayPriceFrom(); @endphp
         <p>
-            <strong>Price:</strong> ৳{{ number_format($product->display_price ?? $product->price, 2) }}<br>
-            <strong>Stock:</strong> {{ $product->quantity }} available
+            @if($fromPrice !== null)
+                <strong>Price:</strong> {{ $product->hasVariants() ? 'from ' : '' }}৳{{ number_format($fromPrice, 2) }}<br>
+            @endif
+            <strong>Stock:</strong> {{ $product->availableStock() }} available
         </p>
         
         <div style="text-align: center;">

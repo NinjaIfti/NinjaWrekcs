@@ -123,6 +123,16 @@ class Product extends Model
         return (int) $this->quantity;
     }
 
+    /**
+     * The price to show where no variant has been chosen, or null when there
+     * is none. Delegates to PricingService so listings, dashboards and emails
+     * agree with the shop on what a variant product costs.
+     */
+    public function displayPriceFrom(): ?float
+    {
+        return app(\App\Services\PricingService::class)->displayPriceFor($this);
+    }
+
     public function requiresBooking(): bool
     {
         return $this->booking_fee !== null && (float) $this->booking_fee > 0;

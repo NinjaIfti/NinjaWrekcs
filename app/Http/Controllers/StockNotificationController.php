@@ -25,8 +25,11 @@ class StockNotificationController extends Controller
 
         $product = Product::findOrFail($request->product_id);
 
-        // Check if product is actually out of stock
-        if ($product->quantity > 0) {
+        // Check if product is actually out of stock. A variant product holds no
+        // stock of its own, so ask for the variant-aware total - otherwise every
+        // merged product looks permanently sold out and accepts sign-ups it will
+        // never need to fulfil.
+        if ($product->availableStock() > 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'This product is currently in stock.'

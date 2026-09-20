@@ -64,6 +64,33 @@ class PricingService
     }
 
     /**
+     * The price to show where no variant has been chosen - a listing row, a
+     * dashboard tile, a notification email.
+     *
+     * A variant product has no price of its own (its price column is 0 by
+     * design), so the figure to show is its cheapest active variant - the
+     * "from" price the shop cards already display. Null when there is no price
+     * to show at all, which the caller renders rather than printing 0.
+     */
+    public function displayPriceFor(Product $product): ?float
+    {
+        if ($product->hasVariants()) {
+            $prices = $product->variants
+                ->where('is_active', true)
+                ->map(fn (ProductVariant $variant) => $this->priceFor($product, $variant))
+                ->filter(fn (float $price) => $price > 0);
+
+            return $prices->isEmpty() ? null : (float) $prices->min();
+        }
+
+        $displayPrice = $product->display_price;
+
+        return $displayPrice !== null && (float) $displayPrice > 0
+            ? (float) $displayPrice
+            : null;
+    }
+
+    /**
      * Per-unit booking fee, or 0.0 when the product does not require booking.
      *
      * This replaces the hardcoded 200 that lived in CartController,

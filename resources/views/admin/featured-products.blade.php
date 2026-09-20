@@ -37,7 +37,7 @@
                                         @endif
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $product->name }}</p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">৳{{ number_format($product->price ?? 0, 2) }}</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $product->hasVariants() ? "from " : "" }}৳{{ number_format($product->displayPriceFrom() ?? 0, 2) }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -70,7 +70,7 @@
                                     <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}" class="w-full h-32 object-cover rounded mb-2">
                                 @endif
                                 <h4 class="font-semibold text-gray-900 dark:text-white text-sm">{{ $product->name }}</h4>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">৳{{ number_format($product->price ?? 0, 2) }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $product->hasVariants() ? "from " : "" }}৳{{ number_format($product->displayPriceFrom() ?? 0, 2) }}</p>
                             </div>
                         @endforeach
                     </div>

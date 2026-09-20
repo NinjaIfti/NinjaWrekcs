@@ -2133,17 +2133,24 @@ class AdminController extends Controller
         $totalProductCosts = $productCosts->total_cost ?? 0;
 
         // Get products with cost info
-        $products = Product::select('id', 'name', 'price', 'cost_price', 'quantity')
+        // The offer columns are selected because the display price depends on
+        // them, and variants because a merged product's price and stock live
+        // there - reading its own columns reported every one as free and empty,
+        // which made profit per unit come out negative by the whole cost price.
+        $products = Product::with('variants')
+            ->select('id', 'name', 'price', 'cost_price', 'quantity', 'sale_price', 'offer_price', 'offer_starts_at', 'offer_ends_at')
             ->where('is_active', true)
             ->get()
             ->map(function ($product) {
+                $sellingPrice = (float) ($product->displayPriceFrom() ?? 0);
+
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
-                    'selling_price' => $product->price,
+                    'selling_price' => $sellingPrice,
                     'cost_price' => $product->cost_price,
-                    'profit_per_unit' => $product->price - $product->cost_price,
-                    'stock' => $product->quantity,
+                    'profit_per_unit' => $sellingPrice - (float) $product->cost_price,
+                    'stock' => $product->availableStock(),
                 ];
             });
 
