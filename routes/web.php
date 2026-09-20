@@ -34,8 +34,15 @@ Route::get('/', function () {
         ->whereNull('parent_id')
         ->whereIn('slug', ['valorant', 'csgo', 'pre-order-upcoming'])
         ->orderBy('order')
-        ->get();
-        
+        ->get()
+        // A category with nothing in it rendered as a heading, a "0 products
+        // available", a View All button and an empty box. Dropped here rather
+        // than by slug, so the section returns on its own once the category has
+        // something to show. Filtered in PHP because the products relation is
+        // already constrained to active ones above.
+        ->filter(fn ($category) => $category->products->isNotEmpty())
+        ->values();
+
         return compact('products', 'categories');
     });
     
