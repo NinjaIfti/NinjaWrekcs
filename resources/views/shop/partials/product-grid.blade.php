@@ -1,6 +1,12 @@
+{{-- Product links carry the current listing filters, so the product page's
+     Back link can return to the same page of the same filtered list. --}}
+@php
+    $listingFilters = collect(request()->only(['category_id', 'search', 'min_price', 'max_price', 'sort', 'in_stock', 'per_page', 'page']))
+        ->filter(fn ($value) => $value !== null && $value !== '')->all();
+@endphp
 @foreach($products as $product)
 <div class="product-item group">
-    <a href="{{ route('shop.show', $product) }}" class="block">
+    <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}" class="block">
         <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20 product-card-zoom">
             @php
                 $cover = $product->primaryImagePath();
@@ -54,7 +60,7 @@
                             'reviews' => $product->reviews,
                             'category_name' => $product->category_name,
                             'image' => $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg',
-                            'url' => route('shop.show', $product),
+                            'url' => route('shop.show', array_merge(['product' => $product], $listingFilters)),
                             'add_to_cart_url' => route('cart.add', $product),
                             'is_keychain' => $product->isKeychain()
                         ]) }});" 
@@ -72,7 +78,7 @@
             <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" onclick="event.stopPropagation();">
                 @if($product->isKeychain() || $hasVariants)
                 {{-- Keychains and multi-variant products need the PDP to pick options --}}
-                <a href="{{ route('shop.show', $product) }}" class="w-full px-4">
+                <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}" class="w-full px-4">
                     <span class="flex w-full px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all relative overflow-hidden group/btn justify-center">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -113,7 +119,7 @@
         </div>
     </a>
     <div class="space-y-2">
-        <a href="{{ route('shop.show', $product) }}">
+        <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}">
             <h3 class="font-semibold text-white group-hover:text-violet-400 transition-colors">{{ $product->name }}</h3>
         </a>
         @if($product->description)

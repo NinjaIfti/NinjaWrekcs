@@ -1,6 +1,12 @@
+{{-- Product links carry the current listing filters, so the product page's
+     Back link can return to the same page of the same filtered list. --}}
+@php
+    $listingFilters = collect(request()->only(['category_id', 'search', 'min_price', 'max_price', 'sort', 'in_stock', 'per_page', 'page']))
+        ->filter(fn ($value) => $value !== null && $value !== '')->all();
+@endphp
 @foreach($products as $product)
 <div class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700/50 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-300 aspect-square flex flex-col">
-    <a href="{{ route('shop.show', $product) }}" class="block flex-1 flex flex-col">
+    <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}" class="block flex-1 flex flex-col">
         <div class="relative overflow-hidden bg-gradient-to-br from-black to-gray-900 flex-1">
             @php
                 $cover = $product->primaryImagePath();
@@ -48,7 +54,7 @@
                 'reviews' => $product->reviews,
                 'category_name' => $product->category_name,
                 'image' => $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg',
-                'url' => route('shop.show', $product),
+                'url' => route('shop.show', array_merge(['product' => $product], $listingFilters)),
                 'add_to_cart_url' => route('cart.add', $product),
                 'is_keychain' => $product->isKeychain()
             ]) }});" 
@@ -63,7 +69,7 @@
     
     <div class="p-3 space-y-2 flex-shrink-0">
         <!-- Product Name -->
-        <a href="{{ route('shop.show', $product) }}">
+        <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}">
             <h3 class="text-xs font-semibold text-white line-clamp-2 leading-tight hover:text-violet-400 transition-colors">
                 {{ $product->name }}
             </h3>
@@ -121,7 +127,7 @@
             @if($product->availableStock() > 0)
                 @if($product->isKeychain() || $hasVariants)
                 {{-- Keychains and multi-variant products need the PDP to pick options --}}
-                <a href="{{ route('shop.show', $product) }}" onclick="event.stopPropagation();" class="ml-auto px-4 py-1.5 text-xs font-semibold bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-full hover:from-violet-500 hover:to-pink-500 hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all shadow-md inline-block text-center">
+                <a href="{{ route('shop.show', array_merge(['product' => $product], $listingFilters)) }}" onclick="event.stopPropagation();" class="ml-auto px-4 py-1.5 text-xs font-semibold bg-gradient-to-r from-violet-600 to-pink-600 text-white rounded-full hover:from-violet-500 hover:to-pink-500 hover:shadow-lg hover:shadow-violet-500/50 hover:scale-105 transition-all shadow-md inline-block text-center">
                     {{ $hasVariants ? 'OPTIONS' : 'ADD' }}
                 </a>
                 @elseif($product->display_price)

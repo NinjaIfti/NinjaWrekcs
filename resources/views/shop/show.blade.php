@@ -47,11 +47,29 @@
     <section class="pt-16 md:pt-28 pb-20 min-h-screen bg-gradient-to-b from-black via-violet-950/50 to-black">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Back Button -->
-            <a href="{{ route('shop.index') }}" class="inline-flex items-center text-violet-400 hover:text-violet-300 mb-8 transition-colors">
+            @php
+                // The listing carries its filters into the product link, so going
+                // back returns to the same page of the same filtered list rather
+                // than dumping the customer at the top of an unfiltered shop.
+                $backParams = collect(request()->only([
+                    'category_id', 'search', 'min_price', 'max_price', 'sort', 'in_stock', 'per_page', 'page',
+                ]))->filter(fn ($value) => $value !== null && $value !== '')->all();
+
+                // Arrived from somewhere that carries no filters - the home page,
+                // a shared link - so fall back to this product's own category.
+                if (empty($backParams) && $product->category_id) {
+                    $backParams = ['category_id' => $product->category_id];
+                }
+
+                $backCategory = !empty($backParams['category_id'])
+                    ? \App\Models\Category::find($backParams['category_id'])
+                    : null;
+            @endphp
+            <a href="{{ route('shop.index', $backParams) }}" class="inline-flex items-center text-violet-400 hover:text-violet-300 mb-8 transition-colors">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
-                Back to Shop
+                Back to {{ $backCategory?->name ?? 'Shop' }}
             </a>
 
             @if(session('success'))
