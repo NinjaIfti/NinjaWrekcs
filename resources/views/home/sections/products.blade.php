@@ -31,7 +31,7 @@
                                                     @php
                                                         $coverImage = $product->primaryImagePath();
                                                     @endphp
-                                                    <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
+                                                    <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" loading="lazy" decoding="async" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                                     <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                                     <div class="absolute top-4 right-4 z-10">
                                                         <button type="button" onclick="event.preventDefault(); event.stopPropagation();" class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30">
@@ -73,7 +73,7 @@
                                         @php
                                             $coverImage = $product->primaryImagePath();
                                         @endphp
-                                        <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
+                                        <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" loading="lazy" decoding="async" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                         <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                         <div class="absolute top-4 right-4 z-10">
                                             <button type="button" onclick="event.preventDefault(); event.stopPropagation();" class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30">
@@ -138,7 +138,7 @@
                                 @php
                                     $coverImage = $product->primaryImagePath();
                                 @endphp
-                                <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
+                                <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" loading="lazy" decoding="async" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                 <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 <div class="absolute top-4 right-4 z-10">
                                     <button type="button" onclick="event.preventDefault(); event.stopPropagation();" class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30">
@@ -176,7 +176,7 @@
                                     @php
                                         $coverImage = $product->primaryImagePath();
                                     @endphp
-                                    <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
+                                    <img src="{{ $coverImage ? asset('storage/' . $coverImage) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" loading="lazy" decoding="async" class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500">
                                     <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                     <div class="absolute top-4 right-4 z-10">
                                         <button type="button" onclick="event.preventDefault(); event.stopPropagation();" class="w-10 h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-violet-600 hover:text-white transition-colors border border-violet-500/30">

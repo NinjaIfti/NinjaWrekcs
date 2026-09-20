@@ -14,37 +14,37 @@
             <div class="hero-slideshow">
                 <div class="hero-slide active">
                     <div class="glitch-image-wrapper">
-                        <img src="/img/f1.jpg" alt="Valorant Gaming Collectibles" class="w-full h-64 object-cover">
+                        <img src="/img/f1.jpg" alt="Valorant Gaming Collectibles" fetchpriority="high" decoding="async" class="w-full h-64 object-cover">
                         <div class="glitch-overlay"></div>
                     </div>
                 </div>
                 <div class="hero-slide">
                     <div class="glitch-image-wrapper">
-                        <img src="/img/f2.jpg" alt="Valorant Gaming Collectibles" class="w-full h-64 object-cover">
+                        <img src="/img/f2.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-64 object-cover">
                         <div class="glitch-overlay"></div>
                     </div>
                 </div>
                 <div class="hero-slide">
                     <div class="glitch-image-wrapper">
-                        <img src="/img/f3.jpg" alt="Valorant Gaming Collectibles" class="w-full h-64 object-cover">
+                        <img src="/img/f3.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-64 object-cover">
                         <div class="glitch-overlay"></div>
                     </div>
                 </div>
                 <div class="hero-slide">
                     <div class="glitch-image-wrapper">
-                        <img src="/img/f4.jpg" alt="Valorant Gaming Collectibles" class="w-full h-64 object-cover">
+                        <img src="/img/f4.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-64 object-cover">
                         <div class="glitch-overlay"></div>
                     </div>
                 </div>
                 <div class="hero-slide">
                     <div class="glitch-image-wrapper">
-                        <img src="/img/f5.jpg" alt="Valorant Gaming Collectibles" class="w-full h-64 object-cover">
+                        <img src="/img/f5.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-64 object-cover">
                         <div class="glitch-overlay"></div>
                     </div>
                 </div>
                 <div class="hero-slide">
                     <div class="glitch-image-wrapper">
-                        <img src="/img/f6.jpg" alt="Valorant Gaming Collectibles" class="w-full h-64 object-cover">
+                        <img src="/img/f6.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-64 object-cover">
                         <div class="glitch-overlay"></div>
                     </div>
                 </div>

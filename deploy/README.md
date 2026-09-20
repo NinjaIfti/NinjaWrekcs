@@ -75,8 +75,37 @@ port 80 is a safety net.
 ```bash
 cd /var/www/NinjaWrekcs
 git pull origin main
+php artisan migrate          # do not skip: a deploy carrying a migration
+                             # fatals the store without it
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 chown -R www-data:www-data storage/framework bootstrap/cache
 ```
+
+`route:cache` matters when routes were deleted — a stale cached route resolves
+and then fatals on the missing controller.
+
+## Shrinking the product photos
+
+New uploads are downscaled and stored as WebP on the way in. Everything already
+on disk needs the backfill, once:
+
+```bash
+cd /var/www/NinjaWrekcs
+
+# Take a copy first - the originals are replaced, and there is no undo.
+tar czf ~/products-images-$(date +%F).tar.gz storage/app/public/products
+
+php artisan products:optimize-images                 # dry run: shows the plan
+php artisan products:optimize-images --commit
+chown -R www-data:www-data storage/app/public/products
+```
+
+The re-encoded file has a new extension, so every row naming the old path is
+updated in the same pass — `products.image`, `products.cover_photo`,
+`product_images.path` and `product_variant_images.path`. A file that would not
+get smaller is left alone, so the command is safe to re-run.
+
+`--limit=N` stops after N files if you want to eyeball the first few on the
+storefront before committing to the rest.

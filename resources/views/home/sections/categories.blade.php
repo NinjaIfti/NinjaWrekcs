@@ -41,6 +41,8 @@
                         @if($imagePath)
                             <img src="{{ Storage::url($imagePath) }}"
                                  alt="{{ $product->name }}"
+                                 loading="lazy"
+                                 decoding="async"
                                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                         @else
                             <div class="w-full h-full flex items-center justify-center text-gray-500">

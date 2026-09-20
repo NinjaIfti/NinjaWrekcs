@@ -43,7 +43,9 @@
             <div class="relative">
                 <div class="glitch-image-wrapper">
                     <img src="{{ $specialOffer->image_path ? asset('storage/' . $specialOffer->image_path) : 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600' }}" 
-                         alt="{{ $specialOffer->main_title }}" 
+                         alt="{{ $specialOffer->main_title }}"
+                         loading="lazy"
+                         decoding="async"
                          class="rounded-2xl shadow-2xl border border-violet-500/30">
                     <div class="glitch-overlay"></div>
                 </div>

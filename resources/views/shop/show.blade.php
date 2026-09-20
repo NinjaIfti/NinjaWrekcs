@@ -101,7 +101,15 @@
                             <div class="product-slideshow" id="product-slideshow">
                                 @foreach($gallery as $idx => $imgPath)
                                     <div class="product-slide {{ $idx === 0 ? 'active' : '' }}">
-                                        <img src="{{ asset('storage/' . $imgPath) }}" alt="{{ $product->name }}" class="w-full h-auto object-cover">
+                                        {{-- The first slide is the largest thing on the page and
+                                             is visible immediately, so it loads eagerly; the rest
+                                             are behind the arrows and can wait. --}}
+                                        <img src="{{ asset('storage/' . $imgPath) }}"
+                                             alt="{{ $product->name }}"
+                                             loading="{{ $idx === 0 ? 'eager' : 'lazy' }}"
+                                             {{ $idx === 0 ? 'fetchpriority=high' : '' }}
+                                             decoding="async"
+                                             class="w-full h-auto object-cover">
                                         <div class="absolute inset-0 glitch-overlay opacity-30"></div>
                                     </div>
                                 @endforeach
@@ -175,6 +183,8 @@
                                         @disabled(! $inStock)>
                                     @if($vImages !== [])
                                         <img src="{{ asset('storage/' . $vImages[0]) }}" alt="{{ $v->name }}"
+                                             loading="lazy"
+                                             decoding="async"
                                              class="w-14 h-14 object-cover rounded mb-1 mx-auto">
                                     @endif
                                     <span class="block text-sm {{ $inStock ? 'text-white' : 'text-gray-500 line-through' }}">{{ $v->name }}</span>

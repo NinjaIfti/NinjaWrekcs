@@ -21,46 +21,46 @@
                         <!-- Slide 1 -->
                         <div class="hero-slide active">
                             <div class="glitch-image-wrapper">
-                                <img src="/img/f1.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <img src="/img/f1.jpg" alt="Valorant Gaming Collectibles" fetchpriority="high" decoding="async" class="w-full h-full object-cover">
                                 <div class="glitch-overlay"></div>
                             </div>
                         </div>
                         <!-- Slide 2 -->
                         <div class="hero-slide">
                             <div class="glitch-image-wrapper">
-                                <img src="/img/f2.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <img src="/img/f2.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                 <div class="glitch-overlay"></div>
                             </div>
                         </div>
                         <!-- Slide 3 -->
                         <div class="hero-slide">
                             <div class="glitch-image-wrapper">
-                                <img src="/img/f3.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <img src="/img/f3.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                 <div class="glitch-overlay"></div>
                             </div>
                         </div>
                         <!-- Slide 4 -->
                         <div class="hero-slide">
                             <div class="glitch-image-wrapper">
-                                <img src="/img/f4.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <img src="/img/f4.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                 <div class="glitch-overlay"></div>
                             </div>
                         </div>
                         <div class="hero-slide">
                             <div class="glitch-image-wrapper">
-                                <img src="/img/f5.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <img src="/img/f5.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                 <div class="glitch-overlay"></div>
                             </div>
                         </div>
                         <div class="hero-slide">
                             <div class="glitch-image-wrapper">
-                                <img src="/img/f6.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <img src="/img/f6.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                 <div class="glitch-overlay"></div>
                             </div>
                         </div>
                         <div class="hero-slide">
                             <div class="glitch-image-wrapper">
-                                <img src="/img/f7.jpg" alt="Valorant Gaming Collectibles" class="w-full h-full object-cover">
+                                <img src="/img/f7.jpg" alt="Valorant Gaming Collectibles" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                 <div class="glitch-overlay"></div>
                             </div>
                         </div>

@@ -17,8 +17,14 @@
             @php
                 $cover = $product->primaryImagePath();
             @endphp
+            {{-- A listing page carries up to 48 of these. Fetching them all at
+                 once was the bulk of the wait on the shop page; the card box is
+                 fixed at h-72 by CSS, so deferring the file costs no layout
+                 shift. --}}
             <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}"
                  alt="{{ $product->name }}"
+                 loading="lazy"
+                 decoding="async"
                  class="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500 product-image-zoom">
             <div class="absolute inset-0 glitch-overlay opacity-0 group-hover:opacity-100 transition-opacity"></div>
 

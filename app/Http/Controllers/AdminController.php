@@ -23,6 +23,7 @@ use App\Services\NotificationService;
 use App\Services\EmailService;
 use App\Services\MimsmsService;
 use App\Services\CourierCheckService;
+use App\Services\ProductImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -1010,7 +1011,7 @@ class AdminController extends Controller
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $file) {
                 $uploadedPaths[] = [
-                    'path' => $file->store('products', 'public'),
+                    'path' => app(ProductImageService::class)->store($file),
                     'sort_order' => $index,
                 ];
             }
@@ -1035,7 +1036,7 @@ class AdminController extends Controller
         // keychains category, so uploading one for anything else validated
         // fine and was then silently dropped. Update never had that gate.
         if ($request->hasFile('cover_photo')) {
-            $validated['cover_photo'] = $request->file('cover_photo')->store('products', 'public');
+            $validated['cover_photo'] = app(ProductImageService::class)->store($request->file('cover_photo'));
         }
 
         $product = Product::create($validated);
@@ -1069,7 +1070,7 @@ class AdminController extends Controller
                     foreach ($variantImages as $imgIdx => $file) {
                         if ($file && $file->isValid()) {
                             $variant->images()->create([
-                                'path' => $file->store('products', 'public'),
+                                'path' => app(ProductImageService::class)->store($file),
                                 'sort_order' => $imgIdx,
                             ]);
                         }
@@ -1171,7 +1172,7 @@ class AdminController extends Controller
                 if ($product->cover_photo) {
                     $filesToSweep[] = $product->cover_photo;
                 }
-                $validated['cover_photo'] = $request->file('cover_photo')->store('products', 'public');
+                $validated['cover_photo'] = app(ProductImageService::class)->store($request->file('cover_photo'));
             }
             $deleteVariantIds = $request->input('delete_variants', []);
             if (!empty($deleteVariantIds)) {
@@ -1209,7 +1210,7 @@ class AdminController extends Controller
                     foreach ($existingVariantImages as $idx => $file) {
                         if ($file && $file->isValid()) {
                             $variant->images()->create([
-                                'path' => $file->store('products', 'public'),
+                                'path' => app(ProductImageService::class)->store($file),
                                 'sort_order' => $maxOrder + 1 + $idx,
                             ]);
                         }
@@ -1237,7 +1238,7 @@ class AdminController extends Controller
                         foreach ($variantImages as $imgIdx => $file) {
                             if ($file && $file->isValid()) {
                                 $variant->images()->create([
-                                    'path' => $file->store('products', 'public'),
+                                    'path' => app(ProductImageService::class)->store($file),
                                     'sort_order' => $imgIdx,
                                 ]);
                             }
@@ -1262,7 +1263,7 @@ class AdminController extends Controller
             $existingCount = $product->images()->count();
             foreach ($request->file('images') as $idx => $file) {
                 $newImagePaths[] = [
-                    'path' => $file->store('products', 'public'),
+                    'path' => app(ProductImageService::class)->store($file),
                     'sort_order' => $existingCount + $idx,
                 ];
             }
@@ -1295,7 +1296,7 @@ class AdminController extends Controller
 
         // Every row change has landed, so what still names a file is now exactly
         // what still needs it.
-        $imageService = app(\App\Services\ProductImageService::class);
+        $imageService = app(ProductImageService::class);
         foreach (array_unique(array_filter($filesToSweep)) as $path) {
             $imageService->deleteIfUnreferenced($path);
         }
@@ -1342,7 +1343,7 @@ class AdminController extends Controller
 
         $product->delete();
 
-        $images = app(\App\Services\ProductImageService::class);
+        $images = app(ProductImageService::class);
         foreach (array_unique(array_filter($candidatePaths)) as $path) {
             $images->deleteIfUnreferenced($path);
         }
