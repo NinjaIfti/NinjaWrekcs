@@ -150,13 +150,71 @@ class AdminController extends Controller
         ]);
     }
 
+    /**
+     * Products an admin can put on a manual order.
+     *
+     * Filtered in PHP rather than SQL because a variant product holds no stock
+     * of its own - "where quantity > 0" excluded every merged product from the
+     * dropdown, which is why they could not be ordered manually at all.
+     */
+    private function orderableProducts(bool $inStockOnly = true)
+    {
+        return Product::with('variants')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (Product $product) => ! $inStockOnly || $product->availableStock() > 0)
+            ->values();
+    }
+
+    /**
+     * Resolve one submitted order line to its product and, where the product is
+     * sold by variant, the chosen variant. Mirrors the guards CartService
+     * applies on the storefront, so a manual order cannot do what a customer
+     * order cannot.
+     */
+    private function resolveOrderLine(array $productData): array
+    {
+        $product = Product::with('variants')->findOrFail($productData['id']);
+        $variant = null;
+
+        if (! empty($productData['variant_id'])) {
+            $variant = ProductVariant::find($productData['variant_id']);
+
+            if (! $variant || $variant->product_id !== $product->id) {
+                throw new \Exception("Invalid option selected for {$product->name}.");
+            }
+
+            if (! $variant->is_active) {
+                throw new \Exception("That option of {$product->name} is no longer available.");
+            }
+        }
+
+        if ($product->hasVariants() && $variant === null) {
+            throw new \Exception("Choose an option for {$product->name}.");
+        }
+
+        return [$product, $variant];
+    }
+
+    /**
+     * One order line per product AND option - the same knife in two colours is
+     * two lines, so keying by product alone would silently merge them.
+     */
+    private function orderLineKey(Product $product, ?ProductVariant $variant): string
+    {
+        return $product->id . ':' . ($variant?->id ?? 0);
+    }
+
+    private function orderLineName(Product $product, ?ProductVariant $variant): string
+    {
+        return $variant ? "{$product->name} - {$variant->name}" : $product->name;
+    }
+
     public function orderCreate(): View
     {
-        $products = Product::where('is_active', true)
-            ->where('quantity', '>', 0)
-            ->orderBy('name')
-            ->get();
-        
+        $products = $this->orderableProducts();
+
         $coupons = Coupon::where('is_active', true)
             ->orderBy('code')
             ->get();
@@ -183,6 +241,7 @@ class AdminController extends Controller
             'delivery_location' => 'required|in:inside_dhaka,outside_dhaka',
             'products' => 'required|array|min:1',
             'products.*.id' => 'required|exists:products,id',
+            'products.*.variant_id' => 'nullable|exists:product_variants,id',
             'products.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -191,22 +250,29 @@ class AdminController extends Controller
             // Calculate subtotal
             $subtotal = 0;
             $orderItems = [];
-            
+            $pricing = app(\App\Services\PricingService::class);
+
             foreach ($validated['products'] as $productData) {
-                $product = Product::findOrFail($productData['id']);
-                
-                // Check stock
-                if ($product->quantity < $productData['quantity']) {
-                    throw new \Exception("Insufficient stock for {$product->name}. Only {$product->quantity} available.");
+                [$product, $variant] = $this->resolveOrderLine($productData);
+
+                // Stock lives on the variant when there is one.
+                $available = $product->availableStock($variant);
+                $name = $this->orderLineName($product, $variant);
+
+                if ($available < $productData['quantity']) {
+                    throw new \Exception("Insufficient stock for {$name}. Only {$available} available.");
                 }
-                
-                // Use display_price (includes deals/offers) instead of regular price
-                $itemPrice = $product->display_price ?? $product->price;
+
+                // PricingService owns the offer/sale precedence, and a variant
+                // carries its own price outright.
+                $itemPrice = $pricing->priceFor($product, $variant);
                 $itemSubtotal = $itemPrice * $productData['quantity'];
                 $subtotal += $itemSubtotal;
-                
+
                 $orderItems[] = [
                     'product' => $product,
+                    'variant' => $variant,
+                    'name' => $name,
                     'quantity' => $productData['quantity'],
                     'subtotal' => $itemSubtotal,
                     'price' => $itemPrice,
@@ -268,14 +334,15 @@ class AdminController extends Controller
                 \App\Models\OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product']->id,
-                    'product_name' => $item['product']->name,
+                    'product_variant_id' => $item['variant']?->id,
+                    'product_name' => $item['name'],
                     'price' => $item['price'], // Use the deal price if applicable
                     'quantity' => $item['quantity'],
                     'subtotal' => $item['subtotal'],
                 ]);
 
-                // Update product quantity
-                $item['product']->decrement('quantity', $item['quantity']);
+                // Take the stock off the row that actually holds it.
+                ($item['variant'] ?? $item['product'])->decrement('quantity', $item['quantity']);
             }
 
             DB::commit();
@@ -317,16 +384,16 @@ class AdminController extends Controller
 
     public function orderEdit(Order $order): View
     {
-        $products = Product::where('is_active', true)
-            ->orderBy('name')
-            ->get();
-        
+        // Editing shows every active product, in stock or not - an existing line
+        // must stay selectable even once its option has sold out.
+        $products = $this->orderableProducts(inStockOnly: false);
+
         $coupons = Coupon::where('is_active', true)
             ->orderBy('code')
             ->get();
 
         // Load order relationships
-        $order->load(['items.product', 'changes.user']);
+        $order->load(['items.product', 'items.productVariant', 'changes.user']);
 
         return view('admin.order-edit', [
             'order' => $order,
@@ -352,30 +419,36 @@ class AdminController extends Controller
             'tracking_link' => 'nullable|string|max:500',
             'products' => 'required|array|min:1',
             'products.*.id' => 'required|exists:products,id',
+            'products.*.variant_id' => 'nullable|exists:product_variants,id',
             'products.*.quantity' => 'required|integer|min:1',
         ]);
 
         DB::beginTransaction();
         try {
-            // Track original order items
-            $originalItems = $order->items->keyBy('product_id');
+            // Keyed by product AND option: the same knife in two colours is two
+            // lines, and keying by product alone silently dropped one of them.
+            $originalItems = $order->items->keyBy(
+                fn ($item) => $item->product_id . ':' . ($item->product_variant_id ?? 0)
+            );
             $changes = [];
 
             // Calculate new subtotal
             $subtotal = 0;
             $newItemsData = [];
-            
+            $pricing = app(\App\Services\PricingService::class);
+
             foreach ($validated['products'] as $productData) {
-                $product = Product::findOrFail($productData['id']);
+                [$product, $variant] = $this->resolveOrderLine($productData);
                 $quantity = $productData['quantity'];
-                
-                // Use display_price (includes deals/offers) instead of regular price
-                $itemPrice = $product->display_price ?? $product->price;
+
+                $itemPrice = $pricing->priceFor($product, $variant);
                 $itemSubtotal = $itemPrice * $quantity;
                 $subtotal += $itemSubtotal;
-                
-                $newItemsData[$product->id] = [
+
+                $newItemsData[$this->orderLineKey($product, $variant)] = [
                     'product' => $product,
+                    'variant' => $variant,
+                    'name' => $this->orderLineName($product, $variant),
                     'quantity' => $quantity,
                     'subtotal' => $itemSubtotal,
                     'price' => $itemPrice,
@@ -383,52 +456,64 @@ class AdminController extends Controller
             }
 
             // Detect item changes
-            foreach ($newItemsData as $productId => $newItem) {
-                if ($originalItems->has($productId)) {
+            foreach ($newItemsData as $lineKey => $newItem) {
+                // Stock moves on the row that holds it - the variant when the
+                // line has one, the product otherwise.
+                $stockRow = $newItem['variant'] ?? $newItem['product'];
+
+                if ($originalItems->has($lineKey)) {
                     // Item exists - check quantity change
-                    $originalItem = $originalItems[$productId];
+                    $originalItem = $originalItems[$lineKey];
                     if ($originalItem->quantity != $newItem['quantity']) {
                         $changes[] = [
                             'type' => 'item_quantity_changed',
-                            'description' => "Changed quantity of '{$newItem['product']->name}' from {$originalItem->quantity} to {$newItem['quantity']}",
-                            'old_data' => ['product_id' => $productId, 'quantity' => $originalItem->quantity],
-                            'new_data' => ['product_id' => $productId, 'quantity' => $newItem['quantity']],
+                            'description' => "Changed quantity of '{$newItem['name']}' from {$originalItem->quantity} to {$newItem['quantity']}",
+                            'old_data' => ['product_id' => $newItem['product']->id, 'variant_id' => $newItem['variant']?->id, 'quantity' => $originalItem->quantity],
+                            'new_data' => ['product_id' => $newItem['product']->id, 'variant_id' => $newItem['variant']?->id, 'quantity' => $newItem['quantity']],
                         ];
-                        
-                        // Return old quantity to stock and deduct new quantity
-                        $newItem['product']->increment('quantity', $originalItem->quantity);
-                        $newItem['product']->decrement('quantity', $newItem['quantity']);
+
+                        // Return the old quantity before taking the new one, so
+                        // the check below sees stock that is genuinely free.
+                        $stockRow->increment('quantity', $originalItem->quantity);
+                        $stockRow->refresh();
+
+                        if ($stockRow->quantity < $newItem['quantity']) {
+                            throw new \Exception("Insufficient stock for {$newItem['name']}. Only {$stockRow->quantity} available.");
+                        }
+
+                        $stockRow->decrement('quantity', $newItem['quantity']);
                     }
                 } else {
                     // New item added
                     $changes[] = [
                         'type' => 'item_added',
-                        'description' => "Added '{$newItem['product']->name}' x{$newItem['quantity']}",
+                        'description' => "Added '{$newItem['name']}' x{$newItem['quantity']}",
                         'old_data' => null,
-                        'new_data' => ['product_id' => $productId, 'quantity' => $newItem['quantity']],
+                        'new_data' => ['product_id' => $newItem['product']->id, 'variant_id' => $newItem['variant']?->id, 'quantity' => $newItem['quantity']],
                     ];
-                    
+
                     // Deduct from stock
-                    if ($newItem['product']->quantity < $newItem['quantity']) {
-                        throw new \Exception("Insufficient stock for {$newItem['product']->name}");
+                    if ($stockRow->quantity < $newItem['quantity']) {
+                        throw new \Exception("Insufficient stock for {$newItem['name']}. Only {$stockRow->quantity} available.");
                     }
-                    $newItem['product']->decrement('quantity', $newItem['quantity']);
+                    $stockRow->decrement('quantity', $newItem['quantity']);
                 }
             }
 
             // Detect removed items
-            foreach ($originalItems as $productId => $originalItem) {
-                if (!isset($newItemsData[$productId])) {
+            foreach ($originalItems as $lineKey => $originalItem) {
+                if (!isset($newItemsData[$lineKey])) {
                     $changes[] = [
                         'type' => 'item_removed',
                         'description' => "Removed '{$originalItem->product_name}' x{$originalItem->quantity}",
-                        'old_data' => ['product_id' => $productId, 'quantity' => $originalItem->quantity],
+                        'old_data' => ['product_id' => $originalItem->product_id, 'variant_id' => $originalItem->product_variant_id, 'quantity' => $originalItem->quantity],
                         'new_data' => null,
                     ];
-                    
-                    // Return to stock
-                    if ($originalItem->product) {
-                        $originalItem->product->increment('quantity', $originalItem->quantity);
+
+                    // Return to stock, to the variant row when the line had one.
+                    $stockRow = $originalItem->productVariant ?? $originalItem->product;
+                    if ($stockRow) {
+                        $stockRow->increment('quantity', $originalItem->quantity);
                     }
                 }
             }
@@ -461,7 +546,8 @@ class AdminController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product']->id,
-                    'product_name' => $item['product']->name,
+                    'product_variant_id' => $item['variant']?->id,
+                    'product_name' => $item['name'],
                     'price' => $item['price'], // Use deal price if applicable
                     'quantity' => $item['quantity'],
                     'subtotal' => $item['subtotal'],
@@ -476,7 +562,8 @@ class AdminController extends Controller
             // (The old items were already returned to stock above in the item removal/change logic)
             if ($beingCancelled) {
                 foreach ($newItemsData as $item) {
-                    $item['product']->increment('quantity', $item['quantity']);
+                    // Back to the row it came off, variant or product.
+                    ($item['variant'] ?? $item['product'])->increment('quantity', $item['quantity']);
                 }
                 
                 $changes[] = [

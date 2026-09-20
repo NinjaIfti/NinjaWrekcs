@@ -257,29 +257,16 @@
     <template id="product-item-template">
         <div class="product-item flex gap-3 items-start bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
             <div class="flex-1">
+                {{-- A variant product is listed once per option, because the
+                     price and the stock belong to the option, not the product.
+                     The chosen option rides along in the hidden variant_id. --}}
                 <select name="products[INDEX][id]" class="product-select w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm mb-2" required>
                     <option value="">Select Product</option>
                     @foreach($products as $product)
-                        @php
-                            $displayPrice = $product->display_price ?? $product->price;
-                            $originalPrice = $product->price;
-                            $hasDeal = ($product->has_active_offer || $product->has_sale_price) && $displayPrice < $originalPrice;
-                        @endphp
-                        <option value="{{ $product->id }}" 
-                                data-price="{{ $displayPrice }}" 
-                                data-original-price="{{ $originalPrice }}"
-                                data-stock="{{ $product->quantity }}"
-                                data-has-deal="{{ $hasDeal ? '1' : '0' }}">
-                            {{ $product->name }} 
-                            @if($hasDeal)
-                                - ৳{{ number_format($displayPrice, 2) }} <span class="text-red-600">(Deal: Was ৳{{ number_format($originalPrice, 2) }})</span>
-                            @else
-                                - ৳{{ number_format($displayPrice, 2) }}
-                            @endif
-                            (Stock: {{ $product->quantity }})
-                        </option>
+                        @include('admin.partials.order-product-options', ['product' => $product, 'inStockOnly' => true])
                     @endforeach
                 </select>
+                <input type="hidden" name="products[INDEX][variant_id]" class="product-variant-id" value="">
                 <div class="flex items-center gap-2">
                     <label class="text-xs text-gray-600 dark:text-gray-400">Qty:</label>
                     <input type="number" name="products[INDEX][quantity]" class="product-quantity w-20 border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" min="1" value="1" required>
@@ -336,7 +323,13 @@
                 const originalPrice = parseFloat(option.getAttribute('data-original-price')) || price;
                 const hasDeal = option.getAttribute('data-has-deal') === '1';
                 const stock = parseInt(option.getAttribute('data-stock')) || 0;
-                
+
+                // The option knows which variant it is; the form posts it.
+                const variantInput = item.querySelector('.product-variant-id');
+                if (variantInput) {
+                    variantInput.value = option.getAttribute('data-variant-id') || '';
+                }
+
                 // Check stock
                 if (quantity > stock) {
                     alert(`Only ${stock} items available in stock!`);

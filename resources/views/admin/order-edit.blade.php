@@ -315,14 +315,16 @@
     <template id="product-item-template">
         <div class="product-item flex gap-3 items-start bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
             <div class="flex-1">
+                {{-- One option per variant: the price and stock of a line belong
+                     to the option, not the product. Sold-out options stay listed
+                     here so an existing order line can still be edited. --}}
                 <select name="products[INDEX][id]" class="product-select w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm mb-2" required>
                     <option value="">Select Product</option>
                     @foreach($products as $product)
-                        <option value="{{ $product->id }}" data-price="{{ $product->price }}" data-stock="{{ $product->quantity }}">
-                            {{ $product->name }} - ৳{{ number_format($product->price, 2) }} (Stock: {{ $product->quantity }})
-                        </option>
+                        @include('admin.partials.order-product-options', ['product' => $product, 'inStockOnly' => false])
                     @endforeach
                 </select>
+                <input type="hidden" name="products[INDEX][variant_id]" class="product-variant-id" value="">
                 <div class="flex items-center gap-2">
                     <label class="text-xs text-gray-600 dark:text-gray-400">Qty:</label>
                     <input type="number" name="products[INDEX][quantity]" class="product-quantity w-20 border border-gray-300 dark:border-gray-700 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" min="1" value="1" required>
@@ -350,29 +352,46 @@
             addProductRow();
         });
 
-        function addProductRow(productId = null, quantity = 1) {
+        function addProductRow(productId = null, quantity = 1, variantId = null) {
             const template = document.getElementById('product-item-template');
             const clone = template.content.cloneNode(true);
-            
+
             const html = clone.querySelector('.product-item').outerHTML.replace(/INDEX/g, productIndex);
             document.getElementById('product-items').insertAdjacentHTML('beforeend', html);
-            
+
             // Set selected product if provided
             if (productId) {
                 const lastItem = document.getElementById('product-items').lastElementChild;
                 const select = lastItem.querySelector('.product-select');
                 const quantityInput = lastItem.querySelector('.product-quantity');
-                
-                select.value = productId;
+
+                // Several options can share a product id - one per variant - so
+                // match on the variant too, or the wrong colour gets selected.
+                const wanted = variantId ? String(variantId) : '';
+                const option = Array.from(select.options).find((o) =>
+                    o.value === String(productId) && (o.getAttribute('data-variant-id') || '') === wanted
+                );
+
+                if (option) {
+                    option.selected = true;
+                } else {
+                    select.value = productId;
+                }
+
                 quantityInput.value = quantity;
-                
+
+                const chosen = select.options[select.selectedIndex];
+                const variantInput = lastItem.querySelector('.product-variant-id');
+                if (variantInput && chosen) {
+                    variantInput.value = chosen.getAttribute('data-variant-id') || '';
+                }
+
                 // Update price display
-                const option = select.options[select.selectedIndex];
-                const price = parseFloat(option.getAttribute('data-price')) || 0;
+                const price = chosen ? (parseFloat(chosen.getAttribute('data-price')) || 0) : 0;
                 const itemTotal = price * quantity;
                 lastItem.querySelector('.item-price').textContent = itemTotal.toFixed(2);
             }
-            
+
             productIndex++;
             updateOrderSummary();
         }
@@ -394,7 +413,13 @@
                 const option = select.options[select.selectedIndex];
                 const price = parseFloat(option.getAttribute('data-price')) || 0;
                 const stock = parseInt(option.getAttribute('data-stock')) || 0;
-                
+
+                // The option knows which variant it is; the form posts it.
+                const variantInput = item.querySelector('.product-variant-id');
+                if (variantInput) {
+                    variantInput.value = option.getAttribute('data-variant-id') || '';
+                }
+
                 if (quantity > stock) {
                     alert(`Only ${stock} items available in stock!`);
                     item.querySelector('.product-quantity').value = stock;
@@ -496,7 +521,7 @@
         // Load existing order items on page load
         document.addEventListener('DOMContentLoaded', function() {
             orderItems.forEach(item => {
-                addProductRow(item.product_id, item.quantity);
+                addProductRow(item.product_id, item.quantity, item.product_variant_id);
             });
             
             // If no items loaded (deleted products), add at least one empty row
