@@ -1340,7 +1340,16 @@ class AdminController extends Controller
         // Clear paginated shop products cache
         $this->clearShopProductsCache();
 
-        return redirect()->route('admin.products')->with('success', 'Product deleted successfully!');
+        // Return to the view the admin was on. Without this the list snapped
+        // back to active-only, so deleting an inactive product dropped the
+        // other inactive ones out of sight too and read as "nothing happened".
+        $redirectParams = array_filter(
+            request()->only('category_id', 'subcategory_id', 'show_inactive'),
+            fn ($value) => $value !== null && $value !== ''
+        );
+
+        return redirect()->route('admin.products', $redirectParams)
+            ->with('success', 'Product deleted successfully!');
     }
 
     /**

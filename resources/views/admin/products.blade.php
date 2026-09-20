@@ -141,8 +141,10 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 {{-- Carry the active category tab through the edit page so saving returns here, not to "All Products" --}}
-                                <a href="{{ route('admin.products.edit', array_merge(['product' => $product], request()->only('category_id', 'subcategory_id'))) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-3">Edit</a>
-                                <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                <a href="{{ route('admin.products.edit', array_merge(['product' => $product], request()->only('category_id', 'subcategory_id', 'show_inactive'))) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-3">Edit</a>
+                                {{-- The action carries the current view, so deleting returns
+                                     to the same tab with inactive still shown if it was. --}}
+                                <form action="{{ route('admin.products.destroy', array_merge(['product' => $product], request()->only('category_id', 'subcategory_id', 'show_inactive'))) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this product?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">Delete</button>
