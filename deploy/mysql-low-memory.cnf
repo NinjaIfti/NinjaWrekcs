@@ -1,0 +1,38 @@
+# MySQL tuning for the 1 vCPU / 1 GB droplet
+#
+# Deployed at: /etc/mysql/mysql.conf.d/zz-low-memory.cnf
+#              (the zz- prefix matters: !includedir loads the directory in
+#               name order, so this must sort after mysqld.cnf to win)
+#
+# Measured 2026-09-20: mysqld held 443 MB of the box's 961 MB - more than half
+# of everything - against a database that is only 38 MB on disk. The stock
+# config assumes a far bigger machine.
+#
+# This is headroom, not speed. The site already answers in 0.11-0.24s, the OOM
+# killer has never fired and the access log has no 502s. The point is that
+# 161 MB available with no swap leaves nothing for a traffic spike.
+
+[mysqld]
+
+# The largest single saving, 200-350 MB on a box this size. Laravel never reads
+# performance_schema; the cost is that the sys schema and any query-profiling
+# tooling stop working, which nothing here uses.
+performance_schema = OFF
+
+# Deliberately NOT lowered. The whole database is 38 MB, so 128 MB already
+# holds all of it in RAM - shrinking this would make queries slower, which is
+# the opposite of the point.
+innodb_buffer_pool_size = 128M
+
+# Max_used_connections has peaked at 5 since the server came up. Each possible
+# connection reserves per-thread buffers, so 151 is reservation nobody uses.
+# php-fpm is capped at 5 workers, so this is still ~6x the real ceiling.
+max_connections = 30
+
+# Defaults sized for a machine holding hundreds of tables open at once.
+table_open_cache = 400
+table_definition_cache = 400
+
+# Let oversized temp tables spill to disk rather than sit in RAM.
+tmp_table_size = 16M
+max_heap_table_size = 16M

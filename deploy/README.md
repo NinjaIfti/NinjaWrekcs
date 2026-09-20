@@ -86,6 +86,39 @@ chown -R www-data:www-data storage/framework bootstrap/cache
 `route:cache` matters when routes were deleted — a stale cached route resolves
 and then fatals on the missing controller.
 
+## Memory on the 1 GB droplet
+
+Measured 2026-09-20: 799 MB of 961 MB in use, **443 MB of it mysqld**, and no
+swap at all. Nothing was failing — no OOM kills, no 502s, pages answering in
+0.11–0.24s — but 161 MB available with no swap leaves no room for a spike.
+
+`deploy/mysql-low-memory.cnf` trims MySQL. **It restarts the database, so the
+store is down for a few seconds — do it when the shop is quiet.**
+
+```bash
+cp /var/www/NinjaWrekcs/deploy/mysql-low-memory.cnf \
+   /etc/mysql/mysql.conf.d/zz-low-memory.cnf
+systemctl restart mysql
+systemctl status mysql --no-pager | head -5    # confirm it came back
+free -m
+```
+
+Add swap as well — it is the actual protection against an OOM kill, and costs
+nothing while memory is free:
+
+```bash
+fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+echo 'vm.swappiness=10' > /etc/sysctl.d/99-swappiness.conf && sysctl -p /etc/sysctl.d/99-swappiness.conf
+```
+
+Swappiness 10 keeps Linux off the swapfile until it genuinely needs it, so this
+is a safety net rather than something the site runs on day to day.
+
+To undo the MySQL side: `rm /etc/mysql/mysql.conf.d/zz-low-memory.cnf` and
+restart. Nothing else references it.
+
 ## Shrinking the product photos
 
 New uploads are downscaled and stored as WebP on the way in. Everything already
