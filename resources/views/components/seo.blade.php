@@ -47,7 +47,9 @@
         '@type' => 'Product',
         'name' => $product->name,
         'description' => strip_tags($product->description ?? 'Authentic Valorant collectible'),
-        'image' => $product->image ? asset('storage/' . $product->image) : asset('img/fav.png'),
+        // Same reason as og:image: the legacy column is empty on a merged
+        // product and may name a file that is gone.
+        'image' => $product->primaryImagePath() ? asset('storage/' . $product->primaryImagePath()) : asset('img/fav.png'),
         'brand' => [
             '@type' => 'Brand',
             'name' => 'NinjaWrecks'

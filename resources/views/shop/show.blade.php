@@ -9,7 +9,10 @@
     @include('components.seo', [
         'title' => $product->name . ' - NinjaWrecks | Valorant Collectibles',
         'description' => $product->description ? \Illuminate\Support\Str::limit(strip_tags($product->description), 160) : 'Buy ' . $product->name . ' - Authentic Valorant collectible. Get 100 taka off plus 10% discount. Fast delivery across Bangladesh.',
-        'image' => $product->image ? asset('storage/' . $product->image) : asset('img/fav.png'),
+        // The legacy `image` column is empty on a merged product and can name a
+        // file that no longer exists, which made the link preview on Facebook
+        // and WhatsApp a broken thumbnail.
+        'image' => $product->primaryImagePath() ? asset('storage/' . $product->primaryImagePath()) : asset('img/fav.png'),
         'url' => route('shop.show', $product->slug ?? $product->id),
         'type' => 'product',
         'keywords' => $product->name . ', Valorant collectibles, ' . ($product->category ?? 'gaming merchandise') . ', Valorant Bangladesh, Bangladesh gaming store',
