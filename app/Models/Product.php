@@ -113,7 +113,11 @@ class Product extends Model
         }
 
         if ($this->hasVariants()) {
-            return (int) $this->variants()->where('is_active', true)->sum('quantity');
+            // Sum the loaded relation when there is one, so a list of products
+            // that eager-loaded variants does not fire a query per row.
+            return $this->relationLoaded('variants')
+                ? (int) $this->getRelation('variants')->where('is_active', true)->sum('quantity')
+                : (int) $this->variants()->where('is_active', true)->sum('quantity');
         }
 
         return (int) $this->quantity;
@@ -141,8 +145,14 @@ class Product extends Model
     {
         // Always try to get from new category relationship first
         if ($this->category_id) {
-            // Use the relationship method directly to avoid conflict with 'category' attribute
-            $categoryModel = $this->category()->first();
+            // getRelation() rather than $this->category, because 'category' is
+            // also a legacy string column and the attribute would win. Reading
+            // the loaded relation keeps a list of products from querying once
+            // per row just to print its category.
+            $categoryModel = $this->relationLoaded('category')
+                ? $this->getRelation('category')
+                : $this->category()->first();
+
             if ($categoryModel && is_object($categoryModel)) {
                 return $categoryModel->name;
             }

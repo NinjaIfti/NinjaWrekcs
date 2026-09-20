@@ -794,23 +794,38 @@ class AdminController extends Controller
     public function products(Request $request): View
     {
         $categoryId = $request->query('category_id', '');
-        
-        $query = Product::with('category', 'images');
-        
+
+        // Merging a family deactivates its sources rather than deleting them,
+        // so most of the catalogue is merged-away colours. Listing them all
+        // buries the products that are actually for sale, so the list shows
+        // active products and the toggle brings the rest back.
+        $showInactive = $request->boolean('show_inactive');
+
+        // variants is eager-loaded for the stock column, which sums them.
+        $query = Product::with('category', 'images', 'variants');
+
+        if (! $showInactive) {
+            $query->where('is_active', true);
+        }
+
+        // The same filter applies to the tab counts, so they agree with the
+        // number of rows the tab actually shows.
+        $countScope = fn ($q) => $showInactive ? $q : $q->where('is_active', true);
+
         // Get the 4 main categories for tabs with product counts
         $mainCategories = \App\Models\Category::whereNull('parent_id')
             ->where('is_active', true)
             ->orderBy('order')
             ->with('children')
             ->get()
-            ->map(function($category) {
+            ->map(function($category) use ($countScope) {
                 // Count products in this category and its subcategories
                 if ($category->hasChildren()) {
                     $categoryIds = [$category->id];
                     $categoryIds = array_merge($categoryIds, $category->children->pluck('id')->toArray());
-                    $category->product_count = Product::whereIn('category_id', $categoryIds)->count();
+                    $category->product_count = $countScope(Product::whereIn('category_id', $categoryIds))->count();
                 } else {
-                    $category->product_count = Product::where('category_id', $category->id)->count();
+                    $category->product_count = $countScope(Product::where('category_id', $category->id))->count();
                 }
                 return $category;
             });
@@ -838,16 +853,21 @@ class AdminController extends Controller
         }
         
         $products = $query->latest()->get();
-        
+
         // Get total product count for "All Products" tab
-        $totalProductCount = Product::count();
-        
+        $totalProductCount = $countScope(Product::query())->count();
+
+        // How many the toggle would add, so the label can say what it does.
+        $hiddenCount = Product::where('is_active', false)->count();
+
         return view('admin.products', [
             'products' => $products,
             'selectedCategoryId' => $categoryId,
             'selectedSubcategoryId' => $subcategoryId,
             'mainCategories' => $mainCategories,
             'totalProductCount' => $totalProductCount,
+            'showInactive' => $showInactive,
+            'hiddenCount' => $hiddenCount,
         ]);
     }
 

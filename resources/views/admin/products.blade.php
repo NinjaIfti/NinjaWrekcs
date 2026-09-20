@@ -21,7 +21,10 @@
             <!-- Category Tabs -->
             <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
                 <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                    <a href="{{ route('admin.products') }}" 
+                    {{-- Every tab carries the inactive toggle, so switching tabs
+                         does not silently reset what the admin is looking at. --}}
+                    @php $inactiveParam = $showInactive ? ['show_inactive' => 1] : []; @endphp
+                    <a href="{{ route('admin.products', $inactiveParam) }}"
                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition {{ !$selectedCategoryId ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
                         All Products
                         <span class="ml-2 text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
@@ -29,7 +32,7 @@
                         </span>
                     </a>
                     @foreach($mainCategories as $category)
-                        <a href="{{ route('admin.products', ['category_id' => $category->id]) }}" 
+                        <a href="{{ route('admin.products', array_merge(['category_id' => $category->id], $inactiveParam)) }}"
                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition {{ $selectedCategoryId == $category->id ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }}">
                             {{ $category->name }}
                             <span class="ml-2 text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
@@ -39,7 +42,29 @@
                     @endforeach
                 </nav>
             </div>
-            
+
+            {{-- Merging a family deactivates its sources instead of deleting them
+                 (order_items cascades), so most of the catalogue is merged-away
+                 colours. They stay one click away rather than filling the list. --}}
+            @if($hiddenCount > 0 || $showInactive)
+                <div class="mb-4 flex items-center justify-between gap-4 text-sm">
+                    <p class="text-gray-500 dark:text-gray-400">
+                        Showing {{ $products->count() }} {{ Str::plural('product', $products->count()) }}{{ $showInactive ? ', including inactive' : '' }}.
+                    </p>
+                    <a href="{{ route('admin.products', array_merge(
+                            request()->only('category_id', 'subcategory_id'),
+                            $showInactive ? [] : ['show_inactive' => 1]
+                        )) }}"
+                       class="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        @if($showInactive)
+                            Hide inactive
+                        @else
+                            Include inactive ({{ $hiddenCount }})
+                        @endif
+                    </a>
+                </div>
+            @endif
+
             @if($selectedCategoryId)
                 @php
                     $selectedCategory = $mainCategories->firstWhere('id', $selectedCategoryId);
@@ -47,12 +72,12 @@
                 @if($selectedCategory && $selectedCategory->hasChildren())
                     <!-- Valorant Subcategory Filters -->
                     <div class="mb-4 flex flex-wrap gap-2">
-                        <a href="{{ route('admin.products', ['category_id' => $selectedCategory->id]) }}" 
+                        <a href="{{ route('admin.products', array_merge(['category_id' => $selectedCategory->id], $inactiveParam)) }}"
                            class="px-3 py-1.5 text-sm rounded-lg transition {{ !$selectedSubcategoryId ? 'bg-violet-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600' }}">
                             All {{ $selectedCategory->name }}
                         </a>
                         @foreach($selectedCategory->children as $subcategory)
-                            <a href="{{ route('admin.products', ['category_id' => $selectedCategory->id, 'subcategory_id' => $subcategory->id]) }}" 
+                            <a href="{{ route('admin.products', array_merge(['category_id' => $selectedCategory->id, 'subcategory_id' => $subcategory->id], $inactiveParam)) }}"
                                class="px-3 py-1.5 text-sm rounded-lg transition {{ $selectedSubcategoryId == $subcategory->id ? 'bg-violet-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600' }}">
                                 {{ $subcategory->name }}
                             </a>
@@ -98,7 +123,14 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {{ $product->quantity }}
+                                {{-- A variant product holds no stock of its own; its quantity
+                                     column is 0 by design, so sum the variants instead. --}}
+                                {{ $product->availableStock() }}
+                                @if($product->hasVariants())
+                                    <span class="block text-xs text-gray-500 dark:text-gray-400">
+                                        across {{ $product->variants->count() }} {{ Str::plural('variant', $product->variants->count()) }}
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($product->is_active)
