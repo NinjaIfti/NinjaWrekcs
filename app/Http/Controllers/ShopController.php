@@ -129,12 +129,15 @@ class ShopController extends Controller
             }
             
             // Price range filter
+            // Judged on what the customer actually pays. products.price is 0 on
+            // a merged product, so comparing the column excluded them from every
+            // minimum-price filter and let them through every maximum one.
             if ($minPrice !== '' && is_numeric($minPrice)) {
-                $query->where('price', '>=', $minPrice);
+                $query->whereEffectivePrice('>=', (float) $minPrice);
             }
-            
+
             if ($maxPrice !== '' && is_numeric($maxPrice)) {
-                $query->where('price', '<=', $maxPrice);
+                $query->whereEffectivePrice('<=', (float) $maxPrice);
             }
             
             // In stock filter
@@ -150,10 +153,10 @@ class ShopController extends Controller
             // Sorting
             switch ($sort) {
                 case 'price_asc':
-                    $query->orderBy('price', 'asc');
+                    $query->orderByEffectivePrice('asc');
                     break;
                 case 'price_desc':
-                    $query->orderBy('price', 'desc');
+                    $query->orderByEffectivePrice('desc');
                     break;
                 case 'name_asc':
                     $query->orderBy('name', 'asc');
@@ -175,8 +178,17 @@ class ShopController extends Controller
         }
         
         // Get price range for filter (cache for 1 hour)
+        // The bounds the filter slider offers. Reading MIN(price) put the floor
+        // at 0, because every merged product carries 0 in that column.
         $priceRange = \Illuminate\Support\Facades\Cache::remember('shop_price_range', 3600, function () {
-            return Product::where('is_active', true)->selectRaw('MIN(price) as min, MAX(price) as max')->first();
+            $expression = Product::effectivePriceExpression();
+
+            return Product::where('is_active', true)
+                ->selectRaw(
+                    "MIN({$expression}) as min, MAX({$expression}) as max",
+                    [now(), now()]
+                )
+                ->first();
         });
         
         // For AJAX requests (infinite scroll), return JSON

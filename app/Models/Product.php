@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -158,6 +159,85 @@ class Product extends Model
             ) AND products.quantity > 0 THEN 1
             ELSE 0
         END)';
+    }
+
+    /**
+     * The price a listing should sort and filter on, computed in the database.
+     *
+     * The counterpart to PricingService::displayPriceFor(), which cannot be
+     * used here: a paginated listing cannot call PHP once per row. The two must
+     * agree, or the shop sorts by one figure and prints another.
+     *
+     * Precedence mirrors that method exactly:
+     *   - a product with active variants sorts on its CHEAPEST active variant,
+     *     taking each variant's sale_price when it undercuts its price
+     *   - otherwise an open offer, then a sale price, then the list price
+     *
+     * products.price is 0 on every merged product by design, so reading the
+     * column directly listed all of them first at an apparent 0.
+     *
+     * The expression carries one placeholder for "now", because the offer
+     * window has to be judged on Laravel's clock rather than the database's.
+     * Use the orderByEffectivePrice() / whereEffectivePrice() scopes rather
+     * than pasting this into a raw call, so the binding cannot be forgotten.
+     */
+    public static function effectivePriceExpression(): string
+    {
+        return '(CASE
+            WHEN EXISTS (
+                SELECT 1 FROM product_variants pv
+                WHERE pv.product_id = products.id AND pv.is_active = 1
+            ) THEN (
+                SELECT MIN(CASE
+                    WHEN pv2.sale_price IS NOT NULL AND pv2.sale_price < pv2.price
+                        THEN pv2.sale_price
+                    ELSE pv2.price
+                END)
+                FROM product_variants pv2
+                WHERE pv2.product_id = products.id AND pv2.is_active = 1
+            )
+            WHEN products.offer_price IS NOT NULL
+                AND products.offer_starts_at IS NOT NULL
+                AND products.offer_ends_at IS NOT NULL
+                AND ? BETWEEN products.offer_starts_at AND products.offer_ends_at
+                AND products.offer_price < products.price
+                THEN products.offer_price
+            WHEN products.sale_price IS NOT NULL AND products.sale_price < products.price
+                THEN products.sale_price
+            ELSE products.price
+        END)';
+    }
+
+    /**
+     * Order a listing by what a customer actually pays.
+     */
+    public function scopeOrderByEffectivePrice(Builder $query, string $direction = 'asc'): Builder
+    {
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+
+        return $query->orderByRaw(self::effectivePriceExpression() . ' ' . $direction, [now()]);
+    }
+
+    /**
+     * Compare a listing against a price the customer would actually pay.
+     *
+     * The bound value is CAST rather than compared directly. Laravel hands a
+     * PHP float to PDO as PARAM_STR, and SQLite compares an INTEGER column
+     * against a TEXT value by storage class rather than by value - every
+     * number sorts below every string, so `800 >= '500.0'` is false. MySQL
+     * coerces the string and would have hidden this entirely.
+     *
+     * DECIMAL(10,2) carries NUMERIC affinity in SQLite and is a real type in
+     * MySQL, so the cast means the same thing on both.
+     */
+    public function scopeWhereEffectivePrice(Builder $query, string $operator, float $value): Builder
+    {
+        $operator = in_array($operator, ['<', '<=', '>', '>=', '=', '<>'], true) ? $operator : '=';
+
+        return $query->whereRaw(
+            self::effectivePriceExpression() . ' ' . $operator . ' CAST(? AS DECIMAL(10,2))',
+            [now(), $value]
+        );
     }
 
     public function requiresBooking(): bool
