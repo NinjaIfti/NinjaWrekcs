@@ -307,7 +307,14 @@ class CheckoutController extends Controller
                     'subtotal' => $line->lineTotal(),
                 ]);
 
-                $locked->decrement('quantity', $line->quantity);
+                // Stock is NOT taken here. It comes off when the order is
+                // confirmed - see OrderStockService. The availability check
+                // above still runs, so an order can never be placed for more
+                // than exists, but the units stay sellable until someone
+                // accepts the order.
+                if (\App\Services\OrderStockService::holdsStock($order->status)) {
+                    $locked->decrement('quantity', $line->quantity);
+                }
             }
 
             DB::commit();

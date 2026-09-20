@@ -58,7 +58,24 @@ class CheckoutTest extends TestCase
         $this->assertSame(700.0, (float) $order->subtotal);
     }
 
-    public function test_buying_a_variant_decrements_that_variant_not_the_parent(): void
+    /**
+     * Placing an order no longer takes stock - it comes off on confirmation,
+     * so an order nobody has accepted does not reduce what the shop can sell.
+     */
+    public function test_placing_an_order_does_not_take_stock_yet(): void
+    {
+        $product = Product::factory()->withCategory()->create(['price' => 0, 'quantity' => 100]);
+        $blue = ProductVariant::factory()->create(['product_id' => $product->id, 'price' => 450, 'quantity' => 5]);
+
+        app(CartService::class)->add($product, $blue, 2);
+        $this->post(route('checkout.store'), $this->validPayload());
+
+        $this->assertSame('pending', Order::latest('id')->first()->status);
+        $this->assertSame(5, $blue->refresh()->quantity);
+        $this->assertSame(100, $product->refresh()->quantity);
+    }
+
+    public function test_confirming_decrements_that_variant_not_the_parent(): void
     {
         $product = Product::factory()->withCategory()->create(['price' => 0, 'quantity' => 100]);
         $blue = ProductVariant::factory()->create(['product_id' => $product->id, 'price' => 450, 'quantity' => 5]);
@@ -66,6 +83,10 @@ class CheckoutTest extends TestCase
 
         app(CartService::class)->add($product, $blue, 2);
         $this->post(route('checkout.store'), $this->validPayload());
+
+        $order = Order::latest('id')->first();
+        $admin = \App\Models\User::factory()->create(['email' => 'ifti3061@gmail.com']);
+        $this->actingAs($admin)->put(route('admin.orders.update-status', $order), ['status' => 'confirmed']);
 
         $this->assertSame(3, $blue->refresh()->quantity);
         $this->assertSame(5, $red->refresh()->quantity);
@@ -131,12 +152,17 @@ class CheckoutTest extends TestCase
         $this->assertSame(0, Order::count());
     }
 
-    public function test_a_plain_product_still_decrements_its_own_stock(): void
+    public function test_a_plain_product_decrements_its_own_stock_on_confirmation(): void
     {
         $product = Product::factory()->withCategory()->create(['price' => 1000, 'quantity' => 10]);
         app(CartService::class)->add($product, null, 3);
 
         $this->post(route('checkout.store'), $this->validPayload());
+        $this->assertSame(10, $product->refresh()->quantity, 'pending orders do not hold stock');
+
+        $order = Order::latest('id')->first();
+        $admin = \App\Models\User::factory()->create(['email' => 'ifti3061@gmail.com']);
+        $this->actingAs($admin)->put(route('admin.orders.update-status', $order), ['status' => 'confirmed']);
 
         $this->assertSame(7, $product->refresh()->quantity);
     }

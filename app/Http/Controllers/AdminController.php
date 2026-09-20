@@ -341,8 +341,12 @@ class AdminController extends Controller
                     'subtotal' => $item['subtotal'],
                 ]);
 
-                // Take the stock off the row that actually holds it.
-                ($item['variant'] ?? $item['product'])->decrement('quantity', $item['quantity']);
+                // Only if the status the admin chose holds stock - a manual
+                // order left pending does not reserve anything, same as a
+                // customer's. Off the row that actually holds it.
+                if (\App\Services\OrderStockService::holdsStock($validated['status'])) {
+                    ($item['variant'] ?? $item['product'])->decrement('quantity', $item['quantity']);
+                }
             }
 
             DB::commit();
@@ -455,14 +459,10 @@ class AdminController extends Controller
                 ];
             }
 
-            // Detect item changes
+            // Record what changed, for the order's history. The stock itself is
+            // settled in one move below rather than line by line.
             foreach ($newItemsData as $lineKey => $newItem) {
-                // Stock moves on the row that holds it - the variant when the
-                // line has one, the product otherwise.
-                $stockRow = $newItem['variant'] ?? $newItem['product'];
-
                 if ($originalItems->has($lineKey)) {
-                    // Item exists - check quantity change
                     $originalItem = $originalItems[$lineKey];
                     if ($originalItem->quantity != $newItem['quantity']) {
                         $changes[] = [
@@ -471,36 +471,17 @@ class AdminController extends Controller
                             'old_data' => ['product_id' => $newItem['product']->id, 'variant_id' => $newItem['variant']?->id, 'quantity' => $originalItem->quantity],
                             'new_data' => ['product_id' => $newItem['product']->id, 'variant_id' => $newItem['variant']?->id, 'quantity' => $newItem['quantity']],
                         ];
-
-                        // Return the old quantity before taking the new one, so
-                        // the check below sees stock that is genuinely free.
-                        $stockRow->increment('quantity', $originalItem->quantity);
-                        $stockRow->refresh();
-
-                        if ($stockRow->quantity < $newItem['quantity']) {
-                            throw new \Exception("Insufficient stock for {$newItem['name']}. Only {$stockRow->quantity} available.");
-                        }
-
-                        $stockRow->decrement('quantity', $newItem['quantity']);
                     }
                 } else {
-                    // New item added
                     $changes[] = [
                         'type' => 'item_added',
                         'description' => "Added '{$newItem['name']}' x{$newItem['quantity']}",
                         'old_data' => null,
                         'new_data' => ['product_id' => $newItem['product']->id, 'variant_id' => $newItem['variant']?->id, 'quantity' => $newItem['quantity']],
                     ];
-
-                    // Deduct from stock
-                    if ($stockRow->quantity < $newItem['quantity']) {
-                        throw new \Exception("Insufficient stock for {$newItem['name']}. Only {$stockRow->quantity} available.");
-                    }
-                    $stockRow->decrement('quantity', $newItem['quantity']);
                 }
             }
 
-            // Detect removed items
             foreach ($originalItems as $lineKey => $originalItem) {
                 if (!isset($newItemsData[$lineKey])) {
                     $changes[] = [
@@ -509,13 +490,18 @@ class AdminController extends Controller
                         'old_data' => ['product_id' => $originalItem->product_id, 'variant_id' => $originalItem->product_variant_id, 'quantity' => $originalItem->quantity],
                         'new_data' => null,
                     ];
-
-                    // Return to stock, to the variant row when the line had one.
-                    $stockRow = $originalItem->productVariant ?? $originalItem->product;
-                    if ($stockRow) {
-                        $stockRow->increment('quantity', $originalItem->quantity);
-                    }
                 }
+            }
+
+            // Settle the stock in one move: put back whatever the order was
+            // holding, then take what the edited order holds. Simpler than
+            // nudging each line by a delta, and it handles a status change in
+            // the same save - an edit that also confirms the order takes stock
+            // for the first time, and one that cancels it gives everything back.
+            $stockService = app(\App\Services\OrderStockService::class);
+
+            if (\App\Services\OrderStockService::holdsStock($order->status)) {
+                $stockService->release($order);
             }
 
             // Calculate delivery charge
@@ -554,18 +540,29 @@ class AdminController extends Controller
                 ]);
             }
 
-            // Check if order is being cancelled (restore stock if not already cancelled)
             $oldStatus = $order->status;
-            $beingCancelled = ($validated['status'] === 'cancelled' && $oldStatus !== 'cancelled');
-            
-            // If being cancelled, we need to restore the NEW items that were just added
-            // (The old items were already returned to stock above in the item removal/change logic)
-            if ($beingCancelled) {
+
+            // The other half of the settlement: take stock for the edited order
+            // if its new status holds any. The release above already gave back
+            // whatever the old one held, so this is never a double deduction.
+            if (\App\Services\OrderStockService::holdsStock($validated['status'])) {
+                // Checked here, unlike a plain status change: an edit is the
+                // admin choosing quantities, so being told the stock is not
+                // there is useful rather than obstructive. The release above
+                // means these figures include whatever this order held.
                 foreach ($newItemsData as $item) {
-                    // Back to the row it came off, variant or product.
-                    ($item['variant'] ?? $item['product'])->increment('quantity', $item['quantity']);
+                    $stockRow = ($item['variant'] ?? $item['product'])->fresh();
+
+                    if ($stockRow && $stockRow->quantity < $item['quantity']) {
+                        throw new \Exception("Insufficient stock for {$item['name']}. Only {$stockRow->quantity} available.");
+                    }
                 }
-                
+
+                $order->load('items.product', 'items.productVariant');
+                $stockService->commit($order);
+            }
+
+            if ($validated['status'] === 'cancelled' && $oldStatus !== 'cancelled') {
                 $changes[] = [
                     'type' => 'order_updated',
                     'description' => "Order cancelled - all items returned to stock",
@@ -573,7 +570,7 @@ class AdminController extends Controller
                     'new_data' => ['status' => 'cancelled'],
                 ];
             }
-            
+
             // Update order details
             $order->update([
                 'name' => $validated['name'],
@@ -806,19 +803,14 @@ class AdminController extends Controller
         ]);
 
         $oldStatus = $order->status;
-        
-        // Restore stock if order is being cancelled (and wasn't cancelled before)
-        if ($validated['status'] === 'cancelled' && $oldStatus !== 'cancelled') {
-            $order->load('items.product');
-            
-            foreach ($order->items as $item) {
-                if ($item->product) {
-                    // Return items back to stock
-                    $item->product->increment('quantity', $item->quantity);
-                }
-            }
-        }
-        
+
+        // Stock follows the status: it comes off when the order is confirmed
+        // and goes back when it is cancelled. This used to restore only to
+        // $item->product, so a variant line's units went to the product's dead
+        // quantity column and the variant never got them back.
+        app(\App\Services\OrderStockService::class)
+            ->applyStatusChange($order, $oldStatus, $validated['status']);
+
         // Update order status and tracking link
         $updateData = ['status' => $validated['status']];
         
@@ -853,7 +845,15 @@ class AdminController extends Controller
         }
 
         $successMessage = 'Order status updated successfully!';
-        if ($validated['status'] === 'cancelled' && $oldStatus !== 'cancelled') {
+
+        // Say which way the stock moved, since that is the part an admin most
+        // wants confirmed.
+        $held = \App\Services\OrderStockService::holdsStock($oldStatus);
+        $holds = \App\Services\OrderStockService::holdsStock($validated['status']);
+
+        if (! $held && $holds) {
+            $successMessage .= ' Stock has been deducted.';
+        } elseif ($held && ! $holds) {
             $successMessage .= ' Stock has been restored.';
         }
 

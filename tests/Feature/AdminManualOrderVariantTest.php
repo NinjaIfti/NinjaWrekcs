@@ -72,7 +72,7 @@ class AdminManualOrderVariantTest extends TestCase
             'sending_number' => '',
             'coupon_code' => '',
             'notes' => '',
-            'status' => 'pending',
+            'status' => 'confirmed',
             'delivery_location' => 'inside_dhaka',
             'products' => $products,
         ];

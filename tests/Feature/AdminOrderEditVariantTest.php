@@ -56,7 +56,7 @@ class AdminOrderEditVariantTest extends TestCase
             'name' => 'Walk-in Buyer', 'phone' => '01700000000', 'address' => 'Dhaka',
             'email' => '', 'payment_method' => 'cod', 'transaction_number' => '',
             'sending_number' => '', 'coupon_code' => '', 'notes' => '', 'tracking_link' => '',
-            'status' => 'pending', 'delivery_location' => 'inside_dhaka',
+            'status' => 'confirmed', 'delivery_location' => 'inside_dhaka',
             'products' => $products,
         ];
     }
