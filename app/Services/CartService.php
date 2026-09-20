@@ -203,11 +203,18 @@ class CartService
 
     private function imageFor(Product $product, ?ProductVariant $variant): ?string
     {
-        if ($variant !== null && $variant->images->isNotEmpty()) {
-            return $variant->images->first()->path;
+        if ($variant !== null) {
+            $variantImages = $variant->existingImagePaths();
+
+            if ($variantImages !== []) {
+                return $variantImages[0];
+            }
         }
 
-        return $product->cover_photo ?? $product->image;
+        // Reading cover_photo and image directly handed the cart a path whose
+        // file may be gone, and skipped the gallery and variant photos that a
+        // merged product keeps everything in.
+        return $product->primaryImagePath();
     }
 
     private function attributesFor(Product $product, ?ProductVariant $variant): array

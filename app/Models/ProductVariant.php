@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class ProductVariant extends Model
 {
@@ -61,5 +62,23 @@ class ProductVariant extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductVariantImage::class, 'product_variant_id')->orderBy('sort_order');
+    }
+
+    /**
+     * This variant's photos, skipping any whose file is missing.
+     *
+     * The merge copied image paths onto variants rather than copying the files,
+     * so deleting a source product used to delete a file its variant still
+     * named. Picking that colour on the product page then swapped the gallery
+     * to a broken image - keep those out of the swatch and the slideshow.
+     *
+     * @return array<int, string>
+     */
+    public function existingImagePaths(): array
+    {
+        return array_values(array_filter(
+            $this->images->pluck('path')->all(),
+            fn (string $path) => Storage::disk('public')->exists($path)
+        ));
     }
 }

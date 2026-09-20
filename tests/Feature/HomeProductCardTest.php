@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,18 @@ class HomeProductCardTest extends TestCase
     {
         parent::setUp();
         Cache::forget('homepage_data');
+        Storage::fake('public');
+    }
+
+    /**
+     * A path whose file actually exists. The card skips a photo whose file is
+     * missing, so a test about which photo is chosen has to put it there.
+     */
+    private function stored(string $path): string
+    {
+        Storage::disk('public')->put($path, 'binary');
+
+        return $path;
     }
 
     /** Mirrors a merged product: photos and price on the variants, nothing of its own. */
@@ -51,7 +64,7 @@ class HomeProductCardTest extends TestCase
             'quantity' => 4,
             'is_active' => true,
         ]);
-        $variant->images()->create(['path' => 'products/gradient.jpg', 'sort_order' => 0]);
+        $variant->images()->create(['path' => $this->stored('products/gradient.jpg'), 'sort_order' => 0]);
 
         ProductVariant::factory()->create([
             'product_id' => $product->id,
@@ -125,7 +138,7 @@ class HomeProductCardTest extends TestCase
             'quantity' => 5,
             'is_active' => true,
         ]);
-        $product->images()->create(['path' => 'products/hawkbill.jpg', 'sort_order' => 0]);
+        $product->images()->create(['path' => $this->stored('products/hawkbill.jpg'), 'sort_order' => 0]);
 
         $response = $this->get('/');
 

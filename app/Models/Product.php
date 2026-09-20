@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 use App\Models\ProductImage;
 use App\Models\OrderItem;
 
@@ -282,29 +283,103 @@ class Product extends Model
      * as the main image, so it beats whatever happens to be first in the
      * gallery. Then the gallery, then the first active variant's photo, then
      * the legacy single-image column.
+     *
+     * A candidate whose file is missing is skipped rather than returned. The
+     * merge left several rows naming one file, and deleting any one of those
+     * rows used to delete the file for all of them, so dangling paths exist on
+     * production. Handing one to an <img> renders a broken image even when the
+     * product has a perfectly good second photo; falling through to the next
+     * candidate - and ultimately to null, which the views draw as the
+     * placeholder - is always the better picture.
      */
     public function primaryImagePath(): ?string
     {
-        if ($this->cover_photo) {
-            return $this->cover_photo;
-        }
-
-        if ($this->images && $this->images->isNotEmpty()) {
-            return $this->images->first()->path;
-        }
-
-        if ($this->hasVariants()) {
-            $variantImage = $this->variants
-                ->where('is_active', true)
-                ->flatMap(fn (ProductVariant $variant) => $variant->images)
-                ->first();
-
-            if ($variantImage) {
-                return $variantImage->path;
+        foreach ($this->imagePathCandidates() as $candidate) {
+            if ($candidate && Storage::disk('public')->exists($candidate)) {
+                return $candidate;
             }
         }
 
-        return $this->image ?: null;
+        return null;
+    }
+
+    /**
+     * Every photo for the product page's slideshow, best first, skipping any
+     * whose file is missing.
+     *
+     * Same reasoning as primaryImagePath(): a dangling path reaches the browser
+     * as a broken slide. An empty result makes the view draw the placeholder.
+     *
+     * @return array<int, string>
+     */
+    public function galleryImagePaths(): array
+    {
+        $paths = [];
+
+        // The cover photo leads whenever there is one.
+        if ($this->cover_photo) {
+            $paths[] = $this->cover_photo;
+        }
+
+        if ($this->hasVariants()) {
+            foreach ($this->variants->first()?->images ?? [] as $image) {
+                $paths[] = $image->path;
+            }
+        } else {
+            foreach ($this->images as $image) {
+                $paths[] = $image->path;
+            }
+        }
+
+        $surviving = $this->onlyExisting($paths);
+
+        if ($surviving === [] && $this->image) {
+            $surviving = $this->onlyExisting([$this->image]);
+        }
+
+        return $surviving;
+    }
+
+    /**
+     * @param  array<int, string|null>  $paths
+     * @return array<int, string>
+     */
+    private function onlyExisting(array $paths): array
+    {
+        $unique = array_values(array_unique(array_filter($paths)));
+
+        return array_values(array_filter(
+            $unique,
+            fn (string $path) => Storage::disk('public')->exists($path)
+        ));
+    }
+
+    /**
+     * Every path this product could show, best first.
+     *
+     * @return array<int, string>
+     */
+    private function imagePathCandidates(): array
+    {
+        $candidates = [$this->cover_photo];
+
+        if ($this->images && $this->images->isNotEmpty()) {
+            foreach ($this->images as $image) {
+                $candidates[] = $image->path;
+            }
+        }
+
+        if ($this->hasVariants()) {
+            foreach ($this->variants->where('is_active', true) as $variant) {
+                foreach ($variant->images as $image) {
+                    $candidates[] = $image->path;
+                }
+            }
+        }
+
+        $candidates[] = $this->image;
+
+        return array_values(array_unique(array_filter($candidates)));
     }
 
     // Get recent sales count in last 24 hours

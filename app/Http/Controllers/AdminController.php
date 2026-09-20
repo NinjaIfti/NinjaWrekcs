@@ -1154,24 +1154,30 @@ class AdminController extends Controller
             'new_variants.*.images.*' => 'image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
+        // Files whose rows are going away in this request. They are swept at
+        // the end rather than deleted here: the merge copied image paths onto
+        // variants rather than copying the files, so one file is often named by
+        // several rows, and a file may only go once nothing names it any more.
+        $filesToSweep = [];
+
         // Cover photo and variants are available to every category, not just
         // keychains - a knife like "RGX Butterfly" has colour variants the same
         // way a keychain product holds many designs.
         {
             if ($request->has('delete_cover_photo') && $product->cover_photo) {
-                Storage::disk('public')->delete($product->cover_photo);
+                $filesToSweep[] = $product->cover_photo;
                 $validated['cover_photo'] = null;
             } elseif ($request->hasFile('cover_photo')) {
                 if ($product->cover_photo) {
-                    Storage::disk('public')->delete($product->cover_photo);
+                    $filesToSweep[] = $product->cover_photo;
                 }
                 $validated['cover_photo'] = $request->file('cover_photo')->store('products', 'public');
             }
             $deleteVariantIds = $request->input('delete_variants', []);
             if (!empty($deleteVariantIds)) {
-                $product->variants()->whereIn('id', $deleteVariantIds)->get()->each(function ($v) {
+                $product->variants()->whereIn('id', $deleteVariantIds)->get()->each(function ($v) use (&$filesToSweep) {
                     foreach ($v->images as $img) {
-                        Storage::disk('public')->delete($img->path);
+                        $filesToSweep[] = $img->path;
                     }
                     $v->delete();
                 });
@@ -1192,8 +1198,8 @@ class AdminController extends Controller
                 ]);
                 $deleteImgIds = $v['delete_images'] ?? [];
                 if (!empty($deleteImgIds)) {
-                    $variant->images()->whereIn('id', $deleteImgIds)->get()->each(function ($img) {
-                        Storage::disk('public')->delete($img->path);
+                    $variant->images()->whereIn('id', $deleteImgIds)->get()->each(function ($img) use (&$filesToSweep) {
+                        $filesToSweep[] = $img->path;
                         $img->delete();
                     });
                 }
@@ -1246,7 +1252,7 @@ class AdminController extends Controller
         if (!empty($deleteIds)) {
             $imagesToDelete = $product->images()->whereIn('id', $deleteIds)->get();
             foreach ($imagesToDelete as $img) {
-                Storage::disk('public')->delete($img->path);
+                $filesToSweep[] = $img->path;
                 $img->delete();
             }
         }
@@ -1287,6 +1293,13 @@ class AdminController extends Controller
         $primary = $product->images()->orderBy('sort_order')->first();
         $product->update(['image' => $primary->path ?? null]);
 
+        // Every row change has landed, so what still names a file is now exactly
+        // what still needs it.
+        $imageService = app(\App\Services\ProductImageService::class);
+        foreach (array_unique(array_filter($filesToSweep)) as $path) {
+            $imageService->deleteIfUnreferenced($path);
+        }
+
         // Clear relevant caches
         \Illuminate\Support\Facades\Cache::forget('homepage_data');
         \Illuminate\Support\Facades\Cache::forget('shop_categories');
@@ -1313,21 +1326,26 @@ class AdminController extends Controller
 
     public function productDestroy(Product $product): RedirectResponse
     {
-        if ($product->image) {
-            Storage::disk('public')->delete($product->image);
-        }
-        if ($product->cover_photo) {
-            Storage::disk('public')->delete($product->cover_photo);
-        }
+        // Collect first, delete after the row is gone. The merge copied image
+        // paths onto variants rather than copying the files, so one file is
+        // often named by several rows - deleting it outright here blanked the
+        // photo on whichever product shared it.
+        $candidatePaths = [$product->image, $product->cover_photo];
         foreach ($product->images as $image) {
-            Storage::disk('public')->delete($image->path);
+            $candidatePaths[] = $image->path;
         }
         foreach ($product->variants as $variant) {
             foreach ($variant->images as $img) {
-                Storage::disk('public')->delete($img->path);
+                $candidatePaths[] = $img->path;
             }
         }
+
         $product->delete();
+
+        $images = app(\App\Services\ProductImageService::class);
+        foreach (array_unique(array_filter($candidatePaths)) as $path) {
+            $images->deleteIfUnreferenced($path);
+        }
 
         // Clear relevant caches
         \Illuminate\Support\Facades\Cache::forget('homepage_data');

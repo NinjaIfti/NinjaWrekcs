@@ -26,9 +26,31 @@ class CoverPhotoTest extends TestCase
 
     private ?User $admin = null;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('public');
+    }
+
     private function admin(): User
     {
         return $this->admin ??= User::factory()->create(['email' => 'ifti3061@gmail.com']);
+    }
+
+    /**
+     * A path whose file actually exists on the disk.
+     *
+     * primaryImagePath() skips a candidate whose file is missing, so a test
+     * about which photo wins has to put the file there first - otherwise it
+     * asserts against the fallback rather than the precedence. See
+     * SharedImageFileTest for why that check exists.
+     */
+    private function stored(string $path): string
+    {
+        Storage::disk('public')->put($path, 'binary');
+
+        return $path;
     }
 
     private function productPayload(int $categoryId, UploadedFile $cover): array
@@ -90,8 +112,8 @@ class CoverPhotoTest extends TestCase
 
     public function test_the_cover_photo_beats_the_gallery_as_the_card_image(): void
     {
-        $product = Product::factory()->withCategory()->create(['cover_photo' => 'products/cover.png']);
-        $product->images()->create(['path' => 'products/gallery.jpg', 'sort_order' => 0]);
+        $product = Product::factory()->withCategory()->create(['cover_photo' => $this->stored('products/cover.png')]);
+        $product->images()->create(['path' => $this->stored('products/gallery.jpg'), 'sort_order' => 0]);
 
         $this->assertSame('products/cover.png', $product->refresh()->primaryImagePath());
     }
@@ -99,7 +121,7 @@ class CoverPhotoTest extends TestCase
     public function test_the_gallery_is_used_when_there_is_no_cover(): void
     {
         $product = Product::factory()->withCategory()->create(['cover_photo' => null]);
-        $product->images()->create(['path' => 'products/gallery.jpg', 'sort_order' => 0]);
+        $product->images()->create(['path' => $this->stored('products/gallery.jpg'), 'sort_order' => 0]);
 
         $this->assertSame('products/gallery.jpg', $product->refresh()->primaryImagePath());
     }
@@ -108,7 +130,7 @@ class CoverPhotoTest extends TestCase
     {
         $product = Product::factory()->withCategory()->create(['cover_photo' => null, 'image' => null]);
         $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'is_active' => true]);
-        $variant->images()->create(['path' => 'products/variant.jpg', 'sort_order' => 0]);
+        $variant->images()->create(['path' => $this->stored('products/variant.jpg'), 'sort_order' => 0]);
 
         $this->assertSame('products/variant.jpg', $product->refresh()->primaryImagePath());
     }
@@ -116,7 +138,7 @@ class CoverPhotoTest extends TestCase
     public function test_a_plain_products_cover_photo_shows_on_its_product_page(): void
     {
         $product = Product::factory()->withCategory()->create([
-            'cover_photo' => 'products/cover.png',
+            'cover_photo' => $this->stored('products/cover.png'),
             'is_active' => true,
         ]);
 
@@ -135,7 +157,7 @@ class CoverPhotoTest extends TestCase
         );
         Product::factory()->create([
             'category_id' => $category->id,
-            'cover_photo' => 'products/cover.png',
+            'cover_photo' => $this->stored('products/cover.png'),
             'is_active' => true,
         ]);
 

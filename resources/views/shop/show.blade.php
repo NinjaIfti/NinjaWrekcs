@@ -89,36 +89,19 @@
                 <div class="relative">
                     @php
                         $hasVariants = $product->variants->isNotEmpty();
-                        $gallery = collect();
-
                         // The cover photo leads whenever there is one - it used
                         // to be honoured only for variant products, so a plain
-                        // product's cover upload never appeared anywhere.
-                        if ($product->cover_photo) {
-                            $gallery->push((object)['path' => $product->cover_photo]);
-                        }
-
-                        if ($hasVariants) {
-                            $firstVariant = $product->variants->first();
-                            foreach ($firstVariant?->images ?? [] as $img) {
-                                $gallery->push($img);
-                            }
-                        } else {
-                            foreach ($product->images as $img) {
-                                $gallery->push($img);
-                            }
-                        }
-
-                        if ($gallery->isEmpty() && $product->image) {
-                            $gallery->push((object)['path' => $product->image]);
-                        }
+                        // product's cover upload never appeared anywhere. The
+                        // model also drops any photo whose file is missing,
+                        // which would otherwise render as a broken slide.
+                        $gallery = collect($product->galleryImagePaths());
                     @endphp
                     <div class="relative rounded-2xl overflow-hidden border border-violet-500/30 bg-gray-900" id="product-gallery-wrap">
                         @if($gallery->count())
                             <div class="product-slideshow" id="product-slideshow">
-                                @foreach($gallery as $idx => $img)
+                                @foreach($gallery as $idx => $imgPath)
                                     <div class="product-slide {{ $idx === 0 ? 'active' : '' }}">
-                                        <img src="{{ asset('storage/' . $img->path) }}" alt="{{ $product->name }}" class="w-full h-auto object-cover">
+                                        <img src="{{ asset('storage/' . $imgPath) }}" alt="{{ $product->name }}" class="w-full h-auto object-cover">
                                         <div class="absolute inset-0 glitch-overlay opacity-30"></div>
                                     </div>
                                 @endforeach
@@ -176,6 +159,9 @@
                                 @php
                                     $inStock = $v->quantity > 0;
                                     $vPrice = $v->sale_price && $v->sale_price < $v->price ? $v->sale_price : $v->price;
+                                    // Photos whose file is missing are dropped - picking that
+                                    // colour used to swap the gallery to a broken image.
+                                    $vImages = $v->existingImagePaths();
                                 @endphp
                                 <button type="button"
                                         class="variant-swatch relative px-3 py-3 rounded-lg border-2 text-center transition
@@ -185,10 +171,10 @@
                                         data-price="{{ $vPrice }}"
                                         data-in-stock="{{ $inStock ? 1 : 0 }}"
                                         data-stock="{{ $v->quantity }}"
-                                        data-images="{{ $v->images->map(fn($i) => asset('storage/'.$i->path))->values()->toJson() }}"
+                                        data-images="{{ collect($vImages)->map(fn($p) => asset('storage/'.$p))->values()->toJson() }}"
                                         @disabled(! $inStock)>
-                                    @if($v->images->isNotEmpty())
-                                        <img src="{{ asset('storage/' . $v->images->first()->path) }}" alt="{{ $v->name }}"
+                                    @if($vImages !== [])
+                                        <img src="{{ asset('storage/' . $vImages[0]) }}" alt="{{ $v->name }}"
                                              class="w-14 h-14 object-cover rounded mb-1 mx-auto">
                                     @endif
                                     <span class="block text-sm {{ $inStock ? 'text-white' : 'text-gray-500 line-through' }}">{{ $v->name }}</span>

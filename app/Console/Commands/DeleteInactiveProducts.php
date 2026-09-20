@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Services\ProductImageService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Delete deactivated products that nothing has been ordered from.
@@ -30,6 +30,11 @@ class DeleteInactiveProducts extends Command
                             {--commit : Actually delete. Without this the command only shows the plan}';
 
     protected $description = 'Delete deactivated products that have never been ordered, keeping any that carry order history';
+
+    public function __construct(private readonly ProductImageService $images)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -118,22 +123,28 @@ class DeleteInactiveProducts extends Command
             return self::SUCCESS;
         }
 
-        $deletedFiles = 0;
+        // Collect the paths while the rows still exist - the image rows cascade
+        // away with the product, so they cannot be read afterwards. The files
+        // themselves are swept only once the rows are gone, because whether a
+        // file may be deleted depends on what still references it.
+        $candidatePaths = $deletable
+            ->flatMap(fn (Product $product) => $this->imagePathsFor($product))
+            ->unique()
+            ->values();
 
-        DB::transaction(function () use ($deletable, &$deletedFiles) {
+        DB::transaction(function () use ($deletable) {
             foreach ($deletable as $product) {
-                // Files first: once the row is gone the paths go with it, and
-                // the image rows cascade away before we could read them.
-                foreach ($this->imagePathsFor($product) as $path) {
-                    if (Storage::disk('public')->exists($path)) {
-                        Storage::disk('public')->delete($path);
-                        $deletedFiles++;
-                    }
-                }
-
                 $product->delete();
             }
         });
+
+        $deletedFiles = 0;
+
+        foreach ($candidatePaths as $path) {
+            if ($this->images->deleteIfUnreferenced($path)) {
+                $deletedFiles++;
+            }
+        }
 
         $this->forgetCaches();
 
@@ -175,8 +186,9 @@ class DeleteInactiveProducts extends Command
         }
 
         // The merge copied a source's photo onto the merged product, so the
-        // same path can belong to two rows. Deleting it twice is harmless, but
-        // the count would lie.
+        // same path can belong to two rows. These are candidates only: whether
+        // each file may actually be deleted is ProductImageService's call,
+        // after the rows are gone.
         return array_values(array_unique($paths));
     }
 
