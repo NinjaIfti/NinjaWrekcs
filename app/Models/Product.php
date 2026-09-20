@@ -133,6 +133,32 @@ class Product extends Model
         return app(\App\Services\PricingService::class)->displayPriceFor($this);
     }
 
+    /**
+     * SQL for "a customer can buy this right now", as 1 or 0.
+     *
+     * availableStock() is the PHP answer, but sorting and filtering happen in
+     * the database, where it cannot be called per row. Reading products.quantity
+     * there was wrong in both directions: every merged product sorted as
+     * sold-out however much its variants held, and the in-stock filter hid them
+     * outright.
+     *
+     * A product with variants is in stock when an active variant is; a product
+     * without variants when its own column is.
+     */
+    public static function hasStockExpression(): string
+    {
+        return '(CASE
+            WHEN EXISTS (
+                SELECT 1 FROM product_variants pv
+                WHERE pv.product_id = products.id AND pv.is_active = 1 AND pv.quantity > 0
+            ) THEN 1
+            WHEN NOT EXISTS (
+                SELECT 1 FROM product_variants pv2 WHERE pv2.product_id = products.id
+            ) AND products.quantity > 0 THEN 1
+            ELSE 0
+        END)';
+    }
+
     public function requiresBooking(): bool
     {
         return $this->booking_fee !== null && (float) $this->booking_fee > 0;
