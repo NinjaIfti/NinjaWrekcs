@@ -3,7 +3,7 @@
     <a href="{{ route('shop.show', $product) }}" class="block">
         <div class="relative overflow-hidden rounded-xl mb-4 bg-gray-900 border border-violet-500/20 product-card-zoom">
             @php
-                $cover = $product->images->first()?->path ?? $product->image;
+                $cover = $product->primaryImagePath();
             @endphp
             <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" 
                  alt="{{ $product->name }}" 

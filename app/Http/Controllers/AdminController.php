@@ -1031,8 +1031,10 @@ class AdminController extends Controller
         $validated['rating'] = $validated['rating'] ?? 0;
         $validated['reviews'] = $validated['reviews'] ?? 0;
 
-        $keychainsCategoryId = Category::where('slug', 'valorant-keychains-stickers')->value('id');
-        if ($request->category_id == $keychainsCategoryId && $request->hasFile('cover_photo')) {
+        // Every category can have a cover photo. This used to be gated on the
+        // keychains category, so uploading one for anything else validated
+        // fine and was then silently dropped. Update never had that gate.
+        if ($request->hasFile('cover_photo')) {
             $validated['cover_photo'] = $request->file('cover_photo')->store('products', 'public');
         }
 

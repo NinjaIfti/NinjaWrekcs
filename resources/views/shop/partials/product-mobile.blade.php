@@ -3,7 +3,7 @@
     <a href="{{ route('shop.show', $product) }}" class="block flex-1 flex flex-col">
         <div class="relative overflow-hidden bg-gradient-to-br from-black to-gray-900 flex-1">
             @php
-                $cover = $product->images->first()?->path ?? $product->image;
+                $cover = $product->primaryImagePath();
             @endphp
             <img src="{{ $cover ? asset('storage/' . $cover) : '/img/placeholder.jpg' }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
             

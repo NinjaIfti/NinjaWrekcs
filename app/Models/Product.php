@@ -250,18 +250,21 @@ class Product extends Model
      *
      * Merging a family moved each source's photos onto its variant, so a merged
      * product has no product_images rows of its own - reading only those showed
-     * "No Image" for every one of them. Precedence: the product's own gallery,
-     * then an explicitly chosen cover, then the first active variant's photo,
-     * then the legacy single-image column.
+     * "No Image" for every one of them.
+     *
+     * The cover photo comes first: it is the one an admin picked deliberately
+     * as the main image, so it beats whatever happens to be first in the
+     * gallery. Then the gallery, then the first active variant's photo, then
+     * the legacy single-image column.
      */
     public function primaryImagePath(): ?string
     {
-        if ($this->images && $this->images->isNotEmpty()) {
-            return $this->images->first()->path;
-        }
-
         if ($this->cover_photo) {
             return $this->cover_photo;
+        }
+
+        if ($this->images && $this->images->isNotEmpty()) {
+            return $this->images->first()->path;
         }
 
         if ($this->hasVariants()) {

@@ -71,16 +71,28 @@
                 <div class="relative">
                     @php
                         $hasVariants = $product->variants->isNotEmpty();
-                        if ($hasVariants && $product->cover_photo) {
-                            $gallery = collect([(object)['path' => $product->cover_photo]]);
+                        $gallery = collect();
+
+                        // The cover photo leads whenever there is one - it used
+                        // to be honoured only for variant products, so a plain
+                        // product's cover upload never appeared anywhere.
+                        if ($product->cover_photo) {
+                            $gallery->push((object)['path' => $product->cover_photo]);
+                        }
+
+                        if ($hasVariants) {
                             $firstVariant = $product->variants->first();
-                            foreach ($firstVariant->images as $img) {
+                            foreach ($firstVariant?->images ?? [] as $img) {
                                 $gallery->push($img);
                             }
-                        } elseif ($hasVariants && $product->variants->first() && $product->variants->first()->images->isNotEmpty()) {
-                            $gallery = $product->variants->first()->images;
                         } else {
-                            $gallery = $product->images->count() ? $product->images : collect($product->image ? [(object)['path' => $product->image]] : []);
+                            foreach ($product->images as $img) {
+                                $gallery->push($img);
+                            }
+                        }
+
+                        if ($gallery->isEmpty() && $product->image) {
+                            $gallery->push((object)['path' => $product->image]);
                         }
                     @endphp
                     <div class="relative rounded-2xl overflow-hidden border border-violet-500/30 bg-gray-900" id="product-gallery-wrap">

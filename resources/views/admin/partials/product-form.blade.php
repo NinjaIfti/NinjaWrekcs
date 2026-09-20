@@ -77,8 +77,12 @@
                             </label>
                         </div>
                     @endif
-                    <input type="file" name="cover_photo" accept="image/*" class="{{ $field }}">
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The single image used as this product's main photo.</p>
+                    <input type="file" name="cover_photo" accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif" class="{{ $field }}">
+                    @error('cover_photo')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        The main photo for this product — it is shown ahead of the gallery.
+                        JPG, PNG or GIF, up to 10MB.
+                    </p>
                 </div>
 
                 @if($isEdit && $product->images && $product->images->count())
