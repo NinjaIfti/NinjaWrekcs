@@ -48,14 +48,17 @@ class ShopController extends Controller
         $categoryCounts = \Illuminate\Support\Facades\Cache::remember('shop_category_counts', 3600, function () use ($categories) {
             $counts = [];
             foreach ($categories as $parentCategory) {
+                // inCategories() so a "show in all categories" product is
+                // counted everywhere it is listed - the number beside a
+                // category has to match the cards under it.
                 $parentCount = Product::where('is_active', true)
-                    ->where('category_id', $parentCategory->id)
+                    ->inCategories([$parentCategory->id])
                     ->count();
-                
+
                 if ($parentCategory->hasChildren()) {
                     foreach ($parentCategory->children as $childCategory) {
                         $counts[$childCategory->id] = Product::where('is_active', true)
-                            ->where('category_id', $childCategory->id)
+                            ->inCategories([$childCategory->id])
                             ->count();
                     }
                     $counts[$parentCategory->id] = $parentCount;
@@ -121,7 +124,8 @@ class ShopController extends Controller
                     }
                     
                     // Query products from parent category AND any child categories
-                    $query->whereIn('category_id', $categoryIds);
+                    // Plus anything marked "show in all categories".
+                    $query->inCategories($categoryIds);
                 } else {
                     // Category not found, show no products
                     $query->where('category_id', -1);

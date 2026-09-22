@@ -37,6 +37,7 @@ class Product extends Model
         'reviews',
         'is_active',
         'is_featured',
+        'show_in_all_categories',
         'is_new',
         'is_bestseller',
         'is_limited_edition',
@@ -50,6 +51,7 @@ class Product extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'show_in_all_categories' => 'boolean',
         'is_new' => 'boolean',
         'is_bestseller' => 'boolean',
         'is_limited_edition' => 'boolean',
@@ -206,6 +208,28 @@ class Product extends Model
                 THEN products.sale_price
             ELSE products.price
         END)';
+    }
+
+    /**
+     * Products that belong under any of these categories - their own, or every
+     * category when "show in all categories" is ticked.
+     *
+     * The flag lists one product row in many places rather than copying it, so
+     * its stock, variants, cart lines and orders are the same wherever it is
+     * found. Every category listing should go through this scope so the shop,
+     * the counts beside it and the home page all agree on what is "in" a
+     * category.
+     *
+     * @param  array<int, int>  $categoryIds
+     */
+    public function scopeInCategories(Builder $query, array $categoryIds): Builder
+    {
+        // Grouped, so the OR cannot leak past other conditions such as
+        // is_active.
+        return $query->where(function (Builder $q) use ($categoryIds) {
+            $q->whereIn('category_id', $categoryIds)
+                ->orWhere('show_in_all_categories', true);
+        });
     }
 
     /**

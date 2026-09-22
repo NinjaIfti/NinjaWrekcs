@@ -262,6 +262,13 @@
                     <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', $product->is_featured ?? false) ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-700 text-blue-600 shadow-sm focus:ring-blue-500">
                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Feature on homepage</span>
                 </label>
+                <label class="flex items-start">
+                    <input type="checkbox" name="show_in_all_categories" value="1" {{ old('show_in_all_categories', $product->show_in_all_categories ?? false) ? 'checked' : '' }} class="mt-0.5 rounded border-gray-300 dark:border-gray-700 text-blue-600 shadow-sm focus:ring-blue-500">
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        Show in all categories
+                        <span class="block text-xs text-gray-500 dark:text-gray-400">Listed under every category as well as its own. It stays one product — same stock, same cart, same orders.</span>
+                    </span>
+                </label>
                 <p class="text-xs text-gray-500 dark:text-gray-400">An inactive product disappears from the shop but keeps its order history.</p>
             </div>
         </section>

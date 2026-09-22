@@ -38,7 +38,28 @@ Route::get('/', function () {
         ->whereNull('parent_id')
         ->whereIn('slug', ['valorant', 'csgo', 'pre-order-upcoming'])
         ->orderBy('order')
-        ->get()
+        ->get();
+
+        // "Show in all categories" products join every showcase. They cannot
+        // come through the category relation, which matches on category_id, so
+        // they are fetched once and merged in - before the empty-category
+        // filter below, so a category holding only such a product still shows.
+        $everywhere = \App\Models\Product::with('images', 'variants.images')
+            ->where('is_active', true)
+            ->where('show_in_all_categories', true)
+            ->latest()
+            ->get();
+
+        $categories->each(function ($category) use ($everywhere) {
+            $category->setRelation('products', $category->products
+                ->concat($everywhere)
+                ->unique('id')
+                ->sortByDesc('created_at')
+                ->take(4)
+                ->values());
+        });
+
+        $categories = $categories
         // A category with nothing in it rendered as a heading, a "0 products
         // available", a View All button and an empty box. Dropped here rather
         // than by slug, so the section returns on its own once the category has

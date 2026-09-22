@@ -1030,6 +1030,7 @@ class AdminController extends Controller
 
         $validated['is_active'] = $request->has('is_active');
         $validated['is_featured'] = $request->has('is_featured');
+        $validated['show_in_all_categories'] = $request->has('show_in_all_categories');
         $validated['is_new'] = $request->has('is_new');
         $validated['is_bestseller'] = $request->has('is_bestseller');
         $validated['is_limited_edition'] = $request->has('is_limited_edition');
@@ -1282,6 +1283,7 @@ class AdminController extends Controller
 
         $validated['is_active'] = $request->has('is_active');
         $validated['is_featured'] = $request->has('is_featured');
+        $validated['show_in_all_categories'] = $request->has('show_in_all_categories');
         $validated['is_new'] = $request->has('is_new');
         $validated['is_bestseller'] = $request->has('is_bestseller');
         $validated['is_limited_edition'] = $request->has('is_limited_edition');
