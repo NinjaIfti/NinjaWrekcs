@@ -149,16 +149,25 @@
                         </span>
                     </div>
 
-                    <!-- Product Name -->
-                    <h1 class="text-4xl md:text-5xl font-bold text-white">
-                        {{ $product->name }}
-                    </h1>
-
                     @php
                         $activeVariants = $product->variants->where('is_active', true);
                         // Never preselect a sold-out option.
                         $defaultVariant = $activeVariants->firstWhere('quantity', '>', 0);
                     @endphp
+
+                    <!-- Product Name -->
+                    {{-- A merged product holds distinct items as variants ("Valorant
+                         Gun Keychains" -> Prime Classic, Reaver Vandal Purple...), so
+                         the heading names the chosen one and the swatch script keeps
+                         it in step. The family name stays as a smaller line above. --}}
+                    @if($hasVariants && $defaultVariant)
+                        <p id="product-family-name" class="text-sm uppercase tracking-wider text-gray-400">
+                            {{ $product->name }}
+                        </p>
+                    @endif
+                    <h1 id="product-heading" class="text-4xl md:text-5xl font-bold text-white">
+                        {{ $hasVariants && $defaultVariant ? $defaultVariant->name : $product->name }}
+                    </h1>
 
                     @if($hasVariants)
                     <!-- Variant swatches -->
@@ -179,6 +188,7 @@
                                                {{ $inStock ? 'border-violet-500/30 hover:border-violet-500 cursor-pointer' : 'border-gray-700 opacity-40 cursor-not-allowed' }}
                                                {{ $defaultVariant && $defaultVariant->id === $v->id ? 'border-violet-500 bg-violet-500/10' : '' }}"
                                         data-variant-id="{{ $v->id }}"
+                                        data-name="{{ $v->name }}"
                                         data-price="{{ $vPrice }}"
                                         data-in-stock="{{ $inStock ? 1 : 0 }}"
                                         data-stock="{{ $v->quantity }}"
@@ -401,6 +411,7 @@
             const addToCartBtn = document.getElementById('add-to-cart-btn');
             const qtyInput = document.querySelector('input[name="quantity"]');
             const stockStatusEl = document.getElementById('stock-status');
+            const productHeadingEl = document.getElementById('product-heading');
 
             swatches.forEach((swatch) => {
                 swatch.addEventListener('click', function () {
@@ -410,6 +421,11 @@
                     this.classList.add('border-violet-500', 'bg-violet-500/10');
 
                     if (formVariantInput) formVariantInput.value = this.dataset.variantId;
+
+                    // The heading names the chosen item, not just the family.
+                    if (productHeadingEl && this.dataset.name) {
+                        productHeadingEl.textContent = this.dataset.name;
+                    }
                     if (variantPriceEl && this.dataset.price) {
                         variantPriceEl.textContent = '৳' + parseFloat(this.dataset.price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                     }
