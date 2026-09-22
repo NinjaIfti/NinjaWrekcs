@@ -36,7 +36,9 @@ Route::get('/', function () {
             $query->where('is_active', true)->with('images', 'variants.images')->latest()->take(4);
         }])
         ->whereNull('parent_id')
-        ->whereIn('slug', ['valorant', 'csgo', 'pre-order-upcoming'])
+        // Pre-order / upcoming was dropped from the home page on 2026-09-22 at
+        // the owner's request. It is still a category in the shop.
+        ->whereIn('slug', ['valorant', 'csgo'])
         ->orderBy('order')
         ->get();
 

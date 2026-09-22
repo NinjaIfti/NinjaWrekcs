@@ -1,7 +1,12 @@
 <!-- Customer Reviews Section -->
-<section class="py-16 md:py-24 bg-gradient-to-b from-black via-purple-950 to-black overflow-hidden">
+{{-- `relative` on the section is load-bearing. Without it the absolute
+     background layer below was positioned against the page rather than this
+     section, and lay invisibly across the product cards above - every tap on a
+     home page category card landed on it. pointer-events-none as well, so a
+     decoration can never take a tap even if its box drifts again. --}}
+<section class="relative py-16 md:py-24 bg-gradient-to-b from-black via-purple-950 to-black overflow-hidden">
     <!-- Background Effects -->
-    <div class="absolute inset-0 opacity-30">
+    <div class="absolute inset-0 opacity-30 pointer-events-none">
         <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
     </div>
