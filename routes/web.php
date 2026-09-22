@@ -172,7 +172,7 @@ Route::get('/deals', function () {
     
     $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 1800, function () {
         // Get products with active offers
-        $offerProducts = \App\Models\Product::with('images', 'category')
+        $offerProducts = \App\Models\Product::with('images', 'category', 'variants')
             ->where('is_active', true)
             ->where(function($query) {
                 $query->whereNotNull('offer_price')
@@ -183,7 +183,7 @@ Route::get('/deals', function () {
             ->get();
         
         // Get products with sale prices
-        $saleProducts = \App\Models\Product::with('images', 'category')
+        $saleProducts = \App\Models\Product::with('images', 'category', 'variants')
             ->where('is_active', true)
             ->whereNotNull('sale_price')
             ->whereNull('offer_price')
@@ -191,7 +191,7 @@ Route::get('/deals', function () {
             ->get();
         
         // Get featured deals (products marked as featured with discounts)
-        $featuredDeals = \App\Models\Product::with('images', 'category')
+        $featuredDeals = \App\Models\Product::with('images', 'category', 'variants')
             ->where('is_active', true)
             ->where('is_featured', true)
             ->where(function($query) {

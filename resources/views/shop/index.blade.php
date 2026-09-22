@@ -693,6 +693,10 @@
                     <p class="text-lg text-gray-500 line-through">৳${price.toFixed(2)}</p>
                     <span class="px-2 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded">Save ${product.discount_percentage}%</span>
                 `;
+            } else if (product.has_variants) {
+                // The cheapest active variant, as on the card - the customer
+                // chooses the exact one on the product page.
+                priceHTML = `<p class="text-3xl font-bold text-violet-400"><span class="text-lg text-gray-400 font-normal">From </span>৳${displayPrice.toFixed(2)}</p>`;
             } else {
                 priceHTML = `<p class="text-3xl font-bold text-violet-400">৳${price.toFixed(2)}</p>`;
             }
@@ -739,8 +743,15 @@
             const addLink = document.getElementById('qv-add-to-cart-link');
             const addButton = document.getElementById('qv-add-to-cart-btn');
             
-            if (product.is_keychain && product.quantity > 0) {
+            // A variant product cannot be added from here: CartService refuses one
+            // without a variant ("Please choose an option"), so the button was a
+            // dead end. Send the customer to the product page to choose, as
+            // keychains already do. The label is set every time because the
+            // modal is reused - a keychain opened after a variant product would
+            // otherwise keep reading "Choose Options".
+            if ((product.is_keychain || product.has_variants) && product.quantity > 0) {
                 addLink.href = product.url;
+                addLink.lastChild.textContent = product.has_variants ? ' Choose Options ' : ' Add to Cart ';
                 addLink.classList.remove('hidden');
                 form.classList.add('hidden');
             } else {

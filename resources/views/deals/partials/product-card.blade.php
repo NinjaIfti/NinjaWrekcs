@@ -89,14 +89,17 @@
         
         <!-- Stock Status -->
         <div class="mt-2">
-            @if($product->quantity > 0)
+            {{-- availableStock(), not the quantity column, which is 0 on a merged
+                 product - read directly, it called in-stock items sold out. --}}
+            @php $stock = $product->availableStock(); @endphp
+            @if($stock > 0)
                 @if($product->is_low_stock)
                     <span class="text-xs text-orange-400 flex items-center gap-1">
                         <span class="relative flex h-2 w-2">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
                         </span>
-                        Only {{ $product->quantity }} left!
+                        Only {{ $stock }} left!
                     </span>
                 @else
                     <span class="text-xs text-green-400">✓ In Stock</span>

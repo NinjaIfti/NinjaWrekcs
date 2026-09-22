@@ -64,14 +64,21 @@
                             'id' => $product->id,
                             'name' => $product->name,
                             'description' => $product->description,
-                            'price' => $product->price,
+                            // A merged product carries price 0 and quantity 0 of its own,
+                            // so these come from the variant-aware accessors - reading
+                            // the columns made the quick view call it unpriced and out
+                            // of stock. For a variant product the figure is its "from"
+                            // price, and has_variants tells the modal to send the
+                            // customer to the product page to choose one.
+                            'price' => $product->hasVariants() ? $product->displayPriceFrom() : $product->price,
                             'sale_price' => $product->sale_price,
-                            'display_price' => $product->display_price,
+                            'display_price' => $product->hasVariants() ? $product->displayPriceFrom() : $product->display_price,
+                            'has_variants' => $product->hasVariants(),
                             'has_discount' => $product->has_discount,
                             'has_active_offer' => $product->has_active_offer,
                             'offer_ends_at' => $product->has_active_offer ? $product->offer_ends_at->timestamp : null,
                             'discount_percentage' => $product->discount_percentage,
-                            'quantity' => $product->quantity,
+                            'quantity' => $product->availableStock(),
                             'is_low_stock' => $product->is_low_stock,
                             'rating' => $product->rating,
                             'reviews' => $product->reviews,
@@ -194,7 +201,10 @@
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
                     </span>
-                    <p class="text-sm font-semibold text-orange-400">Only {{ $product->quantity }} left!</p>
+                    {{-- availableStock(), not the quantity column: that is 0 on a
+                         merged product, so a knife with one unit left read
+                         "Only 0 left!" under a badge that correctly appeared. --}}
+                    <p class="text-sm font-semibold text-orange-400">Only {{ $product->availableStock() }} left!</p>
                 </div>
             @else
                 <p class="text-sm text-green-400">✓ In Stock</p>
