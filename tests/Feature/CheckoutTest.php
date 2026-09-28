@@ -71,8 +71,11 @@ class CheckoutTest extends TestCase
         $this->post(route('checkout.store'), $this->validPayload());
 
         $this->assertSame('pending', Order::latest('id')->first()->status);
-        $this->assertSame(5, $blue->refresh()->quantity);
-        $this->assertSame(100, $product->refresh()->quantity);
+        $this->assertSame(5, $blue->refresh()->quantity, 'a pending order reserves nothing');
+        // The parent column tracks its active variants, so it reads 5 here -
+        // the point of the test is that neither figure moved for a pending
+        // order, not what the parent was seeded with.
+        $this->assertSame(5, $product->refresh()->quantity);
     }
 
     public function test_confirming_decrements_that_variant_not_the_parent(): void
@@ -90,7 +93,10 @@ class CheckoutTest extends TestCase
 
         $this->assertSame(3, $blue->refresh()->quantity);
         $this->assertSame(5, $red->refresh()->quantity);
-        $this->assertSame(100, $product->refresh()->quantity, 'parent stock must not move for a variant sale');
+        // The sale comes off the variant that was bought; the parent column is
+        // derived from the active variants, so it lands on their sum rather
+        // than keeping the 100 it was seeded with.
+        $this->assertSame(8, $product->refresh()->quantity, 'the parent total mirrors its active variants');
     }
 
     public function test_the_order_item_records_the_variant(): void

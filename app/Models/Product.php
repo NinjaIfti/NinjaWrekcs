@@ -185,12 +185,26 @@ class Product extends Model
      */
     public static function effectivePriceExpression(): string
     {
+        // The variant branch takes the cheapest active variant and then lets an
+        // open product offer undercut it, mirroring PricingService::priceFor().
+        // The offer is a ceiling, never a floor, which is why this is a MIN of
+        // the two rather than a replacement.
         return '(CASE
             WHEN EXISTS (
                 SELECT 1 FROM product_variants pv
                 WHERE pv.product_id = products.id AND pv.is_active = 1
             ) THEN (
                 SELECT MIN(CASE
+                    WHEN products.offer_price IS NOT NULL
+                        AND products.offer_starts_at IS NOT NULL
+                        AND products.offer_ends_at IS NOT NULL
+                        AND ? BETWEEN products.offer_starts_at AND products.offer_ends_at
+                        AND products.offer_price < (CASE
+                            WHEN pv2.sale_price IS NOT NULL AND pv2.sale_price < pv2.price
+                                THEN pv2.sale_price
+                            ELSE pv2.price
+                        END)
+                        THEN products.offer_price
                     WHEN pv2.sale_price IS NOT NULL AND pv2.sale_price < pv2.price
                         THEN pv2.sale_price
                     ELSE pv2.price
@@ -233,13 +247,33 @@ class Product extends Model
     }
 
     /**
+     * The bindings one copy of effectivePriceExpression() needs, in order.
+     *
+     * The expression judges the offer window on Laravel's clock rather than the
+     * database's, and does so once in the variant branch and once in the plain
+     * branch. Callers ask for the bindings rather than counting placeholders,
+     * because miscounting them silently shifts every later binding along - a
+     * numeric filter then compares a price against a date string and matches
+     * nothing.
+     *
+     * @return array<int, \Illuminate\Support\Carbon>
+     */
+    public static function effectivePriceBindings(int $copies = 1): array
+    {
+        return array_fill(0, 2 * $copies, now());
+    }
+
+    /**
      * Order a listing by what a customer actually pays.
      */
     public function scopeOrderByEffectivePrice(Builder $query, string $direction = 'asc'): Builder
     {
         $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
 
-        return $query->orderByRaw(self::effectivePriceExpression() . ' ' . $direction, [now()]);
+        return $query->orderByRaw(
+            self::effectivePriceExpression() . ' ' . $direction,
+            self::effectivePriceBindings()
+        );
     }
 
     /**
@@ -260,8 +294,39 @@ class Product extends Model
 
         return $query->whereRaw(
             self::effectivePriceExpression() . ' ' . $operator . ' CAST(? AS DECIMAL(10,2))',
-            [now(), $value]
+            [...self::effectivePriceBindings(), $value]
         );
+    }
+
+    /**
+     * Rewrite products.quantity from the active variants.
+     *
+     * A variant product's stock is not a number an admin types - it is the sum
+     * of its options, and it moves whenever a variant is edited, deactivated,
+     * deleted, or drawn down by a confirmed order. ProductVariantObserver calls
+     * this so every one of those paths keeps the total honest.
+     *
+     * The storefront reads availableStock() and hasStockExpression() and does
+     * not depend on this column, so this is about the admin screens and any
+     * remaining legacy read agreeing with reality.
+     *
+     * Saved quietly: this is a derived figure, and firing product events here
+     * would recurse through anything that listens for a product save.
+     */
+    public function syncStockFromVariants(): void
+    {
+        if (! $this->variants()->exists()) {
+            return;
+        }
+
+        $total = (int) $this->variants()->where('is_active', true)->sum('quantity');
+
+        if ((int) $this->quantity === $total) {
+            return;
+        }
+
+        $this->quantity = $total;
+        $this->saveQuietly();
     }
 
     public function requiresBooking(): bool

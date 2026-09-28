@@ -150,6 +150,9 @@
                     <div class="mb-4">
                         <label for="offer_price" class="{{ $label }}">Offer price (৳)</label>
                         <input type="number" name="offer_price" id="offer_price" value="{{ old('offer_price', $product->offer_price ?? '') }}" step="0.01" min="0" class="{{ $field }} focus:ring-orange-500 focus:border-orange-500">
+                        <p id="offer-variant-note" class="mt-1 text-xs text-amber-700 dark:text-amber-400 {{ $variantDriven ? '' : 'hidden' }}">
+                            Applies to every variant while it runs. Any variant already cheaper than this keeps its own price — an offer never puts a price up.
+                        </p>
                         @error('offer_price')<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
                     </div>
 
@@ -357,17 +360,45 @@
         const quantityNote = document.getElementById('quantity-variant-note');
         const mutedClasses = @json(explode(' ', $muted));
 
+        // The stock total is the sum of the ACTIVE variants, recomputed as you
+        // type so the figure on screen matches what the server will store. The
+        // server recomputes it too and ignores whatever this field posts - this
+        // is for the admin's eyes, not the source of truth.
+        const recalcVariantStock = () => {
+            const blocks = document.querySelectorAll('.variant-block, .new-variant-block');
+            if (!quantityInput || blocks.length === 0) return;
+
+            let total = 0;
+            blocks.forEach((block) => {
+                const active = block.querySelector('input[type="checkbox"][name$="[is_active]"]');
+                if (active && !active.checked) return;
+                total += parseInt(block.querySelector('input[name$="[quantity]"]')?.value, 10) || 0;
+            });
+
+            quantityInput.value = total;
+        };
+
         // Adding a variant makes the product-level price and stock inert, so
         // say so straight away rather than after the save.
         const syncVariantDrivenFields = () => {
             const hasAny = document.querySelectorAll('.variant-block, .new-variant-block').length > 0;
+            document.getElementById('offer-variant-note')?.classList.toggle('hidden', !hasAny);
             [[priceInput, priceNote], [quantityInput, quantityNote]].forEach(([input, note]) => {
                 if (!input) return;
                 input.readOnly = hasAny;
                 mutedClasses.forEach((c) => input.classList.toggle(c, hasAny));
                 if (note) note.classList.toggle('hidden', !hasAny);
             });
+            recalcVariantStock();
         };
+
+        // Delegated, so variants added after page load are covered too.
+        document.addEventListener('input', (e) => {
+            if (e.target.matches('input[name$="[quantity]"]')) recalcVariantStock();
+        });
+        document.addEventListener('change', (e) => {
+            if (e.target.matches('input[type="checkbox"][name$="[is_active]"]')) recalcVariantStock();
+        });
 
         let newVariantIndex = 0;
         if (newVariantsContainer && addVariantBtn) {

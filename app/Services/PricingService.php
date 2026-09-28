@@ -17,16 +17,26 @@ use App\Models\ProductVariant;
 class PricingService
 {
     /**
-     * Precedence, highest first:
-     *   1. variant sale_price  (when a variant is given and it undercuts variant price)
-     *   2. variant price       (when a variant is given)
-     *   3. product offer_price (when the offer window is open and it undercuts price)
-     *   4. product sale_price  (when it undercuts price)
-     *   5. product price
+     * What a customer pays, lowest of everything that applies.
      *
-     * A variant carries its own pricing outright - a product-level offer does
-     * not leak onto it, because a variant's price is not derived from the
-     * product's.
+     * For a variant:
+     *   1. variant sale_price  (when it undercuts the variant price)
+     *   2. product offer_price (when the offer window is open and it undercuts
+     *                           whatever the variant would otherwise cost)
+     *   3. variant price
+     *
+     * Otherwise:
+     *   1. product offer_price (when the window is open and it undercuts price)
+     *   2. product sale_price  (when it undercuts price)
+     *   3. product price
+     *
+     * A product-level offer reaching its variants is deliberate, changed
+     * 2026-09-28 at the owner's request: an offer set on a merged product is
+     * meant for the whole family. It is applied as a ceiling, never a floor -
+     * a variant already cheaper than the offer keeps its own price, so an
+     * offer can never put a price UP. That matters on products whose options
+     * differ: CSGO Butterfly holds a 1400 and a 1599 option, and a 1450 offer
+     * must leave the 1400 alone.
      */
     public function priceFor(Product $product, ?ProductVariant $variant = null): float
     {
@@ -34,9 +44,15 @@ class PricingService
             $variantPrice = (float) $variant->price;
             $variantSale = $variant->sale_price !== null ? (float) $variant->sale_price : null;
 
-            return ($variantSale !== null && $variantSale < $variantPrice)
+            $effective = ($variantSale !== null && $variantSale < $variantPrice)
                 ? $variantSale
                 : $variantPrice;
+
+            if ($this->offerIsOpen($product) && (float) $product->offer_price < $effective) {
+                return (float) $product->offer_price;
+            }
+
+            return $effective;
         }
 
         $price = (float) $product->price;

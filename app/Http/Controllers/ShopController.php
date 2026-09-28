@@ -190,7 +190,7 @@ class ShopController extends Controller
             return Product::where('is_active', true)
                 ->selectRaw(
                     "MIN({$expression}) as min, MAX({$expression}) as max",
-                    [now(), now()]
+                    Product::effectivePriceBindings(2)
                 )
                 ->first();
         });

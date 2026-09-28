@@ -119,7 +119,8 @@ class AdminOrderEditVariantTest extends TestCase
 
         $this->assertSame(0, (int) $gradient->refresh()->quantity);
         $this->assertSame(4, (int) $blue->refresh()->quantity);
-        $this->assertSame(0, (int) $product->refresh()->quantity);
+        // The parent column is the sum of the active variants.
+        $this->assertSame(4, (int) $product->refresh()->quantity);
     }
 
     public function test_removing_a_variant_line_returns_stock_to_that_variant(): void
@@ -144,7 +145,7 @@ class AdminOrderEditVariantTest extends TestCase
         // The dropped unit goes back to Gradient Finish, not to the product.
         $this->assertSame(2, (int) $gradient->refresh()->quantity);
         $this->assertSame(2, (int) $blue->refresh()->quantity);
-        $this->assertSame(0, (int) $product->refresh()->quantity);
+        $this->assertSame(4, (int) $product->refresh()->quantity, 'the parent total is their sum');
     }
 
     public function test_an_edit_cannot_exceed_the_variants_stock(): void

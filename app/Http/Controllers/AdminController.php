@@ -1112,13 +1112,22 @@ class AdminController extends Controller
 
     public function productUpdate(Request $request, Product $product): RedirectResponse
     {
+        // A variant product's price column is 0 by design, so comparing the
+        // offer against it rejected every offer with "must be less than 0.00".
+        // The offer is judged against the variants instead - PricingService
+        // applies it as a ceiling, so one above a given variant simply leaves
+        // that variant alone.
+        $offerRule = $product->hasVariants()
+            ? 'nullable|numeric|min:0'
+            : 'nullable|numeric|min:0|lt:price';
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
             'quantity' => 'required|integer|min:0',
             'price' => 'nullable|numeric|min:0',
-            'offer_price' => 'nullable|numeric|min:0|lt:price',
+            'offer_price' => $offerRule,
             'offer_starts_at' => 'nullable|date',
             'offer_ends_at' => 'nullable|date|after:offer_starts_at',
             'category_id' => 'nullable|exists:categories,id',
@@ -1291,7 +1300,17 @@ class AdminController extends Controller
         $validated['is_upcoming'] = $request->has('is_upcoming');
         $validated['is_bookable'] = $request->has('is_bookable');
 
+        // A variant product's stock is the sum of its options, so whatever the
+        // form posted is dropped here and recomputed below - after the variant
+        // edits in this same request have been applied.
+        if ($product->hasVariants()) {
+            unset($validated['quantity']);
+        }
+
         $product->update($validated);
+
+        $product->load('variants');
+        $product->syncStockFromVariants();
 
         if (!empty($newImagePaths)) {
             foreach ($newImagePaths as $pathData) {

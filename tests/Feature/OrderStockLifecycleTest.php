@@ -82,7 +82,9 @@ class OrderStockLifecycleTest extends TestCase
         $this->setStatus($order, 'confirmed');
 
         $this->assertSame(3, (int) $variant->refresh()->quantity);
-        $this->assertSame(0, (int) $product->refresh()->quantity, 'the parent column must not move');
+        // Since 2026-09-28 the parent column is derived from the active
+        // variants rather than left alone, so it follows the sale down.
+        $this->assertSame(3, (int) $product->refresh()->quantity, 'the parent total mirrors its active variants');
     }
 
     public function test_cancelling_a_confirmed_order_returns_stock_to_the_variant(): void
@@ -93,7 +95,7 @@ class OrderStockLifecycleTest extends TestCase
         $this->setStatus($order->refresh(), 'cancelled');
 
         $this->assertSame(5, (int) $variant->refresh()->quantity, 'units must come back to the variant');
-        $this->assertSame(0, (int) $product->refresh()->quantity, 'and not to the parent column');
+        $this->assertSame(5, (int) $product->refresh()->quantity, 'and the parent total follows them back');
     }
 
     public function test_cancelling_a_pending_order_changes_nothing(): void

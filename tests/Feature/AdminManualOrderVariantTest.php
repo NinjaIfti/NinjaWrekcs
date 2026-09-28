@@ -137,8 +137,9 @@ class AdminManualOrderVariantTest extends TestCase
         );
 
         $this->assertSame(0, (int) $gradient->refresh()->quantity);
-        // Untouched: the product's own column is not where stock lives.
-        $this->assertSame(0, (int) $product->refresh()->quantity);
+        // Stock lives on the variants; the product's column is their sum, so
+        // it shows the other variant's remaining 4 rather than staying at 0.
+        $this->assertSame(4, (int) $product->refresh()->quantity);
         $this->assertSame(4, (int) $product->variants->firstWhere('name', 'Blue Shadow')->quantity);
     }
 
