@@ -162,10 +162,18 @@
         @endphp
         <div class="flex items-center gap-2">
             @if($cardVariants->isNotEmpty())
+                @php
+                    $cardNow = $cardVariantPrices->min();
+                    // What it would cost without the offer, for the strike-through.
+                    $cardWas = $product->compareAtPriceFrom();
+                @endphp
                 @if($cardVariantPrices->min() < $cardVariantPrices->max())
-                    <p class="text-lg font-bold text-violet-400"><span class="text-xs text-gray-400 font-normal">From</span> ৳{{ number_format($cardVariantPrices->min(), 2) }}</p>
+                    <p class="text-lg font-bold text-violet-400"><span class="text-xs text-gray-400 font-normal">From</span> ৳{{ number_format($cardNow, 2) }}</p>
                 @else
-                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($cardVariantPrices->min(), 2) }}</p>
+                    <p class="text-lg font-bold text-violet-400">৳{{ number_format($cardNow, 2) }}</p>
+                @endif
+                @if($cardWas !== null && $cardWas > $cardNow)
+                    <p class="text-sm text-gray-500 line-through">৳{{ number_format($cardWas, 2) }}</p>
                 @endif
             @elseif(!$product->display_price)
                 <p class="text-sm font-semibold text-yellow-400">⏳ Price to be announced</p>

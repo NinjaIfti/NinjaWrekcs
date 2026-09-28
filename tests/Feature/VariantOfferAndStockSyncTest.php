@@ -160,8 +160,10 @@ class VariantOfferAndStockSyncTest extends TestCase
         $html = $this->get(route('shop.index', ['category_id' => $this->category()->id]))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString('1,300.00', $html);
-        $this->assertStringNotContainsString('1,400.00', $html);
+        $this->assertStringContainsString('1,300.00', $html, 'the price the cart will charge');
+        // 1,400 still appears, struck through as the old price - what matters
+        // is that it is not offered as the price to pay.
+        $this->assertMatchesRegularExpression('/line-through[^>]*>\s*৳1,400\.00/u', $html);
     }
 
     public function test_the_deals_card_shows_the_offer_price_not_a_placeholder(): void

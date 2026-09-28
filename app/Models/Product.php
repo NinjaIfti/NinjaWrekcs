@@ -378,14 +378,50 @@ class Product extends Model
     }
 
     // Check if offer is currently active
+    /**
+     * What this product would cost without the product-level offer.
+     *
+     * The figure a discount is measured against and struck through on a card.
+     * For a merged product that is its cheapest active variant, honouring any
+     * sale price on that variant; the product's own price column is 0 and
+     * means nothing.
+     */
+    public function compareAtPriceFrom(): ?float
+    {
+        if ($this->hasVariants()) {
+            $prices = $this->variants
+                ->where('is_active', true)
+                ->map(fn (ProductVariant $variant) => (float) (
+                    $variant->sale_price !== null && $variant->sale_price < $variant->price
+                        ? $variant->sale_price
+                        : $variant->price
+                ))
+                ->filter(fn (float $price) => $price > 0);
+
+            return $prices->isEmpty() ? null : (float) $prices->min();
+        }
+
+        return (float) $this->price > 0 ? (float) $this->price : null;
+    }
+
     public function getHasActiveOfferAttribute()
     {
         if (!$this->offer_price || !$this->offer_starts_at || !$this->offer_ends_at) {
             return false;
         }
-        
-        $now = now();
-        return $now->between($this->offer_starts_at, $this->offer_ends_at) && $this->offer_price < $this->price;
+
+        // Compared against the variants on a merged product. This used to read
+        // products.price, which is 0 there, so `1200 < 0` was false and a
+        // product on offer reported that it had none: the card showed the
+        // discounted price with no badge, no old price and no countdown.
+        $compareAt = $this->compareAtPriceFrom();
+
+        if ($compareAt === null) {
+            return false;
+        }
+
+        return now()->between($this->offer_starts_at, $this->offer_ends_at)
+            && (float) $this->offer_price < $compareAt;
     }
 
     // Get the final display price (offer price if active, then sale price, otherwise regular price)
@@ -417,9 +453,16 @@ class Product extends Model
             return 0;
         }
         
-        $originalPrice = $this->price;
-        $discountedPrice = $this->has_active_offer ? $this->offer_price : $this->sale_price;
-        
+        // Measured against the variants on a merged product, where the price
+        // column is 0 - dividing by it would have been a fatal error rather
+        // than a wrong number.
+        $originalPrice = $this->compareAtPriceFrom();
+        $discountedPrice = $this->has_active_offer ? (float) $this->offer_price : (float) $this->sale_price;
+
+        if ($originalPrice === null || $originalPrice <= 0 || $discountedPrice <= 0) {
+            return 0;
+        }
+
         return round((($originalPrice - $discountedPrice) / $originalPrice) * 100);
     }
 
