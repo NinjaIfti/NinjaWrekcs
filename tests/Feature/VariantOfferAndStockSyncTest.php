@@ -148,6 +148,32 @@ class VariantOfferAndStockSyncTest extends TestCase
         $this->assertSame(1599.0, $line->compareAtPrice);
     }
 
+    /**
+     * The card has to show what the cart will charge. It builds its own "from"
+     * figure out of the variants, so applying offers in PricingService alone
+     * would have left the card advertising the pre-offer price.
+     */
+    public function test_the_shop_card_shows_the_offer_price(): void
+    {
+        $this->butterfly($this->openOffer(1300));
+
+        $html = $this->get(route('shop.index', ['category_id' => $this->category()->id]))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('1,300.00', $html);
+        $this->assertStringNotContainsString('1,400.00', $html);
+    }
+
+    public function test_the_deals_card_shows_the_offer_price_not_a_placeholder(): void
+    {
+        $this->butterfly($this->openOffer(1300));
+
+        $html = $this->get(route('deals.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('1,300.00', $html);
+        $this->assertStringNotContainsString('Price to be announced', $html);
+    }
+
     /** Sorting must agree with the price on the card. */
     public function test_price_sorting_uses_the_offer_price(): void
     {

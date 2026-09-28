@@ -57,31 +57,40 @@
             {{ $product->name }}
         </h4>
         
-        @if(!$product->display_price)
+        @php
+            // A merged product's own price column is 0, so display_price is
+            // null and this card announced "price to be announced" for the very
+            // products on offer. Ask the model for the figure the cart will
+            // charge, and strike through what it would otherwise have cost.
+            $dealPrice = $product->hasVariants() ? $product->displayPriceFrom() : $product->display_price;
+            $dealWasPrice = $product->hasVariants()
+                ? $product->variants->where('is_active', true)
+                    ->map(fn ($v) => (float) ($v->sale_price && $v->sale_price < $v->price ? $v->sale_price : $v->price))
+                    ->min()
+                : (float) $product->price;
+            $dealSaving = $dealPrice !== null && $dealWasPrice > $dealPrice ? $dealWasPrice - $dealPrice : null;
+        @endphp
+        @if($dealPrice === null)
             <div class="py-2">
                 <p class="text-yellow-400 text-sm font-semibold">⏳ Price to be announced</p>
             </div>
-        @elseif($product->display_price)
+        @else
             <!-- Price Display -->
             <div class="flex items-center gap-2 mb-2">
-                @if($product->has_discount)
-                    <span class="text-gray-500 text-sm line-through">৳{{ number_format($product->price, 2) }}</span>
-                    <span class="text-violet-400 font-bold text-lg">৳{{ number_format($product->display_price, 2) }}</span>
+                @if($dealSaving)
+                    <span class="text-gray-500 text-sm line-through">৳{{ number_format($dealWasPrice, 2) }}</span>
+                    <span class="text-violet-400 font-bold text-lg">৳{{ number_format($dealPrice, 2) }}</span>
                 @else
-                    <span class="text-violet-400 font-bold text-lg">৳{{ number_format($product->price, 2) }}</span>
+                    <span class="text-violet-400 font-bold text-lg">{{ $product->hasVariants() && $product->variants->where('is_active', true)->count() > 1 ? 'From ' : '' }}৳{{ number_format($dealPrice, 2) }}</span>
                 @endif
             </div>
-            
+
             <!-- Savings -->
-            @if($product->has_discount)
+            @if($dealSaving)
             <p class="text-green-400 text-xs font-semibold mb-2">
-                💰 Save ৳{{ number_format($product->price - $product->display_price, 2) }}
+                💰 Save ৳{{ number_format($dealSaving, 2) }}
             </p>
             @endif
-        @else
-            <div class="py-2">
-                <p class="text-yellow-400 text-sm font-semibold">⏳ Price to be announced</p>
-            </div>
         @endif
         
         <!-- Countdown Timer for Limited Time Offers -->

@@ -154,7 +154,11 @@
             // A variant product has no meaningful price of its own - show the range
             // its active variants actually sell at.
             $cardVariants = $product->variants->where('is_active', true);
-            $cardVariantPrices = $cardVariants->map(fn ($v) => (float) ($v->sale_price && $v->sale_price < $v->price ? $v->sale_price : $v->price));
+            // Through PricingService, so the card shows what the cart will
+            // charge. Working the figure out here by hand missed the product's
+            // open offer, which applies to every variant.
+            $cardPricing = app(\App\Services\PricingService::class);
+            $cardVariantPrices = $cardVariants->map(fn ($v) => $cardPricing->priceFor($product, $v));
         @endphp
         <div class="flex items-center gap-2">
             @if($cardVariants->isNotEmpty())
