@@ -3,9 +3,16 @@
     
     <!-- Product Image -->
     <div class="relative aspect-square overflow-hidden bg-black/50">
-        @if($product->images && $product->images->first())
-            <img src="{{ Storage::url($product->images->first()->path) }}" 
-                 alt="{{ $product->name }}" 
+        {{-- Ask the model, not products.images: a merged product keeps its
+             photos on its variants and its cover in its own column, so reading
+             the gallery directly showed "No Image" for the very products this
+             page exists to sell. --}}
+        @php $cover = $product->primaryImagePath(); @endphp
+        @if($cover)
+            <img src="{{ Storage::url($cover) }}"
+                 alt="{{ $product->name }}"
+                 loading="lazy"
+                 decoding="async"
                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
         @else
             <div class="w-full h-full flex items-center justify-center text-gray-500">
