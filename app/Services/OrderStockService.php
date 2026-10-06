@@ -8,9 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * When an order holds stock, and moving it when that changes.
  *
- * Stock used to come off the moment an order was placed, so a pending order
- * nobody had accepted yet was already reducing what the shop could sell. It now
- * comes off when the order is confirmed and goes back when it is cancelled.
+ * Stock comes off the moment an order is placed and goes back when it is
+ * cancelled. A pending order therefore reserves its units: two customers
+ * cannot both buy the last one and leave the shop to discover it later.
+ *
+ * The cost of that, which is real: an order nobody ever pays for holds its
+ * stock until somebody cancels it. Roughly a quarter of this shop's orders end
+ * cancelled, so abandoned pending orders will make items look sold out while
+ * they sit there. Cancelling returns the units immediately, so the remedy is
+ * to cancel dead orders rather than leave them pending. Reverting is a matter
+ * of taking 'pending' back out of HOLDING_STATUSES.
  *
  * The order's status is the whole source of truth - there is no "already
  * deducted" flag to drift out of step with it. An order in a holding status has
@@ -21,11 +28,11 @@ use Illuminate\Database\Eloquent\Model;
 class OrderStockService
 {
     /**
-     * Statuses where the goods are committed to the customer. Pending is not
-     * one: the order is accepted but the stock is still sellable. Cancelled is
-     * not one either, which is what puts the units back.
+     * Statuses where the goods are spoken for. Pending is one of them, so the
+     * units are reserved from the moment the order is placed. Cancelled is the
+     * only status that is not, which is what puts the units back.
      */
-    public const HOLDING_STATUSES = ['confirmed', 'processing', 'shipped', 'delivered'];
+    public const HOLDING_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
 
     public static function holdsStock(?string $status): bool
     {

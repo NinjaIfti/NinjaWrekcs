@@ -342,9 +342,10 @@ class AdminController extends Controller
                     'subtotal' => $item['subtotal'],
                 ]);
 
-                // Only if the status the admin chose holds stock - a manual
-                // order left pending does not reserve anything, same as a
-                // customer's. Off the row that actually holds it.
+                // Only if the status the admin chose holds stock, which every
+                // status but cancelled now does - so a manual order left
+                // pending reserves its units, same as a customer's. Off the
+                // row that actually holds it.
                 if (\App\Services\OrderStockService::holdsStock($validated['status'])) {
                     ($item['variant'] ?? $item['product'])->decrement('quantity', $item['quantity']);
                 }

@@ -307,11 +307,11 @@ class CheckoutController extends Controller
                     'subtotal' => $line->lineTotal(),
                 ]);
 
-                // Stock is NOT taken here. It comes off when the order is
-                // confirmed - see OrderStockService. The availability check
-                // above still runs, so an order can never be placed for more
-                // than exists, but the units stay sellable until someone
-                // accepts the order.
+                // Whether stock comes off here is OrderStockService's call, not
+                // this controller's. Since pending holds stock, placing the
+                // order reserves its units straight away; the availability
+                // check above already ran under a row lock, so two buyers
+                // cannot both take the last one.
                 if (\App\Services\OrderStockService::holdsStock($order->status)) {
                     $locked->decrement('quantity', $line->quantity);
                 }

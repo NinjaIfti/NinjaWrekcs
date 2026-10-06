@@ -19,9 +19,10 @@ use Tests\TestCase;
  * a variant order returned the units to the product's dead quantity column
  * instead of the variant.
  *
- * The rule is now: confirmed, processing, shipped and delivered hold stock;
- * pending and cancelled do not. Because the status is the only source of
- * truth, transitions are idempotent and cannot double-deduct.
+ * The rule since 2026-10-06: every status except cancelled holds stock, so
+ * placing an order reserves its units and cancelling is what frees them.
+ * Because the status is the only source of truth, transitions are idempotent
+ * and cannot double-deduct.
  */
 class OrderStockLifecycleTest extends TestCase
 {
@@ -68,11 +69,12 @@ class OrderStockLifecycleTest extends TestCase
         return [$product, $variant, Order::latest('id')->firstOrFail()];
     }
 
-    public function test_a_pending_order_holds_no_stock(): void
+    /** Placing the order is what reserves the units, since 2026-10-06. */
+    public function test_a_pending_order_already_holds_its_stock(): void
     {
         [, $variant] = $this->pendingVariantOrder();
 
-        $this->assertSame(5, (int) $variant->refresh()->quantity);
+        $this->assertSame(3, (int) $variant->refresh()->quantity);
     }
 
     public function test_confirming_takes_the_stock_off_the_variant(): void
@@ -98,7 +100,8 @@ class OrderStockLifecycleTest extends TestCase
         $this->assertSame(5, (int) $product->refresh()->quantity, 'and the parent total follows them back');
     }
 
-    public function test_cancelling_a_pending_order_changes_nothing(): void
+    /** Cancelling is now the only thing that frees a pending order's units. */
+    public function test_cancelling_a_pending_order_returns_its_stock(): void
     {
         [, $variant, $order] = $this->pendingVariantOrder();
 
@@ -147,14 +150,15 @@ class OrderStockLifecycleTest extends TestCase
         $this->assertSame(3, (int) $variant->refresh()->quantity);
     }
 
-    public function test_going_back_to_pending_returns_the_stock(): void
+    /** Pending and confirmed both hold, so moving between them moves nothing. */
+    public function test_going_back_to_pending_keeps_the_stock_reserved(): void
     {
         [, $variant, $order] = $this->pendingVariantOrder();
 
         $this->setStatus($order, 'confirmed');
         $this->setStatus($order->refresh(), 'pending');
 
-        $this->assertSame(5, (int) $variant->refresh()->quantity);
+        $this->assertSame(3, (int) $variant->refresh()->quantity);
     }
 
     public function test_a_plain_product_follows_the_same_rule(): void
@@ -172,7 +176,8 @@ class OrderStockLifecycleTest extends TestCase
         ]);
 
         $order = Order::latest('id')->firstOrFail();
-        $this->assertSame(10, (int) $product->refresh()->quantity);
+        // Reserved by placing the order; confirming moves nothing further.
+        $this->assertSame(7, (int) $product->refresh()->quantity);
 
         $this->setStatus($order, 'confirmed');
         $this->assertSame(7, (int) $product->refresh()->quantity);

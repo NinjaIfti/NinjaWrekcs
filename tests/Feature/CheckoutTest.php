@@ -62,7 +62,7 @@ class CheckoutTest extends TestCase
      * Placing an order no longer takes stock - it comes off on confirmation,
      * so an order nobody has accepted does not reduce what the shop can sell.
      */
-    public function test_placing_an_order_does_not_take_stock_yet(): void
+    public function test_placing_an_order_reserves_the_stock_immediately(): void
     {
         $product = Product::factory()->withCategory()->create(['price' => 0, 'quantity' => 100]);
         $blue = ProductVariant::factory()->create(['product_id' => $product->id, 'price' => 450, 'quantity' => 5]);
@@ -71,11 +71,9 @@ class CheckoutTest extends TestCase
         $this->post(route('checkout.store'), $this->validPayload());
 
         $this->assertSame('pending', Order::latest('id')->first()->status);
-        $this->assertSame(5, $blue->refresh()->quantity, 'a pending order reserves nothing');
-        // The parent column tracks its active variants, so it reads 5 here -
-        // the point of the test is that neither figure moved for a pending
-        // order, not what the parent was seeded with.
-        $this->assertSame(5, $product->refresh()->quantity);
+        $this->assertSame(3, $blue->refresh()->quantity, 'a pending order reserves its units');
+        // The parent column tracks its active variants, so it follows down.
+        $this->assertSame(3, $product->refresh()->quantity);
     }
 
     public function test_confirming_decrements_that_variant_not_the_parent(): void
@@ -164,7 +162,7 @@ class CheckoutTest extends TestCase
         app(CartService::class)->add($product, null, 3);
 
         $this->post(route('checkout.store'), $this->validPayload());
-        $this->assertSame(10, $product->refresh()->quantity, 'pending orders do not hold stock');
+        $this->assertSame(7, $product->refresh()->quantity, 'placing the order reserves the units');
 
         $order = Order::latest('id')->first();
         $admin = \App\Models\User::factory()->create(['email' => 'ifti3061@gmail.com']);
