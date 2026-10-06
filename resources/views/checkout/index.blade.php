@@ -126,9 +126,7 @@
                             <!-- Delivery Location -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Delivery Location *</label>
-                                {{-- Stacked on a phone: two columns of "Inside Dhaka ৳80"
-                                     side by side is what forced the minimum width. --}}
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-2 gap-4">
                                     <label class="relative flex items-center p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg cursor-pointer hover:border-violet-500/60 transition delivery-option">
                                         <input type="radio" name="delivery_location" value="inside_dhaka" data-charge="80" checked onchange="updateDeliveryCharge()" class="sr-only">
                                         <div class="flex-1">
