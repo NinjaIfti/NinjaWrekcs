@@ -77,6 +77,26 @@ Route::get('/', function () {
 });
 
 
+/**
+ * The page a printed QR code opens.
+ *
+ * This URL used to hold the giveaway entry form and 404'd from the day the
+ * giveaway was removed - the access log shows scans landing on nothing. The
+ * cards are already printed, so the URL has to keep working.
+ *
+ * The terms are read from the coupon row rather than written into the page: a
+ * discount promised on a card that the checkout then refuses is worse than no
+ * page at all.
+ */
+Route::get('/agent-code', function () {
+    $coupon = \App\Models\Coupon::whereRaw('UPPER(code) = ?', ['AGENT10'])->first();
+
+    return view('agent-code', [
+        'coupon' => $coupon,
+        'isUsable' => (bool) $coupon?->isValid(),
+    ]);
+})->name('agent-code');
+
 Route::get('/about', function () {
     return view('about');
 })->name('about');

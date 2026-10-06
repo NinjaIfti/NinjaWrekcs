@@ -15,9 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
 
-        $middleware->validateCsrfTokens(except: [
-            'agent-code/search',
-        ]);
+        // 'agent-code/search' lived here for the giveaway's phone lookup and
+        // outlived the route it exempted. The agent-code page is a plain GET
+        // now, so nothing needs exempting.
         
         // Add visitor tracking middleware to web routes
         $middleware->web(append: [
