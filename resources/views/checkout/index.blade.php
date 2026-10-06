@@ -84,8 +84,13 @@
                 @csrf
                 <input type="hidden" id="checkout_discount_value" value="0">
 
+                {{-- min-w-0 is load-bearing: a grid item defaults to min-width:auto,
+                     so it refuses to shrink below its content's minimum. That pinned
+                     both columns at 438px regardless of screen width, and since the
+                     page does not scroll sideways, everything past the edge was
+                     simply unreachable on a phone. --}}
                 <!-- Left Column - Form -->
-                <div class="lg:col-span-2 space-y-6">
+                <div class="lg:col-span-2 min-w-0 space-y-6">
                     <!-- Customer Information -->
                     <div class="bg-black/50 backdrop-blur-xl rounded-2xl border border-violet-500/30 p-6">
                         <h2 class="text-2xl font-bold mb-6">Customer Information</h2>
@@ -121,7 +126,9 @@
                             <!-- Delivery Location -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-3">Delivery Location *</label>
-                                <div class="grid grid-cols-2 gap-4">
+                                {{-- Stacked on a phone: two columns of "Inside Dhaka ৳80"
+                                     side by side is what forced the minimum width. --}}
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <label class="relative flex items-center p-4 bg-black/30 border-2 border-violet-500/30 rounded-lg cursor-pointer hover:border-violet-500/60 transition delivery-option">
                                         <input type="radio" name="delivery_location" value="inside_dhaka" data-charge="80" checked onchange="updateDeliveryCharge()" class="sr-only">
                                         <div class="flex-1">
@@ -362,7 +369,7 @@
                 </div>
 
                 <!-- Right Column - Order Summary -->
-                <div class="lg:col-span-1">
+                <div class="lg:col-span-1 min-w-0">
                     <div class="bg-black/50 backdrop-blur-xl rounded-2xl border border-violet-500/30 p-6 sticky top-24">
                         <h2 class="text-2xl font-bold mb-6">Order Summary</h2>
                         
@@ -391,11 +398,11 @@
                                            id="coupon_code_input" 
                                            name="coupon_code"
                                            placeholder="Enter coupon code" 
-                                           class="flex-1 px-4 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50 uppercase"
+                                           class="flex-1 min-w-0 px-4 py-2 bg-black/50 border border-violet-500/30 rounded-lg text-white focus:border-violet-500 focus:ring-violet-500/50 uppercase"
                                            style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
                                     <button type="button" 
                                             onclick="applyCoupon()" 
-                                            class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold transition">
+                                            class="shrink-0 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold transition">
                                         Apply
                                     </button>
                                 </div>
