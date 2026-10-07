@@ -107,6 +107,62 @@ class VariantDiscountDisplayTest extends TestCase
         $this->assertSame(13.0, (float) $product->discount_percentage);
     }
 
+    /**
+     * The product page priced each swatch by hand and missed the product's
+     * offer, so picking a colour showed ৳1400 while the cart charged ৳1200.
+     */
+    public function test_the_product_page_prices_each_variant_with_the_offer(): void
+    {
+        $product = $this->rgxButterfly();
+
+        $html = $this->get(route('shop.show', $product))->assertOk()->getContent();
+
+        // Every swatch hands the script the price the cart will charge.
+        $this->assertStringContainsString('data-price="1200"', $html);
+        $this->assertStringNotContainsString('data-price="1400"', $html);
+
+        // And the pre-offer price travels with it for the strike-through.
+        $this->assertStringContainsString('data-compare="1400"', $html);
+    }
+
+    public function test_the_headline_price_shows_the_offer_and_the_old_price(): void
+    {
+        $product = $this->rgxButterfly();
+
+        $html = $this->get(route('shop.show', $product))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/id="variant-price"[^>]*>\s*৳1,200\.00/u', $html);
+        $this->assertMatchesRegularExpression('/id="variant-compare"[^>]*>[\s\S]{0,40}৳1,400\.00/u', $html);
+        $this->assertStringContainsString('Save 14%', $html);
+    }
+
+    /** No offer, no strike-through - the old price must not appear from nowhere. */
+    public function test_a_variant_product_without_an_offer_shows_one_plain_price(): void
+    {
+        $product = $this->rgxButterfly(offer: null);
+
+        $html = $this->get(route('shop.show', $product))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/id="variant-price"[^>]*>\s*৳1,400\.00/u', $html);
+        // The badge and the old price stay in the markup so the swatch script can
+        // fill them for another colour, but both must start hidden.
+        $this->assertMatchesRegularExpression('/<span[^>]*\bhidden\b[^>]*id="variant-saving"/', $html);
+        $this->assertMatchesRegularExpression('/<div[^>]*\bhidden\b[^>]*id="variant-compare"/', $html);
+    }
+
+    /** A variant cheaper than the offer keeps its own price, here too. */
+    public function test_a_variant_below_the_offer_is_not_marked_down(): void
+    {
+        $product = $this->rgxButterfly(offer: 1450, variantPrices: [1400, 1599]);
+
+        $html = $this->get(route('shop.show', $product))->assertOk()->getContent();
+
+        // 1400 stays 1400 and carries no compare price; 1599 drops to 1450.
+        $this->assertStringContainsString('data-price="1400"', $html);
+        $this->assertStringContainsString('data-price="1450"', $html);
+        $this->assertStringContainsString('data-compare="1599"', $html);
+    }
+
     public function test_the_card_shows_the_badge_the_old_price_and_the_timer(): void
     {
         $this->rgxButterfly();

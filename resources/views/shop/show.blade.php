@@ -153,6 +153,15 @@
                         $activeVariants = $product->variants->where('is_active', true);
                         // Never preselect a sold-out option.
                         $defaultVariant = $activeVariants->firstWhere('quantity', '>', 0);
+
+                        // One source of truth for every price on this page.
+                        $pagePricing = app(\App\Services\PricingService::class);
+                        $shownVariant = $defaultVariant ?? $activeVariants->first();
+                        $shownPrice = $shownVariant ? $pagePricing->priceFor($product, $shownVariant) : 0;
+                        $shownWas = $shownVariant ? $pagePricing->compareAtPriceFor($product, $shownVariant) : null;
+                        $shownSaving = $shownWas && $shownWas > 0
+                            ? (int) round((($shownWas - $shownPrice) / $shownWas) * 100)
+                            : 0;
                     @endphp
 
                     <!-- Product Name -->
@@ -178,7 +187,12 @@
                             @foreach($activeVariants as $v)
                                 @php
                                     $inStock = $v->quantity > 0;
-                                    $vPrice = $v->sale_price && $v->sale_price < $v->price ? $v->sale_price : $v->price;
+                                    // Through PricingService, so the figure matches what the
+                                    // cart charges. Worked out here by hand it missed the
+                                    // product's open offer: picking a colour showed the full
+                                    // price while the cart took the discounted one.
+                                    $vPrice = $pagePricing->priceFor($product, $v);
+                                    $vWas = $pagePricing->compareAtPriceFor($product, $v);
                                     // Photos whose file is missing are dropped - picking that
                                     // colour used to swap the gallery to a broken image.
                                     $vImages = $v->existingImagePaths();
@@ -190,6 +204,7 @@
                                         data-variant-id="{{ $v->id }}"
                                         data-name="{{ $v->name }}"
                                         data-price="{{ $vPrice }}"
+                                        data-compare="{{ $vWas ?? '' }}"
                                         data-in-stock="{{ $inStock ? 1 : 0 }}"
                                         data-stock="{{ $v->quantity }}"
                                         data-images="{{ collect($vImages)->map(fn($p) => asset('storage/'.$p))->values()->toJson() }}"
@@ -201,7 +216,12 @@
                                              class="w-14 h-14 object-cover rounded mb-1 mx-auto">
                                     @endif
                                     <span class="block text-sm {{ $inStock ? 'text-white' : 'text-gray-500 line-through' }}">{{ $v->name }}</span>
-                                    <span class="block text-xs text-violet-300">৳{{ number_format($vPrice, 2) }}</span>
+                                    <span class="block text-xs text-violet-300">
+                                        ৳{{ number_format($vPrice, 2) }}
+                                        @if($vWas)
+                                            <span class="block text-[10px] text-gray-500 line-through">৳{{ number_format($vWas, 2) }}</span>
+                                        @endif
+                                    </span>
                                     @unless($inStock)
                                         <span class="block text-[10px] text-red-400 uppercase tracking-wide">Sold out</span>
                                     @endunless
@@ -223,7 +243,12 @@
                     <div class="space-y-3" id="price-block">
                         <div class="flex items-center gap-3">
                             @if($hasVariants)
-                                <div class="text-3xl font-bold text-violet-400" id="variant-price">৳{{ number_format($defaultVariant ? ($defaultVariant->sale_price && $defaultVariant->sale_price < $defaultVariant->price ? $defaultVariant->sale_price : $defaultVariant->price) : ($activeVariants->first()->price ?? 0), 2) }}</div>
+                                <div class="text-3xl font-bold text-violet-400" id="variant-price">৳{{ number_format($shownPrice, 2) }}</div>
+                                {{-- Both stay in the markup so the swatch script can fill
+                                     them in for the next colour without rebuilding the row;
+                                     hidden when the chosen option carries no discount. --}}
+                                <div class="text-xl text-gray-500 line-through {{ $shownWas ? '' : 'hidden' }}" id="variant-compare">৳{{ number_format($shownWas ?? 0, 2) }}</div>
+                                <span class="px-3 py-1 bg-red-500/20 text-red-400 text-sm font-bold rounded-full {{ $shownSaving > 0 ? '' : 'hidden' }}" id="variant-saving">Save {{ $shownSaving }}%</span>
                             @elseif($product->has_discount)
                                 <div class="text-3xl font-bold text-violet-400">
                                     ৳{{ number_format($product->display_price, 2) }}
@@ -367,6 +392,9 @@
             const wrap = document.getElementById('product-gallery-wrap');
             const variantSelect = document.getElementById('variant_id');
             const variantPriceEl = document.getElementById('variant-price');
+            const variantCompareEl = document.getElementById('variant-compare');
+            const variantSavingEl = document.getElementById('variant-saving');
+            const taka = (value) => '৳' + parseFloat(value).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
             const formVariantInput = document.getElementById('form_variant_id');
 
             const rebuildSlideshow = (imageUrls) => {
@@ -426,8 +454,25 @@
                     if (productHeadingEl && this.dataset.name) {
                         productHeadingEl.textContent = this.dataset.name;
                     }
+                    // Price, the struck-through original and the saving all belong
+                    // to the chosen colour, so they move together.
                     if (variantPriceEl && this.dataset.price) {
-                        variantPriceEl.textContent = '৳' + parseFloat(this.dataset.price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                        variantPriceEl.textContent = taka(this.dataset.price);
+                    }
+
+                    const price = parseFloat(this.dataset.price);
+                    const was = parseFloat(this.dataset.compare);
+                    const discounted = !isNaN(was) && was > price;
+
+                    if (variantCompareEl) {
+                        variantCompareEl.textContent = discounted ? taka(was) : '';
+                        variantCompareEl.classList.toggle('hidden', !discounted);
+                    }
+                    if (variantSavingEl) {
+                        variantSavingEl.textContent = discounted
+                            ? 'Save ' + Math.round(((was - price) / was) * 100) + '%'
+                            : '';
+                        variantSavingEl.classList.toggle('hidden', !discounted);
                     }
                     if (addToCartBtn) addToCartBtn.disabled = false;
 
